@@ -10,7 +10,7 @@ answer or save as a local artifact when file output is requested.
 |---|---|
 | passport_id | BP-YYYYMMDD-001 |
 | workflow_alias | biomedical-research-council / omics-analysis-team / evidence-audit-team / experiment-design-team / translational-scout-team |
-| workflow_version | 0.2.4 |
+| workflow_version | 0.3.0 |
 | created_at |  |
 | updated_at |  |
 | current_stage |  |
@@ -38,6 +38,24 @@ answer or save as a local artifact when file output is requested.
 | source_id | type | identifier | version_or_retrieval_date | status | claim_use |
 |---|---|---|---|---|---|
 | S-001 | PMID/DOI/accession/NCT/file/tool |  |  | checked / not checked / excluded |  |
+
+## Workflow Run State
+
+| field | value |
+|---|---|
+| workflow_run_id |  |
+| workflow_run_location_or_summary |  |
+| current_stage_status |  |
+
+## Stage Evaluation
+
+| stage | status | reason |
+|---|---|---|
+| S1 Plan | pass / pass-with-caveats / skipped / block / not-applicable |  |
+| S2 Setup | pass / pass-with-caveats / skipped / block / not-applicable |  |
+| S3 Validate | pass / pass-with-caveats / skipped / block / not-applicable |  |
+| S4 Inference/Synthesis | pass / pass-with-caveats / skipped / block / not-applicable |  |
+| S5 Submit/Report | pass / pass-with-caveats / skipped / block / not-applicable |  |
 
 ## Gate Status
 

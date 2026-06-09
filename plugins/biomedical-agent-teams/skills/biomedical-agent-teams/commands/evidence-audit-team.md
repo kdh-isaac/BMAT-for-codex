@@ -12,13 +12,14 @@ Audit the supplied biomedical claim, report, manuscript section, or agent output
 
 ## Required Preflight Contract
 
-Before literature/database expansion, external tools, file writes, or final
-rewriting, produce or update a compact preflight contract with:
+Before literature/database expansion, external tools, file writes, spawned-agent
+claims, or final rewriting, produce or update runtime capability preflight and a
+compact preflight contract with:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
-`checkpoint_plan`. If this contract is absent, label the result as a compact or
-partial workflow rather than a full audit.
+`checkpoint_plan`. If runtime capability preflight or this contract is absent,
+label the result as a compact or partial workflow rather than a full audit.
 
 ## Team
 
@@ -38,21 +39,24 @@ partial workflow rather than a full audit.
 
 ## Workflow
 
-1. Run `protocol-context-locker` to define audit object, evidence scope, risk/safety/privacy class, and stop criteria.
-2. Run `entity-normalizer` if entities, datasets, cohorts, trials, or assays are present.
-3. Split the audit object into atomic claims and build `central-claim-ledger-evidence-graph`.
-4. Maintain biomedical passport state for the audit object, selected claims,
+1. Run runtime capability preflight to record source-check, file, shell, network, and spawned-subagent support.
+2. Run `protocol-context-locker` to define audit object, evidence scope, risk/safety/privacy class, and stop criteria.
+3. Run `entity-normalizer` if entities, datasets, cohorts, trials, or assays are present.
+4. Lock the source corpus for citations, PMIDs, DOIs, accessions, registry IDs, database records, software versions, local files, and retrieval dates.
+5. Split the audit object into atomic claims and build `central-claim-ledger-evidence-graph`.
+6. Maintain workflow-run state and biomedical passport state for the audit object, selected claims,
    source/provenance/statistics/citation gate status, skipped gates, and resume
    checkpoints.
-5. Check citations, PMIDs, DOIs, accessions, database records, software versions, and retrieval dates.
-6. Map each claim to source evidence, local artifact, or missing provenance.
-7. Audit statistical validity, experimental unit, multiple testing, survival endpoints, uncertainty, and reproducibility.
-8. Audit causal language and confounding.
-9. Audit study quality/risk of bias and applicability.
-10. Audit safety, privacy, clinical-advice, dual-use, and patent-sensitive boundaries when relevant.
-11. Red-team contradictions, negative evidence, and scope drift.
-12. Produce safer rewritten claims only from verified ledger material.
-13. Run the integrity gate and `post-write-final-validator` on the rewritten/audited final text.
+7. Check citations, PMIDs, DOIs, accessions, database records, software versions, and retrieval dates.
+8. Map each claim to source evidence, local artifact, or missing provenance.
+9. Audit statistical validity, experimental unit, multiple testing, survival endpoints, uncertainty, and reproducibility.
+10. Audit causal language and confounding.
+11. Audit study quality/risk of bias and applicability.
+12. Audit safety, privacy, clinical-advice, dual-use, and patent-sensitive boundaries when relevant.
+13. Red-team contradictions, negative evidence, and scope drift.
+14. Apply `references/independent-review-policy.md`; do not call same-model validation independent.
+15. Produce safer rewritten claims only from verified ledger material.
+16. Run the integrity gate and `post-write-final-validator` on the rewritten/audited final text.
 
 ## Audit Scope
 
@@ -70,14 +74,18 @@ otherwise state that no safety auditor trigger was present.
 ## Final Output
 
 1. audit verdict: pass / pass-with-revisions / block
-2. protocol/context lock
-3. atomic claim ledger / evidence graph
-4. unsupported or contradicted claims
-5. citation and provenance gaps
-6. statistical/causal/risk-of-bias/safety issues
-7. corrected wording
-8. useful but excluded or not-ledger-verified claims
-9. post-write validation verdict
-10. biomedical passport status and integrity-gate failure-mode checklist status
-11. unresolved checks
-12. recommended next evidence needed
+2. runtime capability preflight and downgrade rule
+3. protocol/context lock
+4. source corpus lock
+5. atomic claim ledger / evidence graph
+6. unsupported or contradicted claims
+7. citation and provenance gaps
+8. statistical/causal/risk-of-bias/safety issues
+9. corrected wording
+10. useful but excluded or not-ledger-verified claims
+11. independent-review status
+12. post-write validation verdict
+13. workflow-run state, biomedical passport status, and integrity-gate failure-mode checklist status
+14. unresolved checks
+15. recommended next evidence needed
+16. final workflow label and skipped gates with reasons

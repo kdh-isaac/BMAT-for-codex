@@ -52,6 +52,7 @@
       }
     },
     "excluded_claim_handling": { "type": "string" },
+    "independent_review_status": { "type": "string" },
     "minimal_required_corrections": {
       "type": "array",
       "items": { "type": "string" }

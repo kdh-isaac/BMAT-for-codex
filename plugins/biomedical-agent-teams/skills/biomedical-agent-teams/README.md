@@ -5,6 +5,37 @@ audit gates, writer restriction, and post-write final validation.
 
 Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
 
+## v0.3.2 Updates
+
+- Adds benchmark hygiene guardrails for BioAgentBench-style tasks with hidden
+  truth files, result archives, scoring scripts, reproduction scripts, and task
+  Dockerfiles.
+- Updates omics workflow rules to keep benchmark solve and scoring phases
+  separated.
+
+## v0.3.1 Updates
+
+- Makes command-level final output requirements self-contained by adding final
+  workflow label and skipped-gate reporting to every command recipe.
+- Adds stronger package tests for router resource references, source-manifest
+  command and agent roster existence, Markdown file references, and v0.3 schema
+  sample payload validation.
+
+## v0.3.0 Updates
+
+- Adds runtime capability preflight with schema/template and Codex capability
+  matrix reference.
+- Adds workflow-run state with stage DAG and downgrade reasons.
+- Promotes source corpus lock to a standalone schema/template.
+- Adds hypothesis tournament schema/template/reference for idea discovery.
+- Adds S1-S5 stage evaluation schema/template and omics validation failure modes.
+- Adds independent-review policy for independent validation versus same-model
+  separate-pass validation.
+- Adds rollback/resume template for durable workflow artifacts.
+- Updates all six command recipes to mention runtime capability, source lock,
+  workflow state, stage validation where relevant, and independent-review
+  status.
+
 ## v0.2.4 Updates
 
 - Adds command-level preflight contract requirements to every alias workflow,

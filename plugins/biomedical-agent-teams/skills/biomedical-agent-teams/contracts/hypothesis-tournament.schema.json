@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Hypothesis Tournament",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tournament_id",
+    "context_lock",
+    "candidates",
+    "rounds",
+    "final_ranking"
+  ],
+  "properties": {
+    "tournament_id": { "type": "string" },
+    "context_lock": { "type": "string" },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["hypothesis_id", "hypothesis", "status"],
+        "properties": {
+          "hypothesis_id": { "type": "string" },
+          "hypothesis": { "type": "string" },
+          "cluster_id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["active", "merged", "held", "discarded", "winner"]
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "rounds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["round_id", "round_type", "output_summary"],
+        "properties": {
+          "round_id": { "type": "string" },
+          "round_type": {
+            "type": "string",
+            "enum": [
+              "generation",
+              "clustering",
+              "novelty-filter",
+              "pairwise-debate",
+              "evolution",
+              "bayesian-ranking",
+              "red-team",
+              "kill-test-design"
+            ]
+          },
+          "output_summary": { "type": "string" }
+        }
+      }
+    },
+    "final_ranking": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rank", "hypothesis_id", "verdict", "rationale"],
+        "properties": {
+          "rank": { "type": "integer", "minimum": 1 },
+          "hypothesis_id": { "type": "string" },
+          "verdict": { "type": "string" },
+          "rationale": { "type": "string" },
+          "expected_information_gain": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -17,6 +17,9 @@
     "checkpoint_plan"
   ],
   "properties": {
+    "runtime_capability_preflight_id": {
+      "type": "string"
+    },
     "requested_alias": {
       "type": "string"
     },
@@ -100,6 +103,12 @@
           "required_before": { "type": "string" }
         }
       }
+    },
+    "source_corpus_id": {
+      "type": "string"
+    },
+    "workflow_run_id": {
+      "type": "string"
     }
   }
 }

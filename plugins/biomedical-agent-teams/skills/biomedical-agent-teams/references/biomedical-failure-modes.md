@@ -16,7 +16,7 @@ downgraded.
 | FM7 | unsafe/private disclosure | PHI/PII, private sample IDs, unpublished data, patent-sensitive details, or controlled-access data are sent externally or exposed | redact, stop external use, and require approval |
 | FM8 | clinical or translational overreach | research evidence becomes patient-facing advice, actionability, or trial recommendation | restate as research support and add clinician/regulatory boundary |
 | FM9 | provenance gap | final claim, figure, table, or recommendation cannot be traced to source/tool/file/artifact | add traceability or exclude the claim |
-| FM10 | reviewer/writer self-ratification | the same pass writes the claim and validates it without criteria or dissent preservation | require independent audit section or downgrade workflow label |
+| FM10 | reviewer/writer self-ratification | the same pass writes the claim and validates it without criteria, ledger comparison, or dissent preservation | apply `references/independent-review-policy.md`, require independent audit section or downgrade workflow label |
 
 ## Status Vocabulary
 

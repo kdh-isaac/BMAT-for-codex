@@ -35,6 +35,14 @@
       "type": "array",
       "items": { "type": "object", "additionalProperties": true }
     },
+    "workflow_run": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "stage_evaluation": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "claim_ledger": {
       "type": "object",
       "additionalProperties": true,

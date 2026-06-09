@@ -4,11 +4,46 @@ Codex Desktop compatible plugin wrapper for the `biomedical-agent-teams` skill.
 
 ## Contents
 
-- `.codex-plugin/plugin.json`: Codex plugin metadata.
+- `.agents/plugins/marketplace.json`: local marketplace metadata.
 - `skills/biomedical-agent-teams/`: Codex-native biomedical agent-team skill,
-  including 35 agent prompts, 6 workflow recipes, and a fixed-field claim
-  ledger template, contract schemas, biomedical passport, and integrity-gate
-  resources.
+  including 35 agent prompts, 6 workflow recipes, 10 contract schemas, 9
+  templates, 6 references, a fixed-field claim ledger, biomedical passport,
+  runtime capability preflight, source corpus lock, workflow-run state, stage
+  evaluation, hypothesis tournament, independent-review policy, and
+  integrity-gate resources.
+
+## v0.3.2 Updates
+
+- Adds benchmark hygiene rules for BioAgentBench-style hidden truth/result
+  files, scoring scripts, reproduction scripts, and task Dockerfiles.
+- Clarifies that truth/result materials are scoring-phase only and must not be
+  exposed to the solving agent before final candidate output is frozen.
+
+## v0.3.1 Updates
+
+- Ensures every command recipe final output requires a final workflow label and
+  skipped-gate reasons.
+- Strengthens smoke tests for router-advertised bundled resources, source
+  manifest command/agent existence, Markdown resource references, and v0.3
+  schema sample payload validation.
+
+## v0.3.0 Updates
+
+- Adds runtime capability preflight so workflows record actual Codex support for
+  web/search, shell/code execution, file writes, network/database access,
+  spawned subagents, sandbox, and downgrade rules.
+- Adds workflow-run stage DAG state for deep, audit, omics run, translational,
+  manuscript-support, generated-file, and long-running workflows.
+- Promotes source corpus handling into a standalone source lock with schema and
+  template.
+- Adds hypothesis tournament resources for idea-discovery and research-council
+  ideation workflows.
+- Adds S1-S5 stage evaluation for omics run/audit and generated-file workflows,
+  with a blocking rule when S3 Validate fails.
+- Adds independent-review policy distinguishing spawned/tool-backed validation
+  from same-model separate-pass validation.
+- Adds rollback/resume artifact convention for durable `.bmat/run-*` style
+  state.
 
 ## v0.2.4 Updates
 

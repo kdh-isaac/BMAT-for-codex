@@ -13,12 +13,14 @@ Run a supervisor-worker-review-gate workflow for public omics. Default to Korean
 ## Required Preflight Contract
 
 Before external search, dataset access/download, code execution, file writes,
-or final reporting, produce or update a compact preflight contract with:
+spawned-agent claims, or final reporting, produce or update runtime capability
+preflight and a compact preflight contract with:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
-`checkpoint_plan`. If this contract is absent, label the result as a compact or
-partial workflow rather than a full omics analysis audit.
+`checkpoint_plan`. If runtime capability preflight or this contract is absent,
+label the result as a compact or partial workflow rather than a full omics
+analysis audit.
 
 ## Team
 
@@ -46,31 +48,53 @@ partial workflow rather than a full omics analysis audit.
 
 ## Workflow
 
-1. Run `protocol-context-locker`: analysis question schema, deliverable, evidence scope, risk/safety/privacy class, output path, budget/depth, stop criteria, and human approval gate.
-2. Run preliminary `entity-normalizer` and lock metadata before analysis: accession, organism, assay, genome build/annotation, sample sheet, biological unit, group labels, endpoint/event/censor definitions where relevant.
-3. Use `safety-ethics-privacy-dual-use-auditor` before external search, download, private sample handling, or controlled-access discussion.
-4. Keep raw data read-only. Write derived outputs only to approved processed/results/reports/output folders.
-5. Require a small-fixture, subset, or smoke test before full long-running or high-memory analysis.
-6. Maintain `central-claim-ledger-evidence-graph` for results, source artifacts, uncertainty, contradictions, and blocked claims.
-7. Maintain an omics run manifest using `contracts/omics-run-manifest.schema.json` or the same field order, plus biomedical passport status for `run` and `audit` modes.
-8. Run review gate before final reporting:
+1. Run runtime capability preflight: web/database access, shell/code execution,
+   file write path, network, sandbox, and spawned-subagent support.
+2. Run `protocol-context-locker`: analysis question schema, deliverable, evidence scope, risk/safety/privacy class, output path, budget/depth, stop criteria, and human approval gate.
+3. Run preliminary `entity-normalizer` and lock metadata before analysis: accession, organism, assay, genome build/annotation, sample sheet, biological unit, group labels, endpoint/event/censor definitions where relevant.
+4. Lock the source corpus for all accessions, database records, local files,
+   software versions, and generated artifacts used in final claims.
+5. Use `safety-ethics-privacy-dual-use-auditor` before external search, download, private sample handling, or controlled-access discussion.
+6. Keep raw data read-only. Write derived outputs only to approved processed/results/reports/output folders.
+7. For benchmark tasks such as BioAgentBench, do not expose truth files,
+   downloaded `results/`, scoring scripts, reproduction scripts, or task
+   Dockerfiles to the solving agent before the final candidate output is frozen.
+8. Require a small-fixture, subset, or smoke test before full long-running or high-memory analysis.
+9. Maintain S1-S5 stage evaluation using `templates/stage-evaluation-template.md` or `contracts/stage-evaluation.schema.json`.
+10. Maintain `central-claim-ledger-evidence-graph` for results, source artifacts, uncertainty, contradictions, and blocked claims.
+11. Maintain workflow-run state, an omics run manifest using `contracts/omics-run-manifest.schema.json` or the same field order, plus biomedical passport status for `run` and `audit` modes.
+12. Run review gate before final reporting:
    - `omics-code-reviewer` for software/reproducibility/raw-data-safety.
    - `omics-provenance-validator` for design/statistics/provenance/claim proportionality.
    - `causal-inference-confounder-analyst` for association-versus-causality boundary.
    - `biostats-repro-auditor` for statistical validity.
    - `risk-of-bias-study-quality-auditor` for dataset/study quality and applicability.
-9. Run `provenance-traceability-architect`, `model-card-dataset-card-writer`, `claim-level-evidence-verifier`, and `citation-verifier` before final deliverables.
-10. `omics-reporter` can report only verified claim-ledger material.
-11. Run the integrity gate and `post-write-final-validator` before final release.
-12. Calibrate claims as exploratory versus validated, association versus causality, and prognostic versus predictive.
+13. Run `provenance-traceability-architect`, `model-card-dataset-card-writer`, `claim-level-evidence-verifier`, and `citation-verifier` before final deliverables.
+14. Apply `references/independent-review-policy.md` before describing validation as independent.
+15. `omics-reporter` can report only verified claim-ledger material.
+16. Run the integrity gate and `post-write-final-validator` before final release.
+17. Calibrate claims as exploratory versus validated, association versus causality, and prognostic versus predictive.
+
+## Stage-Gated Run Model
+
+Use S1-S5 for `plan`, `run`, and `audit` modes. A full run cannot advance to
+validated S4/S5 claims unless S3 Validate passes or passes with explicit caveats.
+
+| Stage | Required locks and checks | Blocking rule |
+|---|---|---|
+| S1 Plan | accession/cohort, organism, assay, biological unit, contrast/endpoint, inclusion/exclusion, statistics plan | block if question or metadata needed for analysis is ambiguous |
+| S2 Setup | environment, package versions, raw-data read-only rule, fixture/subset or smoke-test path | block long-running run if no smoke-test path exists |
+| S3 Validate | sample ID alignment, donor/biological-unit consistency, design matrix, leakage/pseudoreplication, event/censor checks, smoke test | if not pass, S4/S5 claims must be blocked or downgraded |
+| S4 Inference | full/subset run, effect size, CI/FDR/event counts, sensitivity analysis | downgrade if uncertainty or multiplicity is missing |
+| S5 Submit/Report | source corpus, omics manifest, claim ledger, provenance, final report, post-write validation | block if final claims are not traceable |
 
 ## Mode Routing
 
 | Mode | Agent selection and checks |
 |---|---|
-| `plan` | Do not run full analysis. Lock accession/cohort/assay/contrast/endpoints, check public-access feasibility, define metadata/QC/statistics, and list smoke tests. |
-| `run` | Execute only after the plan is specific. Require a small fixture/subset/smoke test, write derived outputs only, then run code, provenance, biostats, risk-of-bias, claim, citation, and final validation gates. |
-| `audit` | Do not rerun full analysis unless explicitly requested. Inspect code/results/provenance/report, verify sample IDs/statistics/claims, and return pass / pass-with-revisions / block. |
+| `plan` | Do not run full analysis. Lock runtime capabilities, accession/cohort/assay/contrast/endpoints, check public-access feasibility, define metadata/QC/statistics, and list S1-S3 validation and smoke tests. |
+| `run` | Execute only after S1 Plan is specific. Require S2 setup and S3 validation/smoke test, write derived outputs only, then run S4 inference and S5 reporting with provenance, biostats, risk-of-bias, claim, citation, independent-review status, and final validation gates. |
+| `audit` | Do not rerun full analysis unless explicitly requested. Inspect code/results/provenance/report, score S1-S5, verify sample IDs/statistics/claims, and return pass / pass-with-revisions / block. |
 
 ## Track Checklists
 
@@ -95,15 +119,19 @@ audit bundle:
 1. bottom-line conclusion
 2. protocol/context lock and approvals
 3. track checklist status
-4. inputs and data provenance
-5. metadata and QC decisions
-6. analysis commands and software versions
-7. statistical methods and uncertainty
-8. central claim ledger summary using `templates/claim-ledger-template.md`
-9. causal/confounder and risk-of-bias boundary
-10. key results and limitations
-11. pathway or biological interpretation
-12. useful but excluded or not-ledger-verified claims
-13. validation-gate and post-write verdicts
-14. generated files, manifest, audit bundle, and next step
-15. biomedical passport status and omics run manifest status
+4. runtime capability preflight and downgrade rule
+5. source corpus status
+6. S1-S5 stage evaluation
+7. inputs and data provenance
+8. metadata and QC decisions
+9. analysis commands and software versions
+10. statistical methods and uncertainty
+11. central claim ledger summary using `templates/claim-ledger-template.md`
+12. causal/confounder and risk-of-bias boundary
+13. key results and limitations
+14. pathway or biological interpretation
+15. useful but excluded or not-ledger-verified claims
+16. independent-review, validation-gate, and post-write verdicts
+17. generated files, manifest, audit bundle, and next step
+18. workflow-run state, biomedical passport status, and omics run manifest status
+19. final workflow label and skipped gates with reasons

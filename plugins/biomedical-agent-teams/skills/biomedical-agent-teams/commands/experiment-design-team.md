@@ -12,13 +12,15 @@ Design a defensible validation plan. Default to Korean. Assume expert-level immu
 
 ## Required Preflight Contract
 
-Before literature/database expansion, external tools, file writes, or final
-writing, produce or update a compact preflight contract with:
+Before literature/database expansion, external tools, file writes, spawned-agent
+claims, or final writing, produce or update runtime capability preflight and a
+compact preflight contract with:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
-`checkpoint_plan`. If this contract is absent, label the result as a compact or
-partial workflow rather than a full experiment-design audit.
+`checkpoint_plan`. If runtime capability preflight or this contract is absent,
+label the result as a compact or partial workflow rather than a full
+experiment-design audit.
 
 ## Team
 
@@ -43,19 +45,22 @@ partial workflow rather than a full experiment-design audit.
 
 ## Workflow
 
-1. Run `protocol-context-locker`: experimental objective, deliverable, safety/privacy class, feasibility boundary, approval gate, and stop criteria.
-2. Run preliminary `entity-normalizer`.
-3. Restate the hypothesis, mechanism, experimental unit, and success/failure criteria.
-4. Build/update `central-claim-ledger-evidence-graph` for rationale, assumptions, and evidence gaps.
-5. Identify the strongest causal kill-test and the most likely confounders.
-6. Specify controls, biological replicates, technical replicates, donor/model considerations, randomization/blinding where feasible, and exclusion criteria.
-7. Define readouts, timing, expected outcomes, alternative interpretations, and follow-up branches.
-8. Add reagent/protocol/QC/logistics checks without inventing unknown reagent details.
-9. Run safety/ethics/privacy/dual-use audit before operational details or external disclosure.
-10. Use Bayesian decision modeling to prioritize the first experiment or staged validation route.
-11. Run biostats, risk-of-bias/study-quality, red-team, claim, and citation gates before final recommendation.
-12. For `deep` or `audit`, maintain biomedical passport state and run the integrity gate before final recommendation.
-13. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
+1. Run runtime capability preflight to record browsing/database, file-write, shell, and spawned-subagent support.
+2. Run `protocol-context-locker`: experimental objective, deliverable, safety/privacy class, feasibility boundary, approval gate, and stop criteria.
+3. Run preliminary `entity-normalizer`.
+4. Lock source corpus for source-backed rationale, methods, reagents, and prior-art claims.
+5. Restate the hypothesis, mechanism, experimental unit, and success/failure criteria.
+6. Build/update `central-claim-ledger-evidence-graph` for rationale, assumptions, and evidence gaps.
+7. Identify the strongest causal kill-test and the most likely confounders.
+8. Specify controls, biological replicates, technical replicates, donor/model considerations, randomization/blinding where feasible, and exclusion criteria.
+9. Define readouts, timing, expected outcomes, alternative interpretations, and follow-up branches.
+10. Add reagent/protocol/QC/logistics checks without inventing unknown reagent details.
+11. Run safety/ethics/privacy/dual-use audit before operational details or external disclosure.
+12. Use Bayesian decision modeling to prioritize the first experiment or staged validation route.
+13. Run biostats, risk-of-bias/study-quality, red-team, claim, and citation gates before final recommendation.
+14. For `deep` or `audit`, maintain workflow-run state and biomedical passport state and run the integrity gate before final recommendation.
+15. Apply `references/independent-review-policy.md` before describing validation as independent.
+16. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
 
 ## Mode Routing
 
@@ -73,17 +78,21 @@ external disclosure. Keep reagent/catalog specifics as unknown unless verified.
 ## Final Output
 
 1. experimental objective
-2. protocol/context lock and safety boundary
-3. mechanistic rationale and claim boundary
-4. central claim ledger summary
-5. design overview
-6. controls and sample size considerations
-7. readouts and statistics
-8. confounders and failure modes
-9. protocol/reagent/QC logistics
-10. expected outcomes and alternative interpretations
-11. go/no-go gates
-12. useful but excluded or not-ledger-verified claims
-13. post-write validation verdict
-14. biomedical passport and integrity-gate status
-15. figure or panel plan if useful
+2. runtime capability preflight and downgrade rule
+3. protocol/context lock and safety boundary
+4. source corpus status
+5. mechanistic rationale and claim boundary
+6. central claim ledger summary
+7. design overview
+8. controls and sample size considerations
+9. readouts and statistics
+10. confounders and failure modes
+11. protocol/reagent/QC logistics
+12. expected outcomes and alternative interpretations
+13. go/no-go gates
+14. useful but excluded or not-ledger-verified claims
+15. independent-review status
+16. post-write validation verdict
+17. workflow-run state, biomedical passport, and integrity-gate status
+18. figure or panel plan if useful
+19. final workflow label and skipped gates with reasons

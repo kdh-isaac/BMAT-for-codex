@@ -37,6 +37,15 @@ Use `references/biomedical-failure-modes.md`.
 | FM9 provenance gap | pass / warn / suspected / not-applicable |  |
 | FM10 reviewer/writer self-ratification | pass / warn / suspected / not-applicable |  |
 
+## Independent Review Status
+
+| field | value |
+|---|---|
+| validation_surface | spawned subagent / separate model / tool-backed validator / human reviewer / same-model separate pass / same pass |
+| independent_validation_claim_allowed | yes / no |
+| downgrade_required | yes / no |
+| reason |  |
+
 ## Required Corrections
 
 | priority | correction | required_before_release |

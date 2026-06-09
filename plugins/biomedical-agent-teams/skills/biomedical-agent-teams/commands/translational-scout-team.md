@@ -12,13 +12,15 @@ Evaluate translational feasibility without turning weak evidence into clinical a
 
 ## Required Preflight Contract
 
-Before literature/trial/IP expansion, external tools, file writes, or final
-writing, produce or update a compact preflight contract with:
+Before literature/trial/IP expansion, external tools, file writes,
+spawned-agent claims, or final writing, produce or update runtime capability
+preflight and a compact preflight contract with:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
-`checkpoint_plan`. If this contract is absent, label the result as a compact or
-partial workflow rather than a full translational audit.
+`checkpoint_plan`. If runtime capability preflight or this contract is absent,
+label the result as a compact or partial workflow rather than a full
+translational audit.
 
 ## Team
 
@@ -39,18 +41,21 @@ partial workflow rather than a full translational audit.
 
 ## Workflow
 
-1. Run `protocol-context-locker`: translational question, deliverable, clinical/legal/regulatory boundary, evidence scope, risk/safety/privacy class, and approval gate.
-2. Normalize disease, target, therapy type, biomarker, trial IDs, and comparator space.
-3. Map trial landscape and operational feasibility.
-4. Maintain `central-claim-ledger-evidence-graph` for each trial, biomarker, safety, IP, and competitive claim.
-5. Check site-level and registry-status caveats when trial matching or recruitment is discussed.
-6. Separate efficacy evidence, biomarker association, mechanism, safety, manufacturability, and competitive positioning.
-7. Audit study quality/risk of bias, causal language, and evidence-to-decision uncertainty.
-8. Run safety/ethics/privacy/dual-use audit for clinical, regulatory, IP, and patient-facing boundaries.
-9. Flag regulatory, IP, and publication risks without providing legal or medical advice.
-10. Verify claims and source identifiers before final synthesis.
-11. For `standard`, `deep`, and `audit`, maintain biomedical passport state and run the integrity gate before final output.
-12. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
+1. Run runtime capability preflight to record live literature/trial/IP lookup, file, network, and spawned-subagent support.
+2. Run `protocol-context-locker`: translational question, deliverable, clinical/legal/regulatory boundary, evidence scope, risk/safety/privacy class, and approval gate.
+3. Normalize disease, target, therapy type, biomarker, trial IDs, and comparator space.
+4. Lock source corpus for trial records, PMIDs/DOIs, IP/competitive sources, registry versions, and retrieval dates.
+5. Map trial landscape and operational feasibility.
+6. Maintain `central-claim-ledger-evidence-graph` for each trial, biomarker, safety, IP, and competitive claim.
+7. Check site-level and registry-status caveats when trial matching or recruitment is discussed.
+8. Separate efficacy evidence, biomarker association, mechanism, safety, manufacturability, and competitive positioning.
+9. Audit study quality/risk of bias, causal language, and evidence-to-decision uncertainty.
+10. Run safety/ethics/privacy/dual-use audit for clinical, regulatory, IP, and patient-facing boundaries.
+11. Flag regulatory, IP, and publication risks without providing legal or medical advice.
+12. Verify claims and source identifiers before final synthesis.
+13. For `standard`, `deep`, and `audit`, maintain workflow-run state and biomedical passport state and run the integrity gate before final output.
+14. Apply `references/independent-review-policy.md` before describing validation as independent.
+15. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
 
 ## Mode Routing
 
@@ -68,15 +73,19 @@ legal, regulatory, or medical advice; frame outputs as research support.
 ## Final Output
 
 1. translational question
-2. protocol/context lock
-3. normalized entities and scope
-4. central claim ledger summary
-5. trial and competitive landscape
-6. operational bottlenecks
-7. safety/regulatory/IP flags
-8. risk-of-bias and causal boundary
-9. evidence strength and claim boundary
-10. useful but excluded or not-ledger-verified claims
-11. post-write validation verdict
-12. biomedical passport and integrity-gate status
-13. recommended next translational action
+2. runtime capability preflight and downgrade rule
+3. protocol/context lock
+4. normalized entities and scope
+5. source corpus status
+6. central claim ledger summary
+7. trial and competitive landscape
+8. operational bottlenecks
+9. safety/regulatory/IP flags
+10. risk-of-bias and causal boundary
+11. evidence strength and claim boundary
+12. useful but excluded or not-ledger-verified claims
+13. independent-review status
+14. post-write validation verdict
+15. workflow-run state, biomedical passport, and integrity-gate status
+16. recommended next translational action
+17. final workflow label and skipped gates with reasons

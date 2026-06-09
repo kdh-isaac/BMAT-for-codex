@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Source Corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["corpus_id", "created_at", "sources"],
+  "properties": {
+    "corpus_id": { "type": "string" },
+    "created_at": { "type": "string" },
+    "query_or_origin": { "type": "string" },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "source_type",
+          "identifier",
+          "version_or_retrieval_date",
+          "inclusion_status",
+          "claim_use",
+          "checked_by",
+          "limitations"
+        ],
+        "properties": {
+          "source_id": { "type": "string" },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "PMID",
+              "DOI",
+              "accession",
+              "NCT",
+              "database-record",
+              "local-file",
+              "analysis-artifact",
+              "software",
+              "other"
+            ]
+          },
+          "identifier": { "type": "string" },
+          "title_or_name": { "type": "string" },
+          "version_or_retrieval_date": { "type": "string" },
+          "query_or_origin": { "type": "string" },
+          "inclusion_status": {
+            "type": "string",
+            "enum": ["included", "excluded", "not-checked", "blocked"]
+          },
+          "claim_use": { "type": "string" },
+          "checked_by": { "type": "string" },
+          "limitations": { "type": "string" }
+        }
+      }
+    }
+  }
+}

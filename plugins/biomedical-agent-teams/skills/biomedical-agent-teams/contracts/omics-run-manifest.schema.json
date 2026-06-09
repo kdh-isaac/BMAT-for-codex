@@ -40,6 +40,10 @@
       "items": { "type": "string" }
     },
     "statistical_plan": { "type": "string" },
+    "stage_evaluation": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "generated_artifacts": {
       "type": "array",
       "items": { "type": "string" }
