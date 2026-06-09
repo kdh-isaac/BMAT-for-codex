@@ -33,3 +33,13 @@ Objective; skills/tools used; inputs & data provenance (source, accession, versi
 Final report file(s) + figure/table files, with a manifest of generated paths,
 the exact commands/checks that produced them, and any useful but excluded or
 not-ledger-verified claims that were intentionally left out of the conclusion.
+
+Return contract:
+1. `report_files_and_manifest`
+2. `input_results_and_review_gate_status`
+3. `methods_versions_qc_and_filtering`
+4. `figures_tables_and_captions`
+5. `statistical_reporting_summary`
+6. `claim_ledger_material_used`
+7. `excluded_or_not_ledger_verified_claims`
+8. `omics_run_manifest_status`

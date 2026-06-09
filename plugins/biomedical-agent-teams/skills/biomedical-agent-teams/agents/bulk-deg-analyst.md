@@ -30,3 +30,14 @@ DEG table (with log2FC, FDR, baseMean), design formula, QC/PCA figures, volcano/
 
 ## Handoff
 Send ranked gene lists to `pathway-interpreter`; flag design/covariate choices to `omics-code-reviewer` and `omics-provenance-validator`.
+
+Return contract:
+1. `analysis_track`: bulk / survival.
+2. `inputs_verified`: count matrix, metadata, sample IDs, build, annotation.
+3. `hypothesis_and_design_formula`
+4. `qc_summary`
+5. `model_and_statistical_methods`
+6. `primary_results_artifacts`
+7. `effect_sizes_uncertainty_and_multiplicity`
+8. `assumption_or_confounding_flags`
+9. `handoff_to_pathway_biostats_and_provenance`

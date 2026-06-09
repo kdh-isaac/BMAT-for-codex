@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Passport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "passport_id",
+    "workflow_alias",
+    "workflow_version",
+    "created_at",
+    "updated_at",
+    "context_lock",
+    "normalized_entities",
+    "source_corpus",
+    "claim_ledger",
+    "gate_status",
+    "outputs",
+    "resume_state"
+  ],
+  "properties": {
+    "passport_id": { "type": "string" },
+    "workflow_alias": { "type": "string" },
+    "workflow_version": { "type": "string" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "context_lock": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "normalized_entities": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "source_corpus": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "claim_ledger": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["location_or_summary", "status"]
+    },
+    "gate_status": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gate", "status", "reason"],
+        "properties": {
+          "gate": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "pass-with-caveats", "skipped", "block", "not-applicable"]
+          },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "resume_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["current_stage", "next_action", "open_questions"],
+      "properties": {
+        "current_stage": { "type": "string" },
+        "next_action": { "type": "string" },
+        "open_questions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

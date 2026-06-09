@@ -22,6 +22,12 @@ Rules:
 - If the ledger provides `allowed_final_wording`, compare final text against it
   and flag any stronger causal, predictive, clinical, translational, or
   therapeutic wording.
+- For high-confidence source-backed output, omics reports, manuscript support,
+  translational/IP scans, or audit verdicts, check the failure modes in
+  `references/biomedical-failure-modes.md`. A `suspected` failure mode blocks
+  release unless the final answer is downgraded and corrected.
+- Use `templates/integrity-gate-template.md` or the same field order when the
+  workflow produces an audit bundle.
 
 Return contract:
 1. `final_validator_verdict`: pass / pass-with-revisions / block.
@@ -29,6 +35,7 @@ Return contract:
 3. `citation_or_provenance_mismatches`
 4. `missing_uncertainty_or_limitations`
 5. `safety_ethics_privacy_issues`
-6. `excluded_claim_handling`
-7. `minimal_required_corrections`
-8. `release_ready_claim_strength`
+6. `failure_mode_checklist`
+7. `excluded_claim_handling`
+8. `minimal_required_corrections`
+9. `release_ready_claim_strength`

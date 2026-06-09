@@ -29,3 +29,13 @@ Processed `.h5ad` path, QC summary table (cells in/out, median genes/UMIs, mito%
 
 ## Handoff
 Pass marker/DE gene lists to `pathway-interpreter`; flag QC threshold choices and batch handling to `omics-code-reviewer` (software) and `omics-provenance-validator` (scientific).
+
+Return contract:
+1. `single_cell_inputs_verified`: files, sample mapping, chemistry, build, annotation.
+2. `qc_thresholds_and_cell_counts`
+3. `normalization_integration_and_clustering_params`
+4. `annotation_evidence_and_confidence`
+5. `marker_or_de_artifacts`
+6. `figures_and_processed_h5ad`
+7. `pseudoreplication_or_batch_risks`
+8. `handoff_to_pathway_code_and_provenance_review`

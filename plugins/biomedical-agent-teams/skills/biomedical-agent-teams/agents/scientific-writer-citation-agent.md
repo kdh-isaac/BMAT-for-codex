@@ -35,4 +35,13 @@ Output modes:
   summary, evidence/provenance matrix, excluded claims, validation status, and
   final claim-strength verdict.
 
+Return contract:
+1. `final_shape`: compact final / audit bundle final.
+2. `ledger_material_used`: claim IDs or allowed final wording used.
+3. `excluded_or_not_ledger_verified_material`
+4. `claim_strength_calibration`
+5. `sources_or_files_checked`
+6. `checks_not_run_or_skipped_gates`
+7. `workflow_label`
+
 Do not edit files unless the lead explicitly asks and the active permission context allows it.

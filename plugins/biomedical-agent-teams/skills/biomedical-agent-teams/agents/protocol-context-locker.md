@@ -18,6 +18,9 @@ Rules:
 - If the user asks a quick conceptual question, use a light protocol lock and avoid over-processing.
 - Distinguish research support from medical advice, legal advice, and regulatory advice.
 - Do not fabricate missing scope details. State assumptions and unresolved context.
+- Decide whether the workflow needs a biomedical passport. Require one for deep,
+  audit, omics run, translational, manuscript-support, generated-file, or
+  long-running workflows.
 
 Return contract:
 1. `question_schema`: PICO/PECO or bio-question schema.
@@ -26,4 +29,5 @@ Return contract:
 4. `risk_safety_privacy_class`: low / moderate / high with reason.
 5. `depth_budget_stop_criteria`: quick / standard / deep / audit and stopping rules.
 6. `human_approval_gate`: none / before browsing / before file write / before code run / before private-data use / before clinical or patent-sensitive claims.
-7. `handoff_to_planner`: concise task framing for the lead scientist and scenario router.
+7. `biomedical_passport_requirement`: none / compact / durable artifact, with reason.
+8. `handoff_to_planner`: concise task framing for the lead scientist and scenario router.

@@ -10,6 +10,16 @@ User request: $ARGUMENTS
 
 Design a defensible validation plan. Default to Korean. Assume expert-level immunology and CAR cell therapy context.
 
+## Required Preflight Contract
+
+Before literature/database expansion, external tools, file writes, or final
+writing, produce or update a compact preflight contract with:
+`requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
+`risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
+`external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
+`checkpoint_plan`. If this contract is absent, label the result as a compact or
+partial workflow rather than a full experiment-design audit.
+
 ## Team
 
 - `protocol-context-locker`
@@ -44,7 +54,8 @@ Design a defensible validation plan. Default to Korean. Assume expert-level immu
 9. Run safety/ethics/privacy/dual-use audit before operational details or external disclosure.
 10. Use Bayesian decision modeling to prioritize the first experiment or staged validation route.
 11. Run biostats, risk-of-bias/study-quality, red-team, claim, and citation gates before final recommendation.
-12. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
+12. For `deep` or `audit`, maintain biomedical passport state and run the integrity gate before final recommendation.
+13. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
 
 ## Mode Routing
 
@@ -74,4 +85,5 @@ external disclosure. Keep reagent/catalog specifics as unknown unless verified.
 11. go/no-go gates
 12. useful but excluded or not-ledger-verified claims
 13. post-write validation verdict
-14. figure or panel plan if useful
+14. biomedical passport and integrity-gate status
+15. figure or panel plan if useful

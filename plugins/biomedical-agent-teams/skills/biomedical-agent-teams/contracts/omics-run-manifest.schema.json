@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Omics Run Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "analysis_id",
+    "track",
+    "data_sources",
+    "sample_sheet",
+    "genome_build",
+    "biological_unit",
+    "contrast_or_endpoint",
+    "software_versions",
+    "qc_decisions",
+    "statistical_plan",
+    "generated_artifacts",
+    "review_status"
+  ],
+  "properties": {
+    "analysis_id": { "type": "string" },
+    "track": {
+      "type": "string",
+      "enum": ["bulk", "single-cell", "survival", "multi-omics", "other"]
+    },
+    "data_sources": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "sample_sheet": { "type": "string" },
+    "genome_build": { "type": "string" },
+    "biological_unit": { "type": "string" },
+    "contrast_or_endpoint": { "type": "string" },
+    "software_versions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "qc_decisions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "statistical_plan": { "type": "string" },
+    "generated_artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "review_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code_review", "provenance_review", "biostats_review"],
+      "properties": {
+        "code_review": { "type": "string" },
+        "provenance_review": { "type": "string" },
+        "biostats_review": { "type": "string" }
+      }
+    }
+  }
+}

@@ -10,6 +10,16 @@ User request: $ARGUMENTS
 
 Run a biomedical idea-discovery workflow. Default to Korean.
 
+## Required Preflight Contract
+
+Before literature/database expansion, external tools, file writes, or final
+writing, produce or update a compact preflight contract with:
+`requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
+`risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
+`external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
+`checkpoint_plan`. If this contract is absent, label the result as a compact or
+partial workflow rather than a full idea-discovery audit.
+
 ## Use These Agents When Useful
 
 - `protocol-context-locker`
@@ -48,8 +58,9 @@ Run a biomedical idea-discovery workflow. Default to Korean.
 8. Use `causal-inference-confounder-analyst` before causal or CAR-T-intrinsic claims.
 9. Use `bayesian-decision-modeler` before recommending the first experiment.
 10. Use `risk-of-bias-study-quality-auditor`, `safety-ethics-privacy-dual-use-auditor`, `contradiction-red-team`, and `claim-level-evidence-verifier` before final ranked recommendations.
-11. The writer can use only verified ledger material; run `post-write-final-validator` before final output.
-12. Do not fabricate PMIDs, DOIs, accessions, reagent details, trial status, or public database records.
+11. For `deep` or `audit`, maintain biomedical passport state and run the integrity gate before final ranked recommendations.
+12. The writer can use only verified ledger material; run `post-write-final-validator` before final output.
+13. Do not fabricate PMIDs, DOIs, accessions, reagent details, trial status, or public database records.
 
 ## Mode Routing
 
@@ -78,4 +89,5 @@ or not-ledger-verified claims rather than adding them to the final narrative.
 11. citation/provenance/claim verification status
 12. useful but excluded or not-ledger-verified ideas
 13. post-write validation verdict
-14. final claim-strength verdict
+14. biomedical passport and integrity-gate status
+15. final claim-strength verdict

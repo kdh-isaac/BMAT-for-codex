@@ -5,6 +5,30 @@ audit gates, writer restriction, and post-write final validation.
 
 Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
 
+## v0.2.4 Updates
+
+- Adds command-level preflight contract requirements to every alias workflow,
+  so command recipes remain self-contained when read directly.
+- Adds biomedical passport state to the evidence-audit workflow.
+- Updates the source manifest workflow spine to include passport and integrity
+  gates explicitly.
+- Removes a zero-byte `.Rhistory` packaging artifact from `commands/`.
+
+## v0.2.3 Updates
+
+- Adds `contracts/` JSON schemas for preflight contracts, formal role outputs,
+  biomedical passport state, omics run manifests, and post-write validation.
+- Adds `templates/biomedical-passport-template.md` and
+  `templates/integrity-gate-template.md`.
+- Adds `references/contract-gated-workflows.md` and
+  `references/biomedical-failure-modes.md`.
+- Adds formal return contracts for the lead scientist, final writer, omics
+  data curator, bulk/single-cell/pathway workers, omics code/provenance
+  reviewers, and omics reporter.
+- Requires biomedical passport and integrity-gate status for deep, audit, omics
+  run, translational, manuscript-support, and long-running audit-bundle outputs
+  when applicable.
+
 ## v0.2.1 Updates
 
 - Adds explicit `quick`, `standard`, `deep`, and `audit` mode routing to prevent

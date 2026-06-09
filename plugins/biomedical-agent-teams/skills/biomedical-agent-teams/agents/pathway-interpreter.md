@@ -28,3 +28,13 @@ Enrichment table (term, NES/OR, FDR, set size, leading-edge genes), top-pathway 
 
 ## Handoff
 Provide the interpreted narrative + figures to `omics-reporter`; flag any over-reach risk to `omics-provenance-validator`.
+
+Return contract:
+1. `input_gene_sets_or_statistics`
+2. `pathway_database_and_version`
+3. `ranked_pathway_results`
+4. `leading_edge_or_driver_genes`
+5. `interpretation_boundary`
+6. `contradictions_or_redundancy`
+7. `validation_suggestions`
+8. `handoff_to_claim_ledger`

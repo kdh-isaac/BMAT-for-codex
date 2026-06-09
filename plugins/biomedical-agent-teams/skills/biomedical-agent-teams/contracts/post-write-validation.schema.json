@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Post Write Validation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "final_validator_verdict",
+    "unsupported_final_claims",
+    "citation_or_provenance_mismatches",
+    "missing_uncertainty_or_limitations",
+    "safety_ethics_privacy_issues",
+    "failure_mode_checklist",
+    "excluded_claim_handling",
+    "minimal_required_corrections",
+    "release_ready_claim_strength"
+  ],
+  "properties": {
+    "final_validator_verdict": {
+      "type": "string",
+      "enum": ["pass", "pass-with-revisions", "block"]
+    },
+    "unsupported_final_claims": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "citation_or_provenance_mismatches": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_uncertainty_or_limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "safety_ethics_privacy_issues": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "failure_mode_checklist": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["failure_mode", "status", "reason"],
+        "properties": {
+          "failure_mode": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "warn", "suspected", "not-applicable"]
+          },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "excluded_claim_handling": { "type": "string" },
+    "minimal_required_corrections": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "release_ready_claim_strength": { "type": "string" }
+  }
+}

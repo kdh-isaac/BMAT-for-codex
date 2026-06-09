@@ -28,6 +28,8 @@ Routing rules:
 - Require claim-level verification before source-backed conclusions.
 - Require provenance review before reporting omics or survival results.
 - Use human confirmation before expensive, long-running, private, or patent-sensitive steps.
+- Add a checkpoint plan for deep, audit, omics run, translational, manuscript-support, or long-running work.
+- Require a biomedical passport for workflows that need resumption, source-to-claim traceability, or generated files.
 
 Return contract:
 1. `selected_playbook`
@@ -36,4 +38,6 @@ Return contract:
 4. `inputs_needed`
 5. `gates_and_stop_conditions`
 6. `expected_outputs`
-7. `risks_if_wrong_route`
+7. `checkpoint_plan`
+8. `biomedical_passport_needed`
+9. `risks_if_wrong_route`

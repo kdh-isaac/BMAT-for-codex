@@ -10,6 +10,16 @@ User request: $ARGUMENTS
 
 Run a supervisor-worker-review-gate workflow for public omics. Default to Korean.
 
+## Required Preflight Contract
+
+Before external search, dataset access/download, code execution, file writes,
+or final reporting, produce or update a compact preflight contract with:
+`requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
+`risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
+`external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
+`checkpoint_plan`. If this contract is absent, label the result as a compact or
+partial workflow rather than a full omics analysis audit.
+
 ## Team
 
 - `protocol-context-locker`
@@ -42,16 +52,17 @@ Run a supervisor-worker-review-gate workflow for public omics. Default to Korean
 4. Keep raw data read-only. Write derived outputs only to approved processed/results/reports/output folders.
 5. Require a small-fixture, subset, or smoke test before full long-running or high-memory analysis.
 6. Maintain `central-claim-ledger-evidence-graph` for results, source artifacts, uncertainty, contradictions, and blocked claims.
-7. Run review gate before final reporting:
+7. Maintain an omics run manifest using `contracts/omics-run-manifest.schema.json` or the same field order, plus biomedical passport status for `run` and `audit` modes.
+8. Run review gate before final reporting:
    - `omics-code-reviewer` for software/reproducibility/raw-data-safety.
    - `omics-provenance-validator` for design/statistics/provenance/claim proportionality.
    - `causal-inference-confounder-analyst` for association-versus-causality boundary.
    - `biostats-repro-auditor` for statistical validity.
    - `risk-of-bias-study-quality-auditor` for dataset/study quality and applicability.
-8. Run `provenance-traceability-architect`, `model-card-dataset-card-writer`, `claim-level-evidence-verifier`, and `citation-verifier` before final deliverables.
-9. `omics-reporter` can report only verified claim-ledger material.
-10. Run `post-write-final-validator` before final release.
-11. Calibrate claims as exploratory versus validated, association versus causality, and prognostic versus predictive.
+9. Run `provenance-traceability-architect`, `model-card-dataset-card-writer`, `claim-level-evidence-verifier`, and `citation-verifier` before final deliverables.
+10. `omics-reporter` can report only verified claim-ledger material.
+11. Run the integrity gate and `post-write-final-validator` before final release.
+12. Calibrate claims as exploratory versus validated, association versus causality, and prognostic versus predictive.
 
 ## Mode Routing
 
@@ -95,3 +106,4 @@ audit bundle:
 12. useful but excluded or not-ledger-verified claims
 13. validation-gate and post-write verdicts
 14. generated files, manifest, audit bundle, and next step
+15. biomedical passport status and omics run manifest status

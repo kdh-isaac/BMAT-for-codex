@@ -25,3 +25,12 @@ Run the standard correctness/security/maintainability pass, then enforce this **
 
 ## Output
 A verdict — **PASS / PASS-WITH-FIXES / BLOCK** — plus findings grouped by severity (blocking / should-fix / nice-to-have), each with file:line and a concrete fix. Cap the loop: request **at most one** revision cycle, then escalate remaining concerns to the human rather than re-reviewing indefinitely (refinement has diminishing returns). Hand scientific-validity concerns (design, confounding, interpretation) to `omics-provenance-validator` — that is layer B, not your scope.
+
+Return contract:
+1. `review_scope`
+2. `files_or_commands_reviewed`
+3. `blocking_reproducibility_findings`
+4. `raw_data_safety_findings`
+5. `software_environment_risks`
+6. `minimal_required_fixes`
+7. `verdict`: pass / pass-with-revisions / block.

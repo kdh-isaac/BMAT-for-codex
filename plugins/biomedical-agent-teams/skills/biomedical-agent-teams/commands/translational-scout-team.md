@@ -10,6 +10,16 @@ User request: $ARGUMENTS
 
 Evaluate translational feasibility without turning weak evidence into clinical advice. Default to Korean.
 
+## Required Preflight Contract
+
+Before literature/trial/IP expansion, external tools, file writes, or final
+writing, produce or update a compact preflight contract with:
+`requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
+`risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
+`external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
+`checkpoint_plan`. If this contract is absent, label the result as a compact or
+partial workflow rather than a full translational audit.
+
 ## Team
 
 - `protocol-context-locker`
@@ -39,7 +49,8 @@ Evaluate translational feasibility without turning weak evidence into clinical a
 8. Run safety/ethics/privacy/dual-use audit for clinical, regulatory, IP, and patient-facing boundaries.
 9. Flag regulatory, IP, and publication risks without providing legal or medical advice.
 10. Verify claims and source identifiers before final synthesis.
-11. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
+11. For `standard`, `deep`, and `audit`, maintain biomedical passport state and run the integrity gate before final output.
+12. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
 
 ## Mode Routing
 
@@ -67,4 +78,5 @@ legal, regulatory, or medical advice; frame outputs as research support.
 9. evidence strength and claim boundary
 10. useful but excluded or not-ledger-verified claims
 11. post-write validation verdict
-12. recommended next translational action
+12. biomedical passport and integrity-gate status
+13. recommended next translational action

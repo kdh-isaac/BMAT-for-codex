@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Preflight Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requested_alias",
+    "selected_mode",
+    "deliverable_type",
+    "evidence_scope",
+    "risk_class",
+    "required_role_outputs",
+    "skipped_role_outputs_with_reason",
+    "external_tools_allowed",
+    "file_write_plan",
+    "stop_criteria",
+    "checkpoint_plan"
+  ],
+  "properties": {
+    "requested_alias": {
+      "type": "string"
+    },
+    "selected_mode": {
+      "type": "string",
+      "enum": ["quick", "standard", "deep", "audit", "plan", "run"]
+    },
+    "deliverable_type": {
+      "type": "string"
+    },
+    "evidence_scope": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source_types", "species_or_model", "date_or_version_needs"],
+      "properties": {
+        "source_types": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "species_or_model": {
+          "type": "string"
+        },
+        "date_or_version_needs": {
+          "type": "string"
+        }
+      }
+    },
+    "risk_class": {
+      "type": "string",
+      "enum": ["low", "moderate", "high"]
+    },
+    "required_role_outputs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "skipped_role_outputs_with_reason": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "reason"],
+        "properties": {
+          "role": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "external_tools_allowed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "limits"],
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "limits": { "type": "string" }
+      }
+    },
+    "file_write_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["will_write_files", "allowed_paths"],
+      "properties": {
+        "will_write_files": { "type": "boolean" },
+        "allowed_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "stop_criteria": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "checkpoint_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["checkpoint", "required_before"],
+        "properties": {
+          "checkpoint": { "type": "string" },
+          "required_before": { "type": "string" }
+        }
+      }
+    }
+  }
+}

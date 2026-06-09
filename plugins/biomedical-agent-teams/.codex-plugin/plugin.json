@@ -1,6 +1,6 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "0.2.2+codex.20260609105453",
+  "version": "0.2.4+codex.20260609105453",
   "description": "Codex-native biomedical agent-team router for life-science research, hypothesis validation, literature and public-omics evidence synthesis, claim-level verification, statistical audit, experiment design, translational scouting, and scientific writing support.",
   "author": {
     "name": "Donghyun Kim Local Research Workflow"
@@ -23,8 +23,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Biomedical Agent Teams",
-    "shortDescription": "Protocol-locked biomedical research council with evidence, omics, audit, and design agents.",
-    "longDescription": "A Codex-native biomedical agent-team suite for structured life-science research. It locks context of use, normalizes biomedical entities, coordinates specialist lanes for hypothesis discovery, literature retrieval, public omics analysis, mechanism and causal reasoning, experiment design, clinical/regulatory/IP scouting, and routes all claims through a fixed-field central claim ledger, audit gates, citation verification, ledger-only writing, excluded-claim tracking, and post-write validation.",
+    "shortDescription": "Protocol-locked biomedical research council with command-level preflight, evidence, omics, audit, design, passport, and integrity gates.",
+    "longDescription": "A Codex-native biomedical agent-team suite for structured life-science research. It locks context of use, requires command-level preflight contracts, normalizes biomedical entities, coordinates specialist lanes for hypothesis discovery, literature retrieval, public omics analysis, mechanism and causal reasoning, experiment design, clinical/regulatory/IP scouting, and routes all claims through a fixed-field central claim ledger, contract-gated role outputs, biomedical passport state, audit gates, citation verification, ledger-only writing, excluded-claim tracking, integrity-gate failure-mode checks, and post-write validation.",
     "developerName": "Donghyun Kim Local Research Workflow",
     "category": "Research",
     "capabilities": [

@@ -7,7 +7,30 @@ Codex Desktop compatible plugin wrapper for the `biomedical-agent-teams` skill.
 - `.codex-plugin/plugin.json`: Codex plugin metadata.
 - `skills/biomedical-agent-teams/`: Codex-native biomedical agent-team skill,
   including 35 agent prompts, 6 workflow recipes, and a fixed-field claim
-  ledger template.
+  ledger template, contract schemas, biomedical passport, and integrity-gate
+  resources.
+
+## v0.2.4 Updates
+
+- Adds command-level preflight contract requirements to all six workflow
+  recipes.
+- Adds biomedical passport state tracking to the evidence-audit recipe.
+- Updates the workflow-spine manifest to include passport and integrity gates.
+- Removes a zero-byte `.Rhistory` packaging artifact from the commands folder.
+
+## v0.2.3 Updates
+
+- Adds validator-friendly contract schemas for preflight, role outputs,
+  biomedical passport state, omics run manifests, and post-write validation.
+- Adds biomedical passport and integrity-gate templates.
+- Adds a BMAT-specific failure-mode taxonomy for fabricated identifiers,
+  citation-context drift, bulk-to-cell-intrinsic overclaim, metadata leakage,
+  post-hoc endpoint inflation, missing uncertainty, unsafe/private disclosure,
+  clinical overreach, provenance gaps, and writer/reviewer self-ratification.
+- Adds formal return contracts for the lead scientist, final writer, omics
+  curator, analysis workers, pathway interpreter, omics reviewers, and reporter.
+- Requires passport and integrity-gate status in deep/audit/omics/translational
+  audit-bundle outputs when applicable.
 
 ## v0.2.2 Updates
 

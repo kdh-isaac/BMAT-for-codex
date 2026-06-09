@@ -28,3 +28,14 @@ For every dataset: source DB, accession/study ID, version/release, genome build 
 
 ## Handoff
 State which downstream worker should receive the data (`scrna-qc-specialist` for single-cell, `bulk-deg-analyst` for bulk RNA-seq) and flag any metadata risks (confounded batches, unbalanced groups, build mismatch) the `omics-provenance-validator` must check.
+
+Return contract:
+1. `curation_question`
+2. `candidate_datasets_checked`
+3. `selected_dataset_or_block_reason`
+4. `sample_sheet_status`
+5. `genome_build_and_annotation`
+6. `metadata_risks`
+7. `raw_data_location_and_read_only_status`
+8. `provenance_block`
+9. `handoff_worker_and_required_checks`

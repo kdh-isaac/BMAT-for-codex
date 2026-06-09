@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Role Output",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "role",
+    "task_scope",
+    "inputs_checked",
+    "methods_or_tools_used",
+    "key_findings",
+    "limitations",
+    "handoff",
+    "verdict"
+  ],
+  "properties": {
+    "role": {
+      "type": "string"
+    },
+    "task_scope": {
+      "type": "string"
+    },
+    "inputs_checked": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "methods_or_tools_used": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "key_findings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "pass-with-caveats", "pass-with-revisions", "block", "not-assessable"]
+    }
+  }
+}

@@ -39,6 +39,9 @@ Rules:
   instead of allowing them into the final writer material.
 - `writer_allowed_material` must contain only claims with `audit_status` of
   `pass` or `pass-with-caveats`, and it must use `allowed_final_wording`.
+- For resumable or audit-bundle workflows, expose the ledger location or compact
+  summary in the biomedical passport. If the ledger changes after writing, the
+  final output must be treated as stale until revalidated.
 
 Return contract:
 1. `claim_ledger`: compact table or bullet ledger.
@@ -48,3 +51,4 @@ Return contract:
 5. `excluded_or_not_verified_claims`
 6. `writer_allowed_material`
 7. `open_provenance_links`
+8. `passport_ledger_status`

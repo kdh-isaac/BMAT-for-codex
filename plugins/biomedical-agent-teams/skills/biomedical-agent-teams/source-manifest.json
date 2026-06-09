@@ -1,10 +1,12 @@
 {
-  "version": "0.2.2",
+  "version": "0.2.4",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 35,
   "command_count": 6,
-  "template_count": 1,
+  "template_count": 3,
+  "contract_count": 5,
+  "reference_count": 2,
   "workflow_spine": [
     "protocol-context-locker",
     "entity-normalizer",
@@ -12,10 +14,12 @@
     "scenario-playbook-router",
     "specialist-lanes",
     "central-claim-ledger-evidence-graph",
+    "biomedical-passport-state",
     "audit-gates",
     "claim-level-evidence-verifier",
     "citation-verifier",
     "scientific-writer-citation-agent",
+    "integrity-gate",
     "post-write-final-validator"
   ],
   "commands": [
@@ -48,6 +52,22 @@
     "safe-mode-note-for-low-risk-public-only-triggered-workflows",
     "final-workflow-label-and-skipped-gate-reporting",
     "biomedical-research-council-post-write-self-check"
+  ],
+  "new_in_v0_2_3": [
+    "contract-gated-role-output-schemas",
+    "biomedical-passport-template-and-schema",
+    "omics-run-manifest-schema",
+    "integrity-gate-template",
+    "biomedical-failure-mode-taxonomy",
+    "formal-return-contracts-for-lead-writer-and-omics-workers",
+    "workflow-recipe-passport-and-integrity-gate-requirements"
+  ],
+  "new_in_v0_2_4": [
+    "command-level-preflight-contracts-for-all-aliases",
+    "evidence-audit-biomedical-passport-requirement",
+    "workflow-spine-manifest-includes-passport-and-integrity-gate",
+    "removed-zero-byte-rhistory-packaging-artifact",
+    "smoke-test-reference-and-gate-consistency-cleanup"
   ],
   "agent_roster": [
     "bayesian-decision-modeler",
@@ -87,6 +107,19 @@
     "scrna-qc-specialist"
   ],
   "templates": [
-    "claim-ledger-template"
+    "claim-ledger-template",
+    "biomedical-passport-template",
+    "integrity-gate-template"
+  ],
+  "contracts": [
+    "preflight-contract.schema",
+    "role-output.schema",
+    "biomedical-passport.schema",
+    "omics-run-manifest.schema",
+    "post-write-validation.schema"
+  ],
+  "references": [
+    "contract-gated-workflows",
+    "biomedical-failure-modes"
   ]
 }
