@@ -1,6 +1,6 @@
 ---
 description: "Full biomedical research council with protocol lock, hypothesis generation, evidence synthesis, public-omics feasibility, causal/statistical audit, experiment design, translation, central claim ledger, and final validation"
-argument-hint: "<research question, hypothesis seed, or project goal> [--mode quick|standard|deep|audit|translation]"
+argument-hint: "<research question, hypothesis seed, or project goal> [--mode quick|standard|deep|audit]"
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 ---
 
@@ -10,7 +10,7 @@ User request: $ARGUMENTS
 
 Run a lead-controlled biomedical research council. Default to Korean. Treat the user as an expert in immunology, CAR cell therapy, and public-omics analysis.
 
-## v0.2.3 Spine
+## v0.2.4 Spine
 
 1. Run `protocol-context-locker` first to lock question schema, deliverable, evidence scope, risk/safety/privacy class, depth/budget/stop criteria, and human approval gate.
 2. Run preliminary `entity-normalizer` before literature, omics, clinical, or IP expansion.
@@ -57,6 +57,9 @@ to choose the smallest useful playbook:
 - `manuscript-or-grant`
 
 If the request is broad, use `standard`. If the request asks for high-confidence recommendations, use `deep`. If the request asks whether a claim/report is defensible, use `audit`.
+For translational requests, use the `clinical-translation` playbook inside
+`standard`, `deep`, or `audit`, or route to `translational-scout-team` when the
+task is primarily trial, regulatory, IP, or operational scouting.
 
 ## Core Team
 
