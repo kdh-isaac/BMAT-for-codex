@@ -10,7 +10,7 @@ User request: $ARGUMENTS
 
 Run a lead-controlled biomedical research council. Default to Korean. Treat the user as an expert in immunology, CAR cell therapy, and public-omics analysis.
 
-## v0.3.5 Spine
+## v0.3.6 Spine
 
 1. Run runtime capability preflight first: record active Codex support for web,
    shell/code execution, file read/write, network/database access, spawned
@@ -214,6 +214,13 @@ Final workflow label must be one of:
 - `Biomedical Agent Teams-informed narrative review`
 - `Partial workflow; formal gates skipped`
 - `Blocked`
+
+Use `Full protocol followed` only when mandatory artifacts exist, required
+gates pass or pass with caveats, post-write validation is not blocked, and the
+workflow has a spawned, separate-model, tool-backed, external, human, or
+tool-corroborated review surface. When `scripts/bmat_validate.py` was not run
+against a complete artifact bundle, downgrade to a compact or partial workflow
+label.
 
 ## Post-Write Self-Check
 

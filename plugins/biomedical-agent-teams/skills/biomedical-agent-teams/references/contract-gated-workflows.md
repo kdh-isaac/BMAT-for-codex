@@ -1,4 +1,4 @@
-# Contract-Gated Workflows
+# Contract-Shaped And Validator-Enforced Workflows
 
 Use this reference for `deep`, `audit`, omics `run`, translational, manuscript,
 and long-running biomedical workflows.
@@ -6,9 +6,18 @@ and long-running biomedical workflows.
 ## Purpose
 
 BMAT role prompts are usually read and applied inline in Codex. Contract gating
-keeps those inline roles auditable by requiring the lead to preserve each role's
-scope, inputs, methods, findings, limitations, handoff, and verdict before the
-final writer synthesizes the answer.
+is a policy target, not an automatic runtime guarantee. Without
+`scripts/bmat_validate.py`, BMAT workflows are contract-described: the lead
+preserves each role's scope, inputs, methods, findings, limitations, handoff,
+and verdict before the final writer synthesizes the answer. With a complete
+artifact bundle and a passing validator run, the same workflow can be described
+as validator-enforced for the checked policies.
+
+Use `Full protocol followed` only when mandatory artifacts exist, required
+gates pass or pass with caveats, post-write validation is not blocked, and
+independent review is backed by a spawned subagent, separate model,
+tool-backed validator, external verifier, human reviewer, or tool-corroborated
+external database/API check.
 
 ## Required Flow
 
@@ -32,8 +41,10 @@ final writer synthesizes the answer.
 9. Apply `references/independent-review-policy.md` before using independent
    validation or independent audit wording.
 10. Run post-write validation against `contracts/post-write-validation.schema.json`.
-11. Downgrade the workflow label when any required gate is skipped or only
-   considered informally.
+11. Run `scripts/bmat_validate.py` for durable artifact bundles before claiming
+   `Full protocol followed`.
+12. Downgrade the workflow label when any required gate is skipped, only
+   considered informally, or not validator-checked.
 
 ## Checkpoint Types
 

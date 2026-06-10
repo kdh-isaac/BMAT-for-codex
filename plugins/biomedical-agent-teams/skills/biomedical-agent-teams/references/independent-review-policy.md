@@ -25,6 +25,10 @@ database/API) that returns evidence matching the claim scope.
   supporting it at the stated scope (species, assay, cohort, endpoint).
 - A claim checked only by a same-model second pass with no external tool is
   `same_model_separate_pass`, not independent.
+- `same_model_separate_pass` cannot satisfy `Full protocol followed` by itself,
+  even when the pass uses predeclared criteria. It must be paired with a real
+  spawned, separate-model, tool-backed, external, human, or tool-corroborated
+  surface to support independent-review wording.
 - Prefer adding one decisive external tool check over adding another inline
   reviewer role when subagents are unavailable.
 

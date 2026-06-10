@@ -1,0 +1,18 @@
+{
+  "evaluation_id": "stage-valid-001",
+  "workflow_alias": "evidence-audit-team",
+  "stages": [
+    {
+      "stage_id": "S3",
+      "stage_name": "Validate",
+      "status": "block",
+      "score": 0.0,
+      "evidence": "sample metadata mismatch",
+      "blocking_issues": [
+        "sample IDs do not align"
+      ]
+    }
+  ],
+  "overall_verdict": "block",
+  "downgrade_rule_applied": "S3 failed, so high-confidence S4/S5 claims are blocked"
+}

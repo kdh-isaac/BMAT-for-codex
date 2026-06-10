@@ -1,5 +1,5 @@
 {
-  "version": "0.3.5",
+  "version": "0.3.6",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 35,
@@ -7,6 +7,10 @@
   "template_count": 10,
   "contract_count": 10,
   "reference_count": 8,
+  "script_count": 1,
+  "test_fixture_count": 5,
+  "eval_count": 1,
+  "golden_task_count": 22,
   "workflow_spine": [
     "runtime-capability-preflight",
     "protocol-context-locker",
@@ -185,5 +189,14 @@
     "bundled-data-safety-floor-reference-decoupled-from-external-agents-md",
     "minimum-viable-governance-tier-and-by-reference-state",
     "filled-examples-in-claim-ledger-and-source-corpus-templates"
+  ],
+  "new_in_v0_3_6": [
+    "label-honesty-patch-for-contract-described-vs-validator-enforced-workflows",
+    "bmat_validate_cli_for_schema_and_policy_validation",
+    "full-protocol-independent-review-policy-enforcement",
+    "s3-validation-block-rule-enforcement",
+    "source-backed-claim-source-corpus-checks",
+    "final-wording-drift-fixtures",
+    "offline-golden-task-eval-scaffold"
   ]
 }

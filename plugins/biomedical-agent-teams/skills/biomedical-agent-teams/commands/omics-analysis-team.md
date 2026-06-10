@@ -18,7 +18,7 @@ preflight and a compact preflight contract with:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
-`checkpoint_plan`. For v0.3.5, also record `execution_strategy`,
+`checkpoint_plan`. For v0.3.6, also record `execution_strategy`,
 `spawned_review_plan`, `team_spawn_plan`,
 `all_role_spawn_avoidance_reason`, `nested_spawn_policy`, and
 `post_team_audit_plan`. If runtime capability preflight or this contract is absent,
@@ -119,7 +119,7 @@ Use the matching track checklist before analysis or reporting:
 
 | Track | Required locks before run | Required review focus |
 |---|---|---|
-| `bulk` | Organism, assay platform, count vs normalized matrix, genome build/annotation, sample sheet, biological unit, batch/covariates, contrast, multiple-testing plan | Design matrix validity, batch/confounding, count-model assumptions, independent validation, effect size and FDR reporting |
+| `bulk` | Organism, assay platform, count vs normalized matrix, genome build/annotation, sample sheet, biological unit, batch/covariates, contrast, multiple-testing plan | Design matrix validity, batch/confounding, count-model assumptions, independent or tool-backed validation status, effect size and FDR reporting |
 | `single-cell` | Accession/files, chemistry/platform, cell barcode/sample mapping, donor/biological unit, cell type labels, QC thresholds, batch correction plan, cluster/DE contrast | Sample leakage, pseudo-replication, doublets, mito/ribo thresholds, donor-aware statistics, marker and GSEA interpretation boundaries |
 | `survival` | Cohort source/version, endpoint, event/censor definitions, follow-up time unit, inclusion/exclusion, covariates, grouping rule, event counts | Prognostic vs predictive boundary, censoring, proportional hazards, multiplicity, median survival/CI, number-at-risk feasibility |
 | `multi-omics` | Matched sample IDs, modality versions, genome build consistency, missingness, integration method, biological unit, primary endpoint | Cross-modality leakage, batch/source mixing, dimensionality reduction overclaim, validation and sensitivity analyses |

@@ -1,0 +1,19 @@
+{
+  "corpus_id": "corpus-valid-001",
+  "created_at": "2026-06-10",
+  "query_or_origin": "offline synthetic validator fixture",
+  "sources": [
+    {
+      "source_id": "S-001",
+      "source_type": "local-file",
+      "identifier": "synthetic-public-fixture",
+      "title_or_name": "Synthetic public fixture source",
+      "version_or_retrieval_date": "2026-06-10",
+      "query_or_origin": "local fixture",
+      "inclusion_status": "included",
+      "claim_use": "supports CL-001 at conservative wording scope",
+      "checked_by": "tool_backed_validator",
+      "limitations": "synthetic fixture for validator behavior only"
+    }
+  ]
+}

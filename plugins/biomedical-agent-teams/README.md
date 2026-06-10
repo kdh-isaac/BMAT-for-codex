@@ -1,17 +1,33 @@
 # Biomedical Agent Teams Codex Plugin
 
-Codex Desktop compatible plugin wrapper for the `biomedical-agent-teams` skill.
+Codex Desktop compatible plugin wrapper for the `biomedical-agent-teams` skill:
+a lead-controlled biomedical audit workflow with optional spawned or
+tool-backed review.
 
 ## Contents
 
 - `.agents/plugins/marketplace.json`: local marketplace metadata.
 - `skills/biomedical-agent-teams/`: Codex-native biomedical agent-team skill,
   including 35 agent prompts, 6 workflow recipes, 10 contract schemas, 10
-  templates, 7 references, a fixed-field claim ledger, biomedical passport,
+  templates, 8 references, a fixed-field claim ledger, biomedical passport,
   runtime capability preflight, source corpus lock, workflow-run state, stage
   evaluation, hypothesis tournament, independent-review policy, inline-first
   hybrid execution, selective spawned review, team-level spawned workflow DAGs,
-  and integrity-gate resources.
+  integrity-gate resources, and a deterministic BMAT artifact validator.
+
+## v0.3.6 Updates
+
+- Lowers BMAT's default description from mechanically gated to
+  contract-described unless `scripts/bmat_validate.py` is run against a complete
+  artifact bundle.
+- Adds `scripts/bmat_validate.py` to enforce full-protocol label,
+  independent-review surface, S3 validation, source-backed claim, final-wording,
+  and post-write release policies.
+- Adds validator fixtures and subprocess tests for valid full protocol,
+  missing independent review, failed S3 validation, missing source corpus links,
+  and final wording drift.
+- Adds an offline golden-task eval scaffold for measuring unsupported-claim,
+  citation-drift, fabricated-identifier, and overclaim-downgrade detection.
 
 ## v0.3.5 Updates
 

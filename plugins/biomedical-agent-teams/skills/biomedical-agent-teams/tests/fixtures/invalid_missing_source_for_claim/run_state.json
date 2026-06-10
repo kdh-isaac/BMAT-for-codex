@@ -1,0 +1,39 @@
+{
+  "run_id": "run-valid-001",
+  "alias": "evidence-audit-team",
+  "mode": "audit",
+  "plugin_version": "0.3.6",
+  "execution_strategy": "inline_first_selective_review",
+  "nested_spawn_allowed": false,
+  "spawned_review_lanes": [
+    {
+      "role": "citation-verifier",
+      "status": "complete",
+      "rationale": "tool_backed_validator checked the synthetic source identity",
+      "ledger_handoff": "CL-001 checked against S-001"
+    }
+  ],
+  "team_spawn_lanes": [],
+  "stages": [
+    {
+      "id": "S0",
+      "required": true,
+      "status": "pass",
+      "evidence": "runtime lock recorded"
+    },
+    {
+      "id": "S1",
+      "required": true,
+      "status": "pass",
+      "evidence": "source lock recorded"
+    },
+    {
+      "id": "S3",
+      "required": true,
+      "status": "pass",
+      "evidence": "validation passed"
+    }
+  ],
+  "final_label": "Full protocol followed",
+  "downgrade_reasons": []
+}

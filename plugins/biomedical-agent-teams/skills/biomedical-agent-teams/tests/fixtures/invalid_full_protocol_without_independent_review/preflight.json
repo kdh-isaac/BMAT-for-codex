@@ -1,0 +1,64 @@
+{
+  "runtime_capability_preflight_id": "rt-valid-001",
+  "requested_alias": "evidence-audit-team",
+  "selected_mode": "audit",
+  "deliverable_type": "synthetic validator fixture",
+  "evidence_scope": {
+    "source_types": [
+      "local-file"
+    ],
+    "species_or_model": "not-applicable",
+    "date_or_version_needs": "fixture dated 2026-06-10"
+  },
+  "risk_class": "low",
+  "required_role_outputs": [
+    "citation-verifier",
+    "post-write-final-validator"
+  ],
+  "skipped_role_outputs_with_reason": [],
+  "external_tools_allowed": {
+    "allowed": false,
+    "limits": "offline synthetic fixture"
+  },
+  "file_write_plan": {
+    "will_write_files": true,
+    "allowed_paths": [
+      "tests/fixtures/valid_full_protocol_bundle"
+    ]
+  },
+  "stop_criteria": [
+    "validator policy error"
+  ],
+  "checkpoint_plan": [
+    {
+      "checkpoint": "source lock",
+      "required_before": "final writing"
+    }
+  ],
+  "execution_strategy": "inline_first_selective_review",
+  "spawned_review_plan": {
+    "allowed": true,
+    "budget": 1,
+    "selected_roles": [
+      "citation-verifier"
+    ],
+    "rationale": "tool-backed validation fixture"
+  },
+  "team_spawn_plan": {
+    "allowed": false,
+    "budget": 0,
+    "selected_teams": [],
+    "dependency_graph": [],
+    "nested_spawn_allowed": false,
+    "rationale": "single synthetic audit axis"
+  },
+  "all_role_spawn_avoidance_reason": "fixture requires one review surface only",
+  "nested_spawn_policy": {
+    "allowed": false,
+    "authorization": "not requested",
+    "limits": "nested spawning disabled"
+  },
+  "post_team_audit_plan": "post-write validation only",
+  "source_corpus_id": "corpus-valid-001",
+  "workflow_run_id": "run-valid-001"
+}

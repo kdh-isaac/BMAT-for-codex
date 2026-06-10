@@ -1,9 +1,25 @@
 # Biomedical Agent Teams
 
 Codex biomedical agent-team bundle with a protocol lock, central claim ledger,
-audit gates, writer restriction, and post-write final validation.
+audit gates, writer restriction, post-write final validation, and an optional
+deterministic artifact validator.
 
 Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
+
+## v0.3.6 Updates
+
+- Adds `scripts/bmat_validate.py` for deterministic BMAT artifact policy
+  validation.
+- Clarifies that BMAT is contract-described by default; gates are
+  validator-enforced only when the validator is run against a complete artifact
+  bundle.
+- Restricts `Full protocol followed` to bundles with mandatory artifacts,
+  passing gates, post-write validation, and an independent or tool-backed
+  validation surface.
+- Adds fixture tests for missing independent review, S3 validation failure,
+  missing source-corpus links, and final wording drift.
+- Adds an offline golden-task eval scaffold for later measurement without
+  automatic external model calls.
 
 ## v0.3.5 Updates
 

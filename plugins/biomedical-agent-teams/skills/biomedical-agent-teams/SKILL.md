@@ -9,7 +9,7 @@ description: >
   evidence-audit-team, experiment-design-team, translational-scout-team, and
   omics-team.
 metadata:
-  version: "0.3.5"
+  version: "0.3.6"
   upstream_suite: "biomedical-agent-teams-claude"
   codex_adapter: true
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
@@ -19,12 +19,15 @@ allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 
 This is a Codex adapter for the biomedical agent-team suite. In Codex, treat the
 files under `agents/` as scoped role prompts and the files under `commands/` as
-workflow recipes. This v0.3.5 router uses runtime capability preflight,
+workflow recipes. This v0.3.6 router uses runtime capability preflight,
 protocol/context lock, source-corpus lock, workflow-run state, central claim
-ledger, contract-gated role outputs, biomedical passport state, stage
+ledger, contract-shaped role outputs, biomedical passport state, stage
 evaluation, audit gates, writer restriction, independent-review policy,
 inline-first hybrid execution, selective spawned review, dependency-aware
-team-level spawned workflows, and post-write validation before final output.
+team-level spawned workflows, post-write validation, and an optional
+`scripts/bmat_validate.py` policy validator before final output. BMAT is
+contract-described by default; gates are validator-enforced only when the
+validator is run against a complete BMAT artifact bundle.
 
 ## First Rule
 
@@ -41,7 +44,8 @@ For `deep`, `audit`, omics `run`, translational, manuscript-support, or
 long-running work, read `references/contract-gated-workflows.md` before final
 writing. For high-confidence final release or any source-backed audit verdict,
 also use `references/biomedical-failure-modes.md` and
-`references/independent-review-policy.md`.
+`references/independent-review-policy.md`. When local artifacts are available,
+run `scripts/bmat_validate.py` before claiming full protocol compliance.
 
 Default to Korean responses for Donghyun Kim unless the task explicitly asks for
 English. Assume expert-level immunology, CAR cell therapy, molecular biology,
@@ -457,6 +461,16 @@ End every Biomedical Agent Teams workflow with one workflow label:
 - `Biomedical Agent Teams-informed narrative review`
 - `Partial workflow; formal gates skipped`
 - `Blocked`
+
+`Full protocol followed` is permitted only when all mandatory artifacts exist,
+mandatory gates are `pass` or `pass-with-caveats`, post-write validation passes,
+and independent review is backed by a spawned subagent, separate model,
+tool-backed validator, external verifier, human reviewer, or tool-corroborated
+external database/API check. If `scripts/bmat_validate.py` was not run against
+a complete artifact bundle, label the result as `Compact standard workflow`,
+`Biomedical Agent Teams-informed narrative review`, or `Partial workflow;
+formal gates skipped`, depending on the artifacts actually produced.
+Same-model separate-pass review is useful but is not independent validation.
 
 Also list formal role outputs produced, role prompts read but not formalized,
 required gates skipped with reason, runtime capabilities used, source corpus

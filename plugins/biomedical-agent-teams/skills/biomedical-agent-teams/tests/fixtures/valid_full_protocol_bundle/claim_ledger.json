@@ -1,0 +1,19 @@
+{
+  "claims": [
+    {
+      "claim_id": "CL-001",
+      "atomic_claim": "The synthetic fixture supports a conservative audit claim.",
+      "claim_type": "source-backed",
+      "context": "offline validator fixture",
+      "evidence_items": [
+        "S-001"
+      ],
+      "evidence_relation": "direct fixture support",
+      "uncertainty": "synthetic fixture only",
+      "audit_status": "pass",
+      "allowed_final_wording": "Synthetic public fixture supports a conservative audit claim.",
+      "claim_strength": "high-confidence",
+      "source_backed": true
+    }
+  ]
+}
