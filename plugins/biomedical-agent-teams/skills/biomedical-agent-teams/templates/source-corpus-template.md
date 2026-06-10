@@ -6,7 +6,8 @@ identity and retrieval context before the final claim ledger is written.
 
 | source_id | source_type | identifier | title_or_name | version_or_retrieval_date | query_or_origin | inclusion_status | claim_use | checked_by | limitations |
 |---|---|---|---|---|---|---|---|---|---|
-| S-001 | PMID / DOI / accession / NCT / database-record / local-file / analysis-artifact / software / other |  |  |  |  | included / excluded / not-checked / blocked |  |  |  |
+| S-001 | _(example)_ PMID | 34567890 | IL-21 reprograms CAR-T metabolism | retr. 2026-06-10 | PubMed MCP get_article_metadata | included | supports CL-001 | citation-verifier (tool-corroborated) | single cohort, in vitro only |
+| S-002 | PMID / DOI / accession / NCT / database-record / local-file / analysis-artifact / software / other |  |  |  |  | included / excluded / not-checked / blocked |  |  |  |
 
 ## Source Lock Rules
 

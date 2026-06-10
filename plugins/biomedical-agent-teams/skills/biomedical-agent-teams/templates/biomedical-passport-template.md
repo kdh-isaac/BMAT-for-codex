@@ -10,7 +10,7 @@ answer or save as a local artifact when file output is requested.
 |---|---|
 | passport_id | BP-YYYYMMDD-001 |
 | workflow_alias | biomedical-research-council / omics-analysis-team / evidence-audit-team / experiment-design-team / translational-scout-team |
-| workflow_version | 0.3.4 |
+| workflow_version | 0.3.5 |
 | created_at |  |
 | updated_at |  |
 | current_stage |  |

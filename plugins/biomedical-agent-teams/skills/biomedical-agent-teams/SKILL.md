@@ -9,7 +9,7 @@ description: >
   evidence-audit-team, experiment-design-team, translational-scout-team, and
   omics-team.
 metadata:
-  version: "0.3.4"
+  version: "0.3.5"
   upstream_suite: "biomedical-agent-teams-claude"
   codex_adapter: true
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
@@ -19,7 +19,7 @@ allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 
 This is a Codex adapter for the biomedical agent-team suite. In Codex, treat the
 files under `agents/` as scoped role prompts and the files under `commands/` as
-workflow recipes. This v0.3.4 router uses runtime capability preflight,
+workflow recipes. This v0.3.5 router uses runtime capability preflight,
 protocol/context lock, source-corpus lock, workflow-run state, central claim
 ledger, contract-gated role outputs, biomedical passport state, stage
 evaluation, audit gates, writer restriction, independent-review policy,
@@ -300,6 +300,27 @@ state and biomedical passport state. If either is not produced, list it under
 skipped gates and downgrade the workflow label unless the user explicitly asked
 for a short conceptual answer.
 
+## Minimum Viable Governance
+
+Match governance weight to task value so process does not crowd out the science.
+Emit the smallest artifact set that preserves claim integrity, and carry state by
+reference, not by re-printing.
+
+- Proportional ceremony: for `quick` and most `standard` answers, the preflight,
+  capability note, and claim boundary may be 1-3 compact lines each. Reserve the
+  full 17-field preflight contract, workflow-run state, passport, and stage
+  evaluation for `deep`, `audit`, omics `run`, translational, manuscript, and
+  long-running work.
+- By-reference state: once an artifact exists (claim ledger, source corpus,
+  preflight), refer to row IDs (for example `CL-003`, `S-001`) instead of
+  re-emitting the whole table on each turn. Re-print only changed rows.
+- One real check beats three restatements: prefer a single decisive external
+  tool call (see `references/codex-runtime-capability-matrix.md`) over repeated
+  same-model passes that restate the same claim.
+- Never silently skip a required gate. If you compress or skip, name it under
+  skipped gates and downgrade the workflow label rather than implying full
+  compliance.
+
 ## Ledger Template
 
 For any `standard`, `deep`, `audit`, omics, translational, clinical,
@@ -371,7 +392,10 @@ validation, audit, review, red-team, or independent verification. Validation is
 independent only when performed by a separate spawned subagent, separate model,
 tool-backed validator, external verifier, or human reviewer. Same-model
 separate-pass validation is useful but must be labeled as such and may require a
-workflow-label downgrade. The validator must compare final prose against claim
+workflow-label downgrade. When spawned subagents are unavailable, treat
+tool-backed external corroboration (a real PubMed/ClinicalTrials/bioRxiv/ChEMBL/
+Open Targets call returning evidence at the claim scope) as the practical source
+of independence rather than a second same-model pass. The validator must compare final prose against claim
 ledger row IDs or `allowed_final_wording` and must not introduce new evidence
 unless the source corpus and claim ledger are updated first.
 
@@ -512,6 +536,9 @@ Apply these gates before making strong conclusions:
   trial IDs, and assay names before expanding sources.
 - Record actual runtime capabilities before claiming tool-backed or full-depth
   workflow execution.
+- Apply the bundled data-safety floor (`references/data-safety-floor.md`) for any
+  analysis lane: raw data read-only, smoke test before full runs, logged filters,
+  correct experimental unit, and no private-data exfiltration.
 - For benchmark workflows, lock the benchmark protocol before execution and do
   not expose truth files, answer/result files, scoring scripts, reproduction
   scripts, or task Dockerfiles to the agent before the scoring phase.
@@ -615,3 +642,6 @@ reproduction scripts, scoring scripts, Dockerfiles, or result archives:
 - `references/omics-stage-validation-failure-modes.md`: S1-S5 omics validation block conditions.
 - `references/hybrid-execution-policy.md`: inline-first execution, selective
   spawned review, and team-level spawned subagent DAG policy.
+- `references/data-safety-floor.md`: bundled non-negotiable data-safety floor
+  (raw-data read-only, smoke test, statistical floor, privacy) applied even when
+  the host workspace has no AGENTS.md/CLAUDE.md.

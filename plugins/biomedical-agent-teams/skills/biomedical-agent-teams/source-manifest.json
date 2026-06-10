@@ -1,12 +1,12 @@
 {
-  "version": "0.3.4",
+  "version": "0.3.5",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 35,
   "command_count": 6,
   "template_count": 10,
   "contract_count": 10,
-  "reference_count": 7,
+  "reference_count": 8,
   "workflow_spine": [
     "runtime-capability-preflight",
     "protocol-context-locker",
@@ -176,6 +176,14 @@
     "agentic-search-for-biomedical-hypotheses",
     "codex-runtime-capability-matrix",
     "omics-stage-validation-failure-modes",
-    "hybrid-execution-policy"
+    "hybrid-execution-policy",
+    "data-safety-floor"
+  ],
+  "new_in_v0_3_5": [
+    "concrete-mcp-tool-binding-for-citation-literature-and-clinical-agents",
+    "tool-backed-external-corroboration-as-independence-source",
+    "bundled-data-safety-floor-reference-decoupled-from-external-agents-md",
+    "minimum-viable-governance-tier-and-by-reference-state",
+    "filled-examples-in-claim-ledger-and-source-corpus-templates"
   ]
 }

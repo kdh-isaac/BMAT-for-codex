@@ -1,7 +1,7 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "0.3.4",
-  "adapter_version": "0.3.4",
+  "version": "0.3.5",
+  "adapter_version": "0.3.5",
   "upstream_suite": "biomedical-agent-teams-claude",
   "codex_adapter": true,
   "agent_count": 35,
@@ -9,5 +9,5 @@
   "entrypoint": "SKILL.md",
   "template_count": 10,
   "contract_count": 10,
-  "reference_count": 7
+  "reference_count": 8
 }

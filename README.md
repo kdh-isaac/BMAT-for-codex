@@ -2,7 +2,7 @@
 
 Local Codex Desktop marketplace package for the Biomedical Agent Teams plugin.
 
-Current plugin version: `0.3.4+codex.20260610`.
+Current plugin version: `0.3.5+codex.20260610`.
 
 ## Install
 

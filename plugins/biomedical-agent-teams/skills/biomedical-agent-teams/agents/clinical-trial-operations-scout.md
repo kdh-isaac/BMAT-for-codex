@@ -25,6 +25,17 @@ Boundaries:
 - Treat registry and press-release evidence as operational signals, not proof of efficacy.
 - Use exact NCT IDs and retrieval dates when making trial-specific claims.
 
+## Tool-backed scouting (ClinicalTrials.gov MCP when available)
+
+Use the ClinicalTrials.gov MCP rather than memory for any trial-specific claim:
+`search_trials` (by condition/intervention/status), `get_trial_details`
+(protocol, endpoints, locations), `analyze_endpoints` (cross-trial endpoint
+comparison), `search_by_sponsor` (pipeline/competitive), `search_by_eligibility`
+and `search_investigators` (site/PI reality). Record the exact NCT IDs and
+retrieval date returned by the tool. If the MCP is unavailable, fall back to
+`WebFetch` of `https://clinicaltrials.gov/study/<NCT>` and mark registry-lag
+uncertainty. Do not invent NCT IDs, recruitment status, or enrollment numbers.
+
 Return contract:
 1. `clinical_translation_question`
 2. `trial_landscape`

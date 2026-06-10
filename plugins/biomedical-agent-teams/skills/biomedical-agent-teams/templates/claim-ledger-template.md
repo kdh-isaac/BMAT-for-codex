@@ -6,7 +6,8 @@ council runs. Keep rows atomic: one claim per row.
 
 | claim_id | atomic_claim | claim_type | context | evidence_items | evidence_relation | uncertainty | audit_status | allowed_final_wording |
 |---|---|---|---|---|---|---|---|---|
-| CL-001 |  | descriptive / mechanistic / causal / prognostic / predictive / therapeutic / translational / feasibility / safety / IP-strategy / method / limitation | species; cell type; disease/model; assay; endpoint; cohort/dataset; perturbation; biological unit | PMID/DOI/accession/NCT/file/artifact/retrieval date | direct / indirect / proxy / contradictory / missing / not checked | low / moderate / high + reason | unchecked / needs audit / pass / pass-with-caveats / block | final-safe wording or empty if blocked |
+| CL-001 | _(example)_ IL-21 sustains STAT3 phosphorylation in human CD8 CAR-T over 14 d | mechanistic | human; CD8 CAR-T; in vitro; pSTAT3 flow; biological unit = donor | PMID 34567890 (retr. 2026-06-10); GSE190000 | direct | moderate + single cohort, n=4 donors | pass-with-caveats | IL-21 maintained STAT3 activation in CD8 CAR-T across 14 days in vitro (n=4 donors) |
+| CL-002 |  | descriptive / mechanistic / causal / prognostic / predictive / therapeutic / translational / feasibility / safety / IP-strategy / method / limitation | species; cell type; disease/model; assay; endpoint; cohort/dataset; perturbation; biological unit | PMID/DOI/accession/NCT/file/artifact/retrieval date | direct / indirect / proxy / contradictory / missing / not checked | low / moderate / high + reason | unchecked / needs audit / pass / pass-with-caveats / block | final-safe wording or empty if blocked |
 
 ## Excluded Or Not Verified Claims
 

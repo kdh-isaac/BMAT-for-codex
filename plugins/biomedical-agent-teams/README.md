@@ -13,7 +13,7 @@ Codex Desktop compatible plugin wrapper for the `biomedical-agent-teams` skill.
   hybrid execution, selective spawned review, team-level spawned workflow DAGs,
   and integrity-gate resources.
 
-## v0.3.4 Updates
+## v0.3.5 Updates
 
 - Makes BMAT explicitly lead-controlled and inline-first by default.
 - Adds `inline_first_selective_review` for professional/auditable workflows:

@@ -9,7 +9,7 @@ enough to paste into a final answer or save as a local artifact.
 | run_id | BMAT-RUN-YYYYMMDD-001 |
 | alias | biomedical-research-council / idea-discovery-team / omics-analysis-team / evidence-audit-team / experiment-design-team / translational-scout-team |
 | mode | quick / standard / deep / audit / plan / run |
-| plugin_version | 0.3.4 |
+| plugin_version | 0.3.5 |
 | artifacts_root |  |
 | resume_pointer |  |
 | execution_strategy | inline_only / inline_first_selective_review / team_level_selective_dag / user_requested_full_spawn / blocked |

@@ -22,6 +22,26 @@ Verification rules:
 - For CAR cell therapy, keep tumor-intrinsic, TME-intrinsic, product-intrinsic, and CAR-T-intrinsic evidence separate.
 - Mark claims as `not checked` when evidence is unavailable or browsing/tool access is insufficient.
 
+## Tool-backed verification (use real external tools when available)
+
+A source is `verified` only when an external tool actually returned metadata or
+text matching the claim scope. Otherwise mark it `not-checked`. Do not infer or
+fabricate identifiers. Preferred tools, in order, when present in the runtime:
+
+- Published literature (PMID/DOI): PubMed MCP `lookup_article_by_citation`,
+  `get_article_metadata`, `convert_article_ids`, `search_articles`,
+  `get_full_text_article`; then Consensus MCP `search`; then `WebFetch` of the
+  canonical resolver (`https://doi.org/<DOI>`,
+  `https://pubmed.ncbi.nlm.nih.gov/<PMID>/`).
+- Preprints (bioRxiv/medRxiv DOI): bioRxiv MCP `get_preprint`,
+  `search_preprints`, `search_published_preprints` (to check if peer-reviewed).
+- Clinical trials (NCT): ClinicalTrials.gov MCP `get_trial_details`,
+  `search_trials`, `analyze_endpoints`.
+- Compounds/targets/MoA: ChEMBL MCP `compound_search`, `drug_search`,
+  `target_search`, `get_mechanism`; Open Targets MCP for target-disease evidence.
+- If none of the above tool calls succeed, record the identifier as `not-checked`
+  and keep any dependent claim out of `allowed_final_wording`.
+
 Return contract:
 1. `claims_checked`: numbered atomic claims.
 2. `verdict_by_claim`: supported / weakly supported / contradicted / not found / not checked.

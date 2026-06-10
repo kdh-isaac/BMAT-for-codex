@@ -5,7 +5,7 @@ audit gates, writer restriction, and post-write final validation.
 
 Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
 
-## v0.3.4 Updates
+## v0.3.5 Updates
 
 - Defines BMAT as lead-controlled and inline-first by default.
 - Adds selective spawned review for high-confidence or auditable outputs without

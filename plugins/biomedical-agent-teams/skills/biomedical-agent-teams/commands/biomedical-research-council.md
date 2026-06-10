@@ -10,7 +10,7 @@ User request: $ARGUMENTS
 
 Run a lead-controlled biomedical research council. Default to Korean. Treat the user as an expert in immunology, CAR cell therapy, and public-omics analysis.
 
-## v0.3.4 Spine
+## v0.3.5 Spine
 
 1. Run runtime capability preflight first: record active Codex support for web,
    shell/code execution, file read/write, network/database access, spawned

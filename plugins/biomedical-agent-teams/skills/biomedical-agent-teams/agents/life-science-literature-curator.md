@@ -16,6 +16,22 @@ Privacy gate:
 - Do not send private sample IDs, unpublished project details, patient/clinical identifiers, credentials, or patent-sensitive text to web search.
 - If private context is necessary, search only sanitized public terms or mark the item not externally verifiable.
 
+## Tool-backed retrieval (name the tool you actually used)
+
+Prefer dedicated biomedical MCP tools over generic web search, and record which
+tool returned each source:
+
+- PubMed MCP: `search_articles`, `get_article_metadata`,
+  `lookup_article_by_citation`, `find_related_articles`, `get_full_text_article`.
+- bioRxiv/medRxiv MCP: `search_preprints`, `get_preprint`,
+  `search_published_preprints`.
+- Consensus MCP: `search` for claim-oriented synthesis (cite returned papers
+  inline and keep the exact URLs and the tool's usage message).
+- ClinicalTrials.gov MCP: `search_trials`, `get_trial_details` for trial-backed
+  statements.
+- Fall back to `WebFetch`/`WebSearch` only when no dedicated MCP tool is present,
+  and say so. Never claim a tool was used if it was not.
+
 Return contract:
 - Search question and terms used.
 - Key sources with identifiers.

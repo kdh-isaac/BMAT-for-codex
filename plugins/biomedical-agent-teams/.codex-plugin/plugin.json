@@ -1,6 +1,6 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Codex-native biomedical agent-team router for life-science research, hypothesis validation, literature and public-omics evidence synthesis, claim-level verification, statistical audit, experiment design, translational scouting, and scientific writing support.",
   "author": {
     "name": "Donghyun Kim Local Research Workflow"
