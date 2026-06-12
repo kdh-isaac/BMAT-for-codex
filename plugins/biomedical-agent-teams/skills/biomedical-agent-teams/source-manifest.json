@@ -1,5 +1,5 @@
 {
-  "version": "0.4.1",
+  "version": "0.4.3",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 35,
@@ -217,6 +217,12 @@
     "bundled-data-safety-floor-reference-decoupled-from-external-agents-md",
     "minimum-viable-governance-tier-and-by-reference-state",
     "filled-examples-in-claim-ledger-and-source-corpus-templates"
+  ],
+  "new_in_v0_4_3": [
+    "omics-run-reviewer-spawn-floor",
+    "core-omics-reviewer-default-selection",
+    "validator-policy-for-zero-reviewer-budget-in-omics-run",
+    "explicit-downgrade-required-when-omics-reviewer-spawn-is-unavailable"
   ],
   "new_in_v0_3_6": [
     "label-honesty-patch-for-contract-described-vs-validator-enforced-workflows",

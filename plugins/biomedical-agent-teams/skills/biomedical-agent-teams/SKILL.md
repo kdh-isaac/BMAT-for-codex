@@ -9,7 +9,7 @@ description: >
   evidence-audit-team, experiment-design-team, translational-scout-team, and
   omics-team.
 metadata:
-  version: "0.4.1"
+  version: "0.4.3"
   upstream_suite: "biomedical-agent-teams-claude"
   codex_adapter: true
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
@@ -19,14 +19,20 @@ allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 
 This is a Codex adapter for the biomedical agent-team suite. In Codex, treat the
 files under `agents/` as scoped role prompts and the files under `commands/` as
-workflow recipes. This v0.4.1 router uses runtime capability preflight,
+workflow recipes. This v0.4.3 router uses runtime capability preflight,
 protocol/context lock, source-corpus lock, workflow-run state, central claim
 ledger, contract-shaped role outputs, biomedical passport state, stage
 evaluation, audit gates, writer restriction, independent-review policy,
 inline-first hybrid execution, selective spawned review, dependency-aware
 team-level spawned workflows, team output artifact tracking, post-write
 validation, and an optional `scripts/bmat_validate.py` policy validator before
-final output. v0.4.1 adds deterministic validation for team-level selective DAG
+final output. v0.4.3 tightens omics `run` governance: default reviewer-spawn
+planning now requires at least one core omics reviewer when spawned-subagent
+support is available, and validator policy flags omics runs that silently set a
+zero reviewer budget without explicit runtime, privacy, or user-compact
+downgrade rationale. v0.4.2 adds artifact-gated workflow-label rules, final-text label
+auditing in `scripts/bmat_validate.py`, explicit completion-read and label-ceiling
+guards, and a loop not-applicable rule for one-off requests. v0.4.1 adds deterministic validation for team-level selective DAG
 outputs, phase dependencies, nested-spawn policy, and ledger handoff. v0.4.0 also
 adds loop-engineering resources for recurring literature watches, public-omics
 dataset watches, claim-audit inboxes, hypothesis triage, loop-state validation,
@@ -38,9 +44,12 @@ BMAT artifact bundle.
 ## First Rule
 
 Do not load every agent by default. Select one workflow recipe from `commands/`,
+read this `SKILL.md` and the selected command recipe to EOF before task actions,
 perform the protocol/context-of-use lock, then read only the specific
 `agents/*.md` files needed for the user's current research question, data type,
-or decision point.
+or decision point. If a file read is paginated or truncated, continue until EOF
+before source expansion, external tool use, file writes, code execution, or final
+wording.
 
 Default execution is lead-controlled and inline-first. Use spawned subagents
 only when they materially improve independence, parallelism, provenance, or
@@ -152,7 +161,9 @@ boundary, allowed connectors, human gate status, source-delta status, cycle
 budget, open items, reviewer objections, stop conditions, output artifacts, and
 privacy boundary. Do not mark a recurring loop complete if source deltas remain
 pending, reviewer objections are open, or private context would be sent to
-external tools without an approved human gate.
+external tools without an approved human gate. For one-off requests without a
+recurring, scheduled, monitor, watch, inbox, or triage-loop intent, record loop
+status as `not-applicable`; do not treat a missing loop state as a loop failure.
 
 ## Loop Engineering Additions
 
@@ -267,7 +278,7 @@ By mode:
 | `deep` | `inline_first_selective_review` or `team_level_selective_dag` | 1-3 selected spawned outputs |
 | `audit` | `inline_first_selective_review`; add team DAG only for multi-axis audits | 1-4 selected spawned outputs |
 | omics `plan` | `inline_only` unless feasibility axes are independent | 0-1 selected team |
-| omics `run` | `inline_first_selective_review`; add team DAG only after S1-S3 locks | 1-3 selected spawned outputs |
+| omics `run` | `inline_first_selective_review`; after S1-S3 locks, default to at least one core spawned reviewer when supported | 1-3 selected spawned outputs; minimum 1 core reviewer unless explicitly blocked or downgraded |
 
 All spawned reviewers and teams must return a formal output with objective,
 scope, inputs checked, methods/tools used, key findings, contradictions, risks,
@@ -282,6 +293,16 @@ intent and is not proof of execution.
 For spawned command-level teams, the completed team report must be recorded in
 `team_output_artifacts` with dependency-resolved prior outputs before the
 `team_spawn_outputs` stage can pass.
+
+For omics `run`, the default core spawned-reviewer set is
+`omics-code-reviewer`, `omics-provenance-validator`, and
+`biostats-repro-auditor`. Select at least one of these after S1-S3 locks when
+the runtime exposes spawned-subagent or tool-backed reviewer support. Select two
+or more when the run includes donor-aware single-cell contrasts, survival
+modeling, multi-omics integration, extensive generated code, or manuscript-grade
+interpretation. If no core reviewer can be spawned, the preflight must record
+the runtime, privacy, explicit user compact-mode, or budget blocker; the
+workflow-run state must list the skipped reviewer lane and downgrade reason.
 
 ## Default Workflow Spine
 
@@ -406,6 +427,31 @@ reference, not by re-printing.
 - Never silently skip a required gate. If you compress or skip, name it under
   skipped gates and downgrade the workflow label rather than implying full
   compliance.
+
+## v0.4.3 Label and Artifact Gate
+
+Before source expansion or final writing, set an explicit workflow-label ceiling
+from the artifacts that will actually be produced:
+
+- `Biomedical Agent Teams-informed narrative review` or `Partial workflow;
+  formal gates skipped`: allowed when BMAT role prompts and public tools inform
+  a compact narrative but no formal preflight, source corpus, claim ledger, or
+  post-write validation artifact is maintained.
+- `Compact standard workflow`: allowed only when preflight, source corpus,
+  claim ledger, and post-write validation exist inline or as local artifacts.
+- `Full protocol followed`: allowed only when a complete artifact bundle exists,
+  mandatory gates pass or pass with caveats, `scripts/bmat_validate.py` passes,
+  and an independent review surface is recorded.
+
+If the final text declares `Compact standard workflow` or `Full protocol
+followed`, `scripts/bmat_validate.py` may be run against `final.md` alone to
+detect missing required artifacts. A missing loop state is not a failure for
+one-off requests; record loop status as `not-applicable` unless the task is a
+watch, monitor, recurring loop, inbox, or triage workflow.
+
+For omics `run`, this gate also expects a nonzero core reviewer-spawn plan and
+completed reviewer instance unless a concrete runtime, privacy, budget, or
+explicit user-compact downgrade reason is recorded.
 
 ## Ledger Template
 

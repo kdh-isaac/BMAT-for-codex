@@ -18,6 +18,34 @@ spawned or tool-backed review.
   reviewer-agent templates, team output artifact tracking, and deterministic
   BMAT artifact and loop-state validators.
 
+## v0.4.3 Updates
+
+- Tightens omics `run` behavior so reviewer spawning is opt-out after S1-S3
+  locks, not silently optional.
+- Requires the omics preflight to select at least one core reviewer
+  (`omics-code-reviewer`, `omics-provenance-validator`, or
+  `biostats-repro-auditor`) when spawned subagents or tool-backed reviewer
+  instances are available.
+- Adds deterministic validator policy for omics `run` bundles: zero reviewer
+  budget now fails unless a runtime, privacy, budget, or explicit user-compact
+  downgrade rationale is recorded.
+- Adds pytest coverage for omitted omics reviewer spawning, downgrade-allowed
+  skips, non-core reviewer selection, and completed core reviewer instances.
+
+## v0.4.2 Updates
+
+- Adds an explicit completion-read gate: the router `SKILL.md` and selected
+  command recipe must be read to EOF before source expansion, external tool use,
+  file writes, code execution, or final wording.
+- Adds workflow-label ceilings so `Compact standard workflow` requires
+  preflight, source corpus, claim ledger, and post-write validation artifacts.
+- Extends `scripts/bmat_validate.py` to audit `final.md` workflow labels even
+  when no bundle exists, blocking compact or full labels that lack required
+  artifacts.
+- Clarifies that one-off requests should record loop status as
+  `not-applicable`; a missing `loop_state.json` is only a loop failure for
+  recurring, watch, monitor, inbox, or triage workflows.
+
 ## v0.4.1 Updates
 
 - Adds `workflow-run.team_output_artifacts` for concrete command-level spawned
@@ -84,7 +112,7 @@ spawned or tool-backed review.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.4.1 Workflow Structure
+    accTitle: BMAT v0.4.3 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]

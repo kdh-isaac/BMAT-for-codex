@@ -119,7 +119,28 @@ claim full-protocol release. If a team output uses nested child agents while
 | deep | `inline_first_selective_review` or `team_level_selective_dag` | 1-3 |
 | audit | `inline_first_selective_review` with optional team DAG for multi-axis audits | 1-4 |
 | omics plan | `inline_only` unless feasibility axes are independent | 0-1 |
-| omics run | `inline_first_selective_review` after S1-S3 locks | 1-3 |
+| omics run | `inline_first_selective_review` after S1-S3 locks; minimum one core spawned reviewer when supported | 1-3, with at least one of `omics-code-reviewer`, `omics-provenance-validator`, or `biostats-repro-auditor` unless explicitly blocked or downgraded |
+
+## Omics Run Reviewer Floor
+
+For omics `run`, reviewer spawning is opt-out rather than opt-in after S1-S3
+locks. When the runtime supports spawned subagents or tool-backed reviewer
+instances, select at least one core reviewer:
+
+- `omics-code-reviewer` for code, raw-data safety, reproducibility, leakage, and
+  parameter provenance.
+- `omics-provenance-validator` for metadata locks, design, biological unit,
+  statistical provenance, and claim proportionality.
+- `biostats-repro-auditor` for model validity, donor/unit handling,
+  multiplicity, ranking stability, survival/event handling, and sensitivity
+  analysis.
+
+Use two or more core reviewers for donor-aware single-cell contrasts,
+multi-omics integration, survival modeling, large generated scripts, or
+manuscript-grade interpretation. A zero reviewer budget is acceptable only when
+the preflight records an explicit runtime-unavailable, privacy-blocked,
+user-requested compact, or budget-blocked rationale and the workflow label is
+downgraded. Role prompts read inline do not satisfy this reviewer floor.
 
 ## Required Spawned Output Contract
 

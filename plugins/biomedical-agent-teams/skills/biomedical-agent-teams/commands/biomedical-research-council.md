@@ -10,8 +10,12 @@ User request: $ARGUMENTS
 
 Run a lead-controlled biomedical research council. Default to Korean. Treat the user as an expert in immunology, CAR cell therapy, and public-omics analysis.
 
-## v0.4.1 Spine
+## v0.4.3 Spine
 
+0. Confirm the router `SKILL.md` and this command recipe were read to EOF before
+   source expansion, external tool use, file writes, code execution, spawned
+   agent claims, or final wording. Set a workflow-label ceiling from the
+   artifacts that will actually be produced.
 1. Run runtime capability preflight first: record active Codex support for web,
    shell/code execution, file read/write, network/database access, spawned
    subagents, sandbox, and downgrade rule.
@@ -38,6 +42,23 @@ Run a lead-controlled biomedical research council. Default to Korean. Treat the 
 16. `scientific-writer-citation-agent` may use only verified claim-ledger material.
 17. Apply `references/independent-review-policy.md` before using independent-review wording.
 18. Run the integrity gate and `post-write-final-validator` before final output for high-confidence source-backed deliverables.
+
+## v0.4.3 Label and Artifact Gate
+
+Use the label ceiling below before final writing:
+
+- If preflight, source corpus, claim ledger, and post-write validation are not
+  produced, the highest allowed label is `Biomedical Agent Teams-informed
+  narrative review` or `Partial workflow; formal gates skipped`.
+- Use `Compact standard workflow` only when preflight, source corpus, claim
+  ledger, and post-write validation exist inline or as local artifacts.
+- Use `Full protocol followed` only when a complete artifact bundle exists,
+  mandatory gates pass or pass with caveats, `scripts/bmat_validate.py` passes,
+  and independent review is backed by a valid spawned, separate-model,
+  tool-backed, external, human, or tool-corroborated review surface.
+- For one-off research questions, loop status is `not-applicable`; do not report
+  a missing `loop_state.json` as a loop failure unless the user requested a
+  watch, recurring monitor, inbox, or triage loop.
 
 ## Required Preflight Contract
 

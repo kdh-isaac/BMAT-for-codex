@@ -17,7 +17,7 @@ def base_loop_state(loop_type: str = "weekly_literature_watch") -> dict[str, obj
         "loop_id": "loop-edge-test",
         "loop_name": "Loop edge test",
         "loop_type": loop_type,
-        "plugin_version": "0.4.1",
+        "plugin_version": "0.4.3",
         "status": "running",
         "public_only": True,
         "private_context_allowed": False,

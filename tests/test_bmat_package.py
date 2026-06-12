@@ -153,16 +153,17 @@ class BmatPackageTest(unittest.TestCase):
         self.assertIn("| selective_review_outputs |", workflow_template)
         self.assertIn("selective_review_outputs when used", workflow_template)
 
-    def test_readme_workflow_structure_matches_v034_hybrid_model(self):
+    def test_readme_workflow_structure_matches_v043_model(self):
         for readme in (ROOT / "README.md", ROOT / "plugins" / "biomedical-agent-teams" / "README.md"):
             text = readme.read_text(encoding="utf-8")
             with self.subTest(readme=readme.relative_to(ROOT)):
-                self.assertIn("accTitle: BMAT Hybrid Workflow Structure", text)
-                self.assertIn("lead_controlled_inline_spine", text)
-                self.assertIn("team_level_spawned_dag", text)
-                self.assertIn("selective_spawned_review", text)
+                self.assertIn("accTitle: BMAT v0.4.3 Workflow Structure", text)
+                self.assertIn("Runtime, scope, source, and strategy lock", text)
                 self.assertIn("team_level_selective_dag", text)
-                self.assertIn("Nested spawning is disabled by default", text)
+                self.assertIn("team_output_artifacts", text)
+                self.assertIn("selective spawned review", text)
+                self.assertIn("spawned_agent_instances", text)
+                self.assertIn("bmat_loop_check.py", text)
 
     @unittest.skipUnless(importlib.util.find_spec("jsonschema"), "jsonschema is not installed")
     def test_v03_schema_samples_validate(self):
@@ -396,6 +397,68 @@ class BmatPackageTest(unittest.TestCase):
                     }
                 ],
                 "overall_verdict": "pass",
+            },
+            "agent-registry.schema.json": {
+                "version": version,
+                "runtime": "codex",
+                "agents": [
+                    {
+                        "agent_id": "claim-level-evidence-verifier",
+                        "prompt_path": "agents/claim-level-evidence-verifier.md",
+                        "spawnable": True,
+                        "default_execution_surface": "spawned_reviewer",
+                        "allowed_workflows": ["evidence-audit-team"],
+                        "required_output_schema": "contracts/spawned-agent-output.schema.json",
+                        "privacy_level": "public_only",
+                        "recommended_modes": ["audit"],
+                        "toml_template_path": "codex-agents/claim-level-evidence-verifier.toml",
+                    }
+                ],
+            },
+            "spawned-agent-output.schema.json": {
+                "objective": "schema smoke sample",
+                "assigned_scope": "validate output contract shape",
+                "inputs_checked": ["none"],
+                "tools_skills_commands_or_databases_used": ["jsonschema"],
+                "key_findings": ["sample validates schema shape"],
+                "contradictions_or_risks": [],
+                "confidence": "not-assessable",
+                "files_changed_or_none": "none",
+                "checks_run_or_skipped": ["jsonschema validation"],
+                "recommended_handoff": "none",
+                "affected_claim_ids": [],
+                "verdict": "pass",
+                "ledger_handoff": "none",
+            },
+            "loop-state.schema.json": {
+                "loop_id": "LOOP-20260610-001",
+                "loop_name": "schema smoke loop",
+                "loop_type": "weekly_literature_watch",
+                "plugin_version": version,
+                "status": "complete",
+                "public_only": True,
+                "private_context_allowed": False,
+                "external_tools_allowed": True,
+                "connectors_allowed": ["pubmed"],
+                "human_review_required": False,
+                "human_gate_status": "not-required",
+                "state_path": "loop_state.json",
+                "source_delta_status": "none",
+                "cycle_count": 1,
+                "cycle_budget": 1,
+                "open_items": [],
+                "reviewer_objections": [],
+                "stop_conditions": ["schema smoke complete"],
+                "stop_status": "stop",
+                "output_artifacts": [
+                    {
+                        "artifact_id": "ART-001",
+                        "path": "source_delta.md",
+                        "artifact_type": "source_delta",
+                        "status": "reviewed",
+                    }
+                ],
+                "privacy_boundary": "public-only schema smoke sample",
             },
         }
 

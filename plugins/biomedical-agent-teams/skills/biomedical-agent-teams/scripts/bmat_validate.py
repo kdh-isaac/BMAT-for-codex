@@ -42,8 +42,35 @@ SCHEMA_FILES = {
 
 PASSING_STAGE_STATUS = {"pass", "pass-with-caveats", "not-applicable"}
 FULL_LABEL = "Full protocol followed"
+COMPACT_LABEL = "Compact standard workflow"
+NARRATIVE_LABEL = "Biomedical Agent Teams-informed narrative review"
 BLOCKED_LABEL = "Blocked"
 PARTIAL_LABEL = "Partial workflow; formal gates skipped"
+WORKFLOW_LABELS = {
+    FULL_LABEL,
+    COMPACT_LABEL,
+    NARRATIVE_LABEL,
+    PARTIAL_LABEL,
+    BLOCKED_LABEL,
+}
+NEGATED_LABEL_PREFIXES = (
+    "not labeled ",
+    "not label ",
+    "not claiming ",
+    "not claimed ",
+    "not claim ",
+    "not used ",
+    "not using ",
+    "not use ",
+    "do not use ",
+    "does not use ",
+    "did not use ",
+    "without ",
+    "downgraded from ",
+    "downgrade from ",
+    "avoid claiming ",
+    "not eligible for ",
+)
 HIGH_CONFIDENCE_STRENGTH = {"validated", "high-confidence", "high_confidence", "high confidence"}
 FULL_PROTOCOL_SURFACES = {
     "spawned_subagent",
@@ -77,6 +104,27 @@ REQUIRED_RUN_STATE_FIELDS = {
     "stages",
     "final_label",
     "downgrade_reasons",
+}
+OMICS_ALIASES = {"omics-analysis-team", "omics-team", "/omics-analysis-team", "/omics-team"}
+OMICS_CORE_REVIEWERS = {"omics-code-reviewer", "omics-provenance-validator", "biostats-repro-auditor"}
+OMICS_REVIEW_SKIP_EXCEPTION_MARKERS = {
+    "spawned-subagent support unavailable",
+    "spawned subagent support unavailable",
+    "subagent support unavailable",
+    "subagent unavailable",
+    "runtime unavailable",
+    "runtime does not support",
+    "tool unavailable",
+    "privacy-blocked",
+    "privacy blocked",
+    "blocked by privacy",
+    "human gate blocked",
+    "user requested compact",
+    "user-requested compact",
+    "compact inline-only",
+    "explicitly out of scope",
+    "budget-blocked",
+    "budget blocked",
 }
 
 
@@ -200,6 +248,34 @@ def workflow_label(run_state: Any) -> str:
     if isinstance(run_state, dict):
         return str(run_state.get("final_label", ""))
     return ""
+
+
+def label_mention_is_negated(final_norm: str, start: int) -> bool:
+    prefix = final_norm[max(0, start - 100) : start]
+    return any(prefix.endswith(marker) for marker in NEGATED_LABEL_PREFIXES)
+
+
+def has_affirmative_label_mention(final_norm: str, label_norm: str) -> bool:
+    start = final_norm.find(label_norm)
+    while start != -1:
+        if not label_mention_is_negated(final_norm, start):
+            return True
+        start = final_norm.find(label_norm, start + len(label_norm))
+    return False
+
+
+def declared_workflow_labels(artifacts: dict[str, Any]) -> set[str]:
+    labels: set[str] = set()
+    run_state_label = workflow_label(artifacts.get("run_state")).strip()
+    if run_state_label:
+        labels.add(run_state_label)
+
+    final_text = artifacts.get("final_text") or ""
+    final_norm = normalized_text(final_text)
+    for label in WORKFLOW_LABELS:
+        if has_affirmative_label_mention(final_norm, normalized_text(label)):
+            labels.add(label)
+    return labels
 
 
 def run_mode(run_state: Any) -> str:
@@ -388,6 +464,102 @@ def complete_spawned_review_roles(run_state: Any) -> list[str]:
         if lane.get("status") == "complete" and str(lane.get("role", "")).strip():
             roles.append(str(lane["role"]))
     return roles
+
+
+def is_omics_run(artifacts: dict[str, Any]) -> bool:
+    run_state = artifacts.get("run_state")
+    preflight = artifacts.get("preflight")
+
+    aliases: set[str] = set()
+    modes: set[str] = set()
+    if isinstance(run_state, dict):
+        aliases.add(normalized_text(run_state.get("alias")))
+        modes.add(normalized_text(run_state.get("mode")))
+    if isinstance(preflight, dict):
+        aliases.add(normalized_text(preflight.get("requested_alias")))
+        modes.add(normalized_text(preflight.get("selected_mode")))
+
+    return bool(aliases & OMICS_ALIASES) and "run" in modes
+
+
+def selected_review_roles(preflight: Any) -> list[str]:
+    if not isinstance(preflight, dict):
+        return []
+    plan = preflight.get("spawned_review_plan")
+    if not isinstance(plan, dict):
+        return []
+    roles = plan.get("selected_roles", [])
+    if not isinstance(roles, list):
+        return []
+    return [str(role).strip() for role in roles if str(role).strip()]
+
+
+def spawned_review_budget(preflight: Any) -> int:
+    if not isinstance(preflight, dict):
+        return 0
+    plan = preflight.get("spawned_review_plan")
+    if not isinstance(plan, dict):
+        return 0
+    try:
+        return int(plan.get("budget", 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def spawned_review_allowed(preflight: Any) -> bool:
+    if not isinstance(preflight, dict):
+        return False
+    plan = preflight.get("spawned_review_plan")
+    return isinstance(plan, dict) and plan.get("allowed") is True
+
+
+def omics_review_skip_text(artifacts: dict[str, Any]) -> str:
+    parts: list[str] = []
+    preflight = artifacts.get("preflight")
+    run_state = artifacts.get("run_state")
+    post_write = artifacts.get("post_write_validation")
+
+    if isinstance(preflight, dict):
+        plan = preflight.get("spawned_review_plan")
+        if isinstance(plan, dict):
+            parts.append(str(plan.get("rationale", "")))
+        for skipped in preflight.get("skipped_role_outputs_with_reason", []):
+            if isinstance(skipped, dict):
+                parts.append(str(skipped.get("role", "")))
+                parts.append(str(skipped.get("reason", "")))
+        parts.append(str(preflight.get("all_role_spawn_avoidance_reason", "")))
+        parts.append(str(preflight.get("post_team_audit_plan", "")))
+
+    if isinstance(run_state, dict):
+        parts.extend(str(reason) for reason in run_state.get("downgrade_reasons", []))
+        for lane in run_state.get("spawned_review_lanes", []):
+            if isinstance(lane, dict):
+                parts.append(str(lane.get("role", "")))
+                parts.append(str(lane.get("status", "")))
+                parts.append(str(lane.get("rationale", "")))
+
+    if isinstance(post_write, dict):
+        parts.append(str(post_write.get("independent_review_status", "")))
+        for failure in post_write.get("failure_mode_checklist", []):
+            if isinstance(failure, dict):
+                parts.append(str(failure.get("failure_mode", "")))
+                parts.append(str(failure.get("status", "")))
+                parts.append(str(failure.get("reason", "")))
+
+    return normalized_text(" ".join(parts))
+
+
+def has_omics_review_skip_exception(artifacts: dict[str, Any]) -> bool:
+    text = omics_review_skip_text(artifacts)
+    return any(marker in text for marker in OMICS_REVIEW_SKIP_EXCEPTION_MARKERS)
+
+
+def complete_core_omics_reviewer_instances(run_state: Any) -> list[dict[str, Any]]:
+    return [
+        instance
+        for instance in complete_independent_instances(run_state)
+        if str(instance.get("agent_id", "")) in OMICS_CORE_REVIEWERS
+    ]
 
 
 def team_spawn_lanes(run_state: Any) -> list[dict[str, Any]]:
@@ -623,7 +795,7 @@ def validate_full_protocol(artifacts: dict[str, Any], findings: list[Finding]) -
     run_state = artifacts.get("run_state")
     preflight = artifacts.get("preflight")
     post_write = artifacts.get("post_write_validation")
-    if workflow_label(run_state) != FULL_LABEL:
+    if FULL_LABEL not in declared_workflow_labels(artifacts):
         return
 
     if run_state is None:
@@ -681,6 +853,28 @@ def validate_full_protocol(artifacts: dict[str, Any], findings: list[Finding]) -
                 "Full protocol requires at least one complete spawned_agent_instances record with an independent execution surface",
             )
         )
+
+
+def validate_compact_standard_artifacts(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    if COMPACT_LABEL not in declared_workflow_labels(artifacts):
+        return
+
+    required = {
+        "preflight": "Compact standard workflow requires preflight.json or --preflight",
+        "source_corpus": "Compact standard workflow requires source_corpus.json or --source-corpus",
+        "claim_ledger": "Compact standard workflow requires claim_ledger.json or --claim-ledger",
+        "post_write_validation": "Compact standard workflow requires post_write_validation.json or --post-write-validation",
+    }
+    for artifact_key, message in required.items():
+        if artifacts.get(artifact_key) is None:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "COMPACT_WORKFLOW_REQUIRES_ARTIFACT",
+                    message,
+                    BUNDLE_FILES[artifact_key],
+                )
+            )
 
 
 def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
@@ -745,6 +939,74 @@ def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[F
                     f"spawned_review_lanes marks {role} complete but no matching complete spawned_agent_instances entry exists",
                 )
             )
+
+
+def validate_omics_reviewer_spawn_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    if not is_omics_run(artifacts):
+        return
+
+    run_state = artifacts.get("run_state")
+    preflight = artifacts.get("preflight")
+    if not isinstance(preflight, dict):
+        return
+    if isinstance(run_state, dict) and execution_strategy(run_state) == "blocked":
+        return
+
+    roles = selected_review_roles(preflight)
+    core_roles = sorted(set(roles) & OMICS_CORE_REVIEWERS)
+    has_review_budget = spawned_review_allowed(preflight) and spawned_review_budget(preflight) >= 1
+
+    if not has_review_budget or not roles:
+        if has_omics_review_skip_exception(artifacts):
+            findings.append(
+                Finding(
+                    "WARN",
+                    "OMICS_RUN_REVIEWER_SPAWN_SKIPPED_WITH_DOWNGRADE",
+                    "omics run skipped spawned core reviewer with explicit runtime/privacy/user-compact downgrade rationale",
+                    "preflight.json",
+                )
+            )
+            return
+        findings.append(
+            Finding(
+                "ERROR",
+                "OMICS_RUN_REVIEWER_SPAWN_REQUIRED",
+                "omics run requires spawned_review_plan.allowed=true, budget>=1, and a selected core reviewer unless an explicit runtime/privacy/user-compact downgrade reason is recorded",
+                "preflight.json",
+            )
+        )
+        return
+
+    if not core_roles:
+        findings.append(
+            Finding(
+                "ERROR",
+                "OMICS_RUN_CORE_REVIEWER_REQUIRED",
+                "omics run spawned_review_plan must include at least one core reviewer: omics-code-reviewer, omics-provenance-validator, or biostats-repro-auditor",
+                "preflight.json",
+            )
+        )
+        return
+
+    if isinstance(run_state, dict) and not complete_core_omics_reviewer_instances(run_state):
+        if has_omics_review_skip_exception(artifacts):
+            findings.append(
+                Finding(
+                    "WARN",
+                    "OMICS_RUN_CORE_REVIEWER_NOT_COMPLETED_WITH_DOWNGRADE",
+                    "omics run planned a core reviewer but no complete core spawned_agent_instances record was found; downgrade rationale is recorded",
+                    "run_state.json",
+                )
+            )
+            return
+        findings.append(
+            Finding(
+                "ERROR",
+                "OMICS_RUN_REVIEWER_PLAN_NOT_EXECUTED",
+                "omics run planned a core spawned reviewer but lacks a complete core spawned_agent_instances record",
+                "run_state.json",
+            )
+        )
 
 
 def validate_s3_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
@@ -849,8 +1111,10 @@ def validate_post_write_release(artifacts: dict[str, Any], findings: list[Findin
 
 
 def validate_policies(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    validate_compact_standard_artifacts(artifacts, findings)
     validate_full_protocol(artifacts, findings)
     validate_spawned_instance_policy(artifacts, findings)
+    validate_omics_reviewer_spawn_policy(artifacts, findings)
     validate_team_dag_policy(artifacts, findings)
     validate_s3_policy(artifacts, findings)
     validate_source_policy(artifacts, findings)

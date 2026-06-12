@@ -7,6 +7,32 @@ deterministic artifact validators.
 
 Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
 
+## v0.4.3 Updates
+
+- Makes omics `run` reviewer spawning stricter after S1-S3 locks: select at
+  least one core reviewer when spawned or tool-backed reviewer support exists.
+- Defines the core omics reviewer floor as `omics-code-reviewer`,
+  `omics-provenance-validator`, or `biostats-repro-auditor`.
+- Extends `scripts/bmat_validate.py` to flag omics runs with zero reviewer
+  budget unless an explicit runtime, privacy, budget, or user-compact downgrade
+  reason is recorded.
+- Adds regression tests for omitted reviewer spawning, explicit downgrade
+  exceptions, non-core reviewer selection, and successful core reviewer
+  instances.
+
+## v0.4.2 Updates
+
+- Adds an explicit completion-read gate before source expansion, external tool
+  use, file writes, code execution, or final wording.
+- Adds workflow-label ceilings so compact standard and full-protocol labels are
+  available only when their required artifacts actually exist.
+- Extends `scripts/bmat_validate.py` to audit declared workflow labels in
+  `final.md`, catching compact/full label claims that lack preflight, source
+  corpus, claim ledger, post-write validation, or full-protocol run state.
+- Clarifies one-off loop handling: missing loop state is `not-applicable` unless
+  the request is recurring, scheduled, monitored, inbox-style, or triage-loop
+  work.
+
 ## v0.4.1 Updates
 
 - Adds `workflow-run.team_output_artifacts` for actual command-level spawned
@@ -41,7 +67,7 @@ Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.4.1 Workflow Structure
+    accTitle: BMAT v0.4.3 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]

@@ -34,6 +34,15 @@ def run_validator_path_with_env(
     )
 
 
+def run_validator_args(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(VALIDATOR), *args],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
 def combined_output(result: subprocess.CompletedProcess[str]) -> str:
     return result.stdout + result.stderr
 
@@ -84,6 +93,67 @@ def add_valid_team_dag(run_state: dict[str, object]) -> None:
     ]
 
 
+def make_omics_run_bundle(
+    tmp_path: Path,
+    *,
+    spawned_review_plan: dict[str, object],
+    downgrade_reasons: list[str] | None = None,
+    skipped_role_outputs: list[dict[str, str]] | None = None,
+    spawned_review_lanes: list[dict[str, object]] | None = None,
+    spawned_agent_instances: list[dict[str, object]] | None = None,
+    independent_review_status: str = "same-model separate-pass validation",
+) -> Path:
+    bundle = tmp_path / "omics_bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+
+    preflight_path = bundle / "preflight.json"
+    preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
+    preflight["requested_alias"] = "omics-analysis-team"
+    preflight["selected_mode"] = "run"
+    preflight["deliverable_type"] = "synthetic omics run fixture"
+    preflight["required_role_outputs"] = [
+        "omics-code-reviewer",
+        "omics-provenance-validator",
+        "post-write-final-validator",
+    ]
+    preflight["skipped_role_outputs_with_reason"] = skipped_role_outputs or []
+    preflight["spawned_review_plan"] = spawned_review_plan
+    preflight["workflow_run_id"] = "omics-run-fixture"
+    preflight_path.write_text(json.dumps(preflight, indent=2), encoding="utf-8")
+
+    claim_ledger_path = bundle / "claim_ledger.json"
+    claim_ledger = json.loads(claim_ledger_path.read_text(encoding="utf-8"))
+    for claim in claim_ledger.get("claims", []):
+        if isinstance(claim, dict):
+            claim["claim_strength"] = "exploratory"
+    claim_ledger_path.write_text(json.dumps(claim_ledger, indent=2), encoding="utf-8")
+
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["run_id"] = "omics-run-fixture"
+    run_state["alias"] = "omics-analysis-team"
+    run_state["mode"] = "run"
+    run_state["execution_strategy"] = "inline_first_selective_review"
+    run_state["spawned_review_lanes"] = spawned_review_lanes or []
+    run_state["spawned_agent_instances"] = spawned_agent_instances or []
+    run_state["final_label"] = "Compact standard workflow"
+    run_state["downgrade_reasons"] = downgrade_reasons or []
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    post_write_path = bundle / "post_write_validation.json"
+    post_write = json.loads(post_write_path.read_text(encoding="utf-8"))
+    post_write["independent_review_status"] = independent_review_status
+    post_write["release_ready_claim_strength"] = "exploratory association"
+    post_write_path.write_text(json.dumps(post_write, indent=2), encoding="utf-8")
+
+    (bundle / "final.md").write_text(
+        "Final workflow label: Compact standard workflow\n"
+        "Synthetic omics run fixture for reviewer-spawn policy.\n",
+        encoding="utf-8",
+    )
+    return bundle
+
+
 def test_valid_bundle_passes() -> None:
     result = run_validator("valid_full_protocol_bundle")
     assert result.returncode == 0, combined_output(result)
@@ -112,6 +182,50 @@ def test_final_wording_drift_fails() -> None:
     result = run_validator("invalid_final_wording_drift")
     assert result.returncode == 1
     assert "FINAL_WORDING_DRIFT" in combined_output(result)
+
+
+def test_compact_standard_label_requires_formal_artifacts(tmp_path: Path) -> None:
+    final_text = tmp_path / "final.md"
+    final_text.write_text("Final workflow label: Compact standard workflow\n", encoding="utf-8")
+
+    result = run_validator_args("--final-text", str(final_text))
+
+    output = combined_output(result)
+    assert result.returncode == 1
+    assert "COMPACT_WORKFLOW_REQUIRES_ARTIFACT" in output
+    assert "preflight.json" in output
+    assert "source_corpus.json" in output
+    assert "claim_ledger.json" in output
+    assert "post_write_validation.json" in output
+
+
+def test_full_protocol_label_in_final_text_requires_run_state(tmp_path: Path) -> None:
+    final_text = tmp_path / "final.md"
+    final_text.write_text("Final workflow label: Full protocol followed\n", encoding="utf-8")
+
+    result = run_validator_args("--final-text", str(final_text))
+
+    output = combined_output(result)
+    assert result.returncode == 1
+    assert "FULL_PROTOCOL_REQUIRES_RUN_STATE" in output
+    assert "FULL_PROTOCOL_REQUIRES_PREFLIGHT" in output
+    assert "FULL_PROTOCOL_REQUIRES_POST_WRITE" in output
+
+
+def test_negated_full_protocol_label_does_not_trigger_full_policy(tmp_path: Path) -> None:
+    final_text = tmp_path / "final.md"
+    final_text.write_text(
+        "Final workflow label: Compact standard workflow\n"
+        "This is not labeled Full protocol followed because independent review was not run.\n",
+        encoding="utf-8",
+    )
+
+    result = run_validator_args("--final-text", str(final_text))
+
+    output = combined_output(result)
+    assert result.returncode == 1
+    assert "COMPACT_WORKFLOW_REQUIRES_ARTIFACT" in output
+    assert "FULL_PROTOCOL_REQUIRES_" not in output
 
 
 def test_complete_spawned_review_lane_requires_actual_instance(tmp_path: Path) -> None:
@@ -201,6 +315,106 @@ def test_malformed_spawned_instances_shape_returns_policy_error(tmp_path: Path) 
     output = combined_output(result)
     assert "INVALID_SPAWNED_AGENT_INSTANCES" in output
     assert "Traceback" not in output
+
+
+def test_omics_run_reviewer_budget_zero_without_exception_fails(tmp_path: Path) -> None:
+    bundle = make_omics_run_bundle(
+        tmp_path,
+        spawned_review_plan={
+            "allowed": False,
+            "budget": 0,
+            "selected_roles": [],
+            "rationale": "Inline deterministic checks were considered sufficient.",
+        },
+        downgrade_reasons=["No spawned independent reviewer."],
+    )
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "OMICS_RUN_REVIEWER_SPAWN_REQUIRED" in combined_output(result)
+
+
+def test_omics_run_reviewer_budget_zero_with_runtime_exception_warns(tmp_path: Path) -> None:
+    bundle = make_omics_run_bundle(
+        tmp_path,
+        spawned_review_plan={
+            "allowed": False,
+            "budget": 0,
+            "selected_roles": [],
+            "rationale": "Spawned-subagent support unavailable in this runtime.",
+        },
+        skipped_role_outputs=[
+            {
+                "role": "omics-code-reviewer",
+                "reason": "spawned-subagent support unavailable; compact inline-only downgrade recorded",
+            }
+        ],
+        downgrade_reasons=["spawned-subagent support unavailable; downgraded to Compact standard workflow"],
+    )
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 0, combined_output(result)
+    assert "OMICS_RUN_REVIEWER_SPAWN_SKIPPED_WITH_DOWNGRADE" in combined_output(result)
+
+
+def test_omics_run_requires_core_reviewer_role(tmp_path: Path) -> None:
+    bundle = make_omics_run_bundle(
+        tmp_path,
+        spawned_review_plan={
+            "allowed": True,
+            "budget": 1,
+            "selected_roles": ["citation-verifier"],
+            "rationale": "Incorrectly selected a non-core reviewer for omics run.",
+        },
+    )
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "OMICS_RUN_CORE_REVIEWER_REQUIRED" in combined_output(result)
+
+
+def test_omics_run_core_reviewer_instance_passes(tmp_path: Path) -> None:
+    bundle = make_omics_run_bundle(
+        tmp_path,
+        spawned_review_plan={
+            "allowed": True,
+            "budget": 1,
+            "selected_roles": ["omics-code-reviewer"],
+            "rationale": "Core reviewer spawned after S1-S3 locks.",
+        },
+        spawned_review_lanes=[
+            {
+                "role": "omics-code-reviewer",
+                "status": "complete",
+                "rationale": "Reviewed code, leakage, and reproducibility.",
+                "ledger_handoff": "CL-001 code/provenance checks accepted",
+            }
+        ],
+        spawned_agent_instances=[
+            {
+                "instance_id": "OMICS-CODE-REVIEW-001",
+                "agent_id": "omics-code-reviewer",
+                "execution_surface": "spawned_subagent",
+                "spawn_tool": "multi_agent_v1.spawn_agent",
+                "thread_or_task_id": "synthetic-omics-code-review",
+                "parent_run_id": "omics-run-fixture",
+                "status": "complete",
+                "input_scope": "synthetic omics scripts and result tables",
+                "output_artifact": "review/omics-code-reviewer.md",
+                "checks_run": ["script reproducibility", "raw-data safety", "leakage review"],
+                "ledger_handoff": "CL-001 code/provenance checks accepted",
+            }
+        ],
+        independent_review_status="spawned_subagent omics-code-reviewer complete",
+    )
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 0, combined_output(result)
+    assert "VALIDATION_PASSED" in combined_output(result)
 
 
 def test_valid_team_level_selective_dag_passes(tmp_path: Path) -> None:

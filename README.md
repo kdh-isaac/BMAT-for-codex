@@ -2,7 +2,7 @@
 
 Codex Desktop marketplace package for the Biomedical Agent Teams plugin.
 
-Current plugin version: `0.4.1`.
+Current plugin version: `0.4.3`.
 
 ## Install
 
@@ -25,7 +25,7 @@ validator-backed release gates.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.4.1 Workflow Structure
+    accTitle: BMAT v0.4.3 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]
@@ -93,7 +93,7 @@ and `bmat_validate.py` to pass against the complete artifact bundle.
 
 ## Validation
 
-The 0.4.1 package is validated with:
+The 0.4.3 package is validated with:
 
 ```powershell
 uvx pytest plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q

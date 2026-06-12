@@ -18,12 +18,24 @@ preflight and a compact preflight contract with:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
-`checkpoint_plan`. For v0.4.1, also record `execution_strategy`,
+`checkpoint_plan`. For v0.4.3, also record `execution_strategy`,
 `spawned_review_plan`, `team_spawn_plan`,
 `all_role_spawn_avoidance_reason`, `nested_spawn_policy`, and
 `post_team_audit_plan`. If runtime capability preflight or this contract is absent,
 label the result as a compact or partial workflow rather than a full omics
 analysis audit.
+
+For `run` mode, do not silently set `spawned_review_plan.allowed=false` or
+`budget=0` after S1-S3 locks. Default to `inline_first_selective_review` with a
+minimum spawned-review budget of 1 when the runtime supports spawned subagents
+or tool-backed reviewer instances. Select at least one core reviewer from
+`omics-code-reviewer`, `omics-provenance-validator`, and
+`biostats-repro-auditor`; use two or more for donor-aware single-cell
+contrasts, survival analyses, multi-omics integration, large generated scripts,
+or manuscript-grade interpretation. If reviewer spawning is unavailable,
+privacy-blocked, explicitly out of scope, or the user requests a compact
+inline-only run, record the skipped reviewer role, concrete reason, and
+downgrade label in preflight, workflow-run state, and final reporting.
 
 ## Spawned Team Bundle Policy
 
@@ -78,7 +90,9 @@ claim-ledger handoff.
 9. Maintain S1-S5 stage evaluation using `templates/stage-evaluation-template.md` or `contracts/stage-evaluation.schema.json`.
 10. Maintain `central-claim-ledger-evidence-graph` for results, source artifacts, uncertainty, contradictions, and blocked claims.
 11. Maintain workflow-run state, an omics run manifest using `contracts/omics-run-manifest.schema.json` or the same field order, plus biomedical passport status for `run` and `audit` modes.
-12. Run review gate before final reporting:
+12. Run review gate before final reporting. In `run` mode, at least one of the
+   first three core reviewer roles should be a spawned reviewer or tool-backed
+   reviewer instance when runtime support is available:
    - `omics-code-reviewer` for software/reproducibility/raw-data-safety.
    - `omics-provenance-validator` for design/statistics/provenance/claim proportionality.
    - `causal-inference-confounder-analyst` for association-versus-causality boundary.
@@ -110,7 +124,7 @@ validated S4/S5 claims unless S3 Validate passes or passes with explicit caveats
 | Mode | Agent selection and checks |
 |---|---|
 | `plan` | Do not run full analysis. Lock runtime capabilities, accession/cohort/assay/contrast/endpoints, check public-access feasibility, define metadata/QC/statistics, and list S1-S3 validation and smoke tests. |
-| `run` | Execute only after S1 Plan is specific. Require S2 setup and S3 validation/smoke test, write derived outputs only, then run S4 inference and S5 reporting with provenance, biostats, risk-of-bias, claim, citation, independent-review status, and final validation gates. |
+| `run` | Execute only after S1 Plan is specific. Require S2 setup and S3 validation/smoke test, write derived outputs only, then run S4 inference and S5 reporting with provenance, biostats, risk-of-bias, claim, citation, independent-review status, and final validation gates. Default to at least one spawned or tool-backed core reviewer after S1-S3; if unavailable or deliberately skipped, record a downgrade reason rather than treating inline review as equivalent. |
 | `audit` | Do not rerun full analysis unless explicitly requested. Inspect code/results/provenance/report, score S1-S5, verify sample IDs/statistics/claims, and return pass / pass-with-revisions / block. |
 
 ## Track Checklists
@@ -152,4 +166,6 @@ audit bundle:
 17. generated files, manifest, audit bundle, and next step
 18. workflow-run state, biomedical passport status, and omics run manifest status
 19. spawned team output status and ledger handoff if this recipe was spawned
-20. final workflow label and skipped gates with reasons
+20. spawned reviewer status, including actual `spawned_agent_instances` or
+    explicit skipped-core-reviewer downgrade reason
+21. final workflow label and skipped gates with reasons

@@ -1,6 +1,6 @@
 name = "bmat-safety-ethics-privacy-dual-use-auditor"
 agent_id = "safety-ethics-privacy-dual-use-auditor"
-version = "0.4.1"
+version = "0.4.3"
 description = "Template for a Codex reviewer that checks safety, ethics, privacy, dual-use, and external-tool boundaries."
 role_prompt = "../agents/safety-ethics-privacy-dual-use-auditor.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

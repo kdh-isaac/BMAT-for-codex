@@ -1,7 +1,7 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "0.4.1",
-  "adapter_version": "0.4.1",
+  "version": "0.4.3",
+  "adapter_version": "0.4.3",
   "upstream_suite": "biomedical-agent-teams-claude",
   "codex_adapter": true,
   "agent_count": 35,

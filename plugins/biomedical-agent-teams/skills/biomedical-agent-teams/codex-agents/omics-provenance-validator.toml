@@ -1,6 +1,6 @@
 name = "bmat-omics-provenance-validator"
 agent_id = "omics-provenance-validator"
-version = "0.4.1"
+version = "0.4.3"
 description = "Template for a Codex reviewer that validates omics metadata, design, provenance, and claim proportionality."
 role_prompt = "../agents/omics-provenance-validator.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

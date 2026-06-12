@@ -41,9 +41,12 @@ external database/API check.
 9. Apply `references/independent-review-policy.md` before using independent
    validation or independent audit wording.
 10. Run post-write validation against `contracts/post-write-validation.schema.json`.
-11. Run `scripts/bmat_validate.py` for durable artifact bundles before claiming
+11. For omics `run`, record at least one core spawned or tool-backed reviewer
+   after S1-S3 locks, or record the explicit runtime/privacy/user-compact
+   downgrade reason for skipping it.
+12. Run `scripts/bmat_validate.py` for durable artifact bundles before claiming
    `Full protocol followed`.
-12. Downgrade the workflow label when any required gate is skipped, only
+13. Downgrade the workflow label when any required gate is skipped, only
    considered informally, or not validator-checked.
 
 ## Checkpoint Types
