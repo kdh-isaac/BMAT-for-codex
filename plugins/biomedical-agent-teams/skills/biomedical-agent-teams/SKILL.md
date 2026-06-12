@@ -9,7 +9,7 @@ description: >
   evidence-audit-team, experiment-design-team, translational-scout-team, and
   omics-team.
 metadata:
-  version: "0.3.6"
+  version: "0.4.1"
   upstream_suite: "biomedical-agent-teams-claude"
   codex_adapter: true
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
@@ -19,15 +19,21 @@ allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 
 This is a Codex adapter for the biomedical agent-team suite. In Codex, treat the
 files under `agents/` as scoped role prompts and the files under `commands/` as
-workflow recipes. This v0.3.6 router uses runtime capability preflight,
+workflow recipes. This v0.4.1 router uses runtime capability preflight,
 protocol/context lock, source-corpus lock, workflow-run state, central claim
 ledger, contract-shaped role outputs, biomedical passport state, stage
 evaluation, audit gates, writer restriction, independent-review policy,
 inline-first hybrid execution, selective spawned review, dependency-aware
-team-level spawned workflows, post-write validation, and an optional
-`scripts/bmat_validate.py` policy validator before final output. BMAT is
-contract-described by default; gates are validator-enforced only when the
-validator is run against a complete BMAT artifact bundle.
+team-level spawned workflows, team output artifact tracking, post-write
+validation, and an optional `scripts/bmat_validate.py` policy validator before
+final output. v0.4.1 adds deterministic validation for team-level selective DAG
+outputs, phase dependencies, nested-spawn policy, and ledger handoff. v0.4.0 also
+adds loop-engineering resources for recurring literature watches, public-omics
+dataset watches, claim-audit inboxes, hypothesis triage, loop-state validation,
+connector binding, Codex reviewer-agent templates, agent registry metadata, and
+workflow-run spawned instance tracking. BMAT is contract-described by default;
+gates are validator-enforced only when the validator is run against a complete
+BMAT artifact bundle.
 
 ## First Rule
 
@@ -46,6 +52,13 @@ writing. For high-confidence final release or any source-backed audit verdict,
 also use `references/biomedical-failure-modes.md` and
 `references/independent-review-policy.md`. When local artifacts are available,
 run `scripts/bmat_validate.py` before claiming full protocol compliance.
+
+For recurring, scheduled, monitor, watch, inbox, or triage-loop work, read the
+matching file under `loops/`, use `contracts/loop-state.schema.json`, consult
+`references/connector-binding-matrix.md` before any external connector use, and
+run `scripts/bmat_loop_check.py` before marking the loop stopped, complete, or
+release-ready. If loop-state or loop-check is skipped, label the result as a
+partial loop workflow and do not imply automation safety.
 
 Default to Korean responses for Donghyun Kim unless the task explicitly asks for
 English. Assume expert-level immunology, CAR cell therapy, molecular biology,
@@ -133,6 +146,43 @@ or long-running work, also maintain workflow-run state using
 source lock, validation stage, or independent-review gate must be listed as a
 downgrade reason.
 
+For loop workflows, maintain loop state using
+`contracts/loop-state.schema.json`. The loop state must record public/private
+boundary, allowed connectors, human gate status, source-delta status, cycle
+budget, open items, reviewer objections, stop conditions, output artifacts, and
+privacy boundary. Do not mark a recurring loop complete if source deltas remain
+pending, reviewer objections are open, or private context would be sent to
+external tools without an approved human gate.
+
+## Loop Engineering Additions
+
+Use the loop layer only when the user asks for repeated, scheduled, resumable,
+or inbox-style work, or when a workflow naturally has recurring source deltas.
+The loop layer sits above ordinary BMAT command recipes; it does not bypass the
+source corpus, claim ledger, or reviewer gates.
+
+Available loop recipes:
+
+- `loops/weekly-literature-watch.md`: recurring public PMID/DOI/preprint source
+  deltas with citation and claim verification.
+- `loops/public-omics-dataset-watch.md`: recurring public dataset feasibility
+  surveillance without full analysis claims.
+- `loops/claim-audit-inbox.md`: recurring claim triage and corrected wording
+  from ledger-approved material.
+- `loops/hypothesis-triage.md`: recurring candidate hypothesis ranking, EIG
+  deltas, contradiction handling, and kill-test handoff.
+
+Loop release requirements:
+
+1. `loop_state.json` conforms to `contracts/loop-state.schema.json`.
+2. External connectors match `references/connector-binding-matrix.md` and the
+   preflight privacy boundary.
+3. Source deltas are `processed`, `none`, or explicitly `blocked`.
+4. Reviewer objections are resolved, accepted into the ledger, or rejected with
+   rationale.
+5. `scripts/bmat_loop_check.py` returns no errors before outputs are marked
+   reviewed, released, stopped, or complete.
+
 ## Agent Use Terminology
 
 In Codex, distinguish these execution surfaces:
@@ -141,9 +191,17 @@ In Codex, distinguish these execution surfaces:
   current assistant.
 - `formal_role_output`: the role's return contract was explicitly produced in
   the answer or in a local artifact.
+- `predeclared_agent_template`: a `codex-agents/*.toml` template exists for a
+  spawnable reviewer role in `agent-registry.json`.
 - `tool_call`: an MCP, shell, web, browser, BioMCP, or file tool was invoked.
 - `spawned_subagent`: a separate subagent, thread, or tool-backed agent was
   actually created.
+- `spawned_agent_instance`: a concrete execution record in workflow-run state
+  with `agent_id`, execution surface, task/thread/tool identifier when
+  available, output artifact, checks run, and ledger handoff.
+- `team_output_artifact`: a concrete command-level spawned team bundle output
+  in workflow-run state with `team`, `phase`, artifact path, checks run,
+  dependency links, and ledger handoff.
 
 Do not say an agent was "called" or "dispatched" unless a spawned subagent or
 tool-backed agent call occurred. For inline workflows, say "role prompt read and
@@ -153,6 +211,14 @@ When a role produces a formal output, preserve at least: role, task scope,
 inputs checked, methods/tools used, key findings, limitations, handoff, and
 verdict. Use `contracts/role-output.schema.json` as the validator-friendly
 shape when a local artifact is requested.
+
+Use `agent-registry.json` as the source of truth for which role prompts are
+spawnable and which TOML template should be used. Do not treat a TOML template
+as evidence that an agent actually ran. For `deep`, `audit`, omics `run`, or
+Full protocol claims, record actual spawned or tool-backed reviewer executions
+under `spawned_agent_instances` in `contracts/workflow-run.schema.json`.
+For `team_level_selective_dag`, record actual command-level team bundle outputs
+under `team_output_artifacts`; `team_spawn_lanes` alone records only DAG intent.
 
 ## Hybrid Execution Strategy
 
@@ -209,6 +275,14 @@ confidence, files changed or `none`, checks run or skipped, and recommended
 handoff. The main lead must map accepted findings back to the central claim
 ledger before final writing.
 
+For reviewer subagents, consult `agent-registry.json` before spawning. The
+selected `agent_id` must have `spawnable: true`, and the completed run must be
+recorded in `spawned_agent_instances`; `spawned_review_lanes` alone records only
+intent and is not proof of execution.
+For spawned command-level teams, the completed team report must be recorded in
+`team_output_artifacts` with dependency-resolved prior outputs before the
+`team_spawn_outputs` stage can pass.
+
 ## Default Workflow Spine
 
 Apply this spine unless a command recipe narrows it further:
@@ -223,47 +297,55 @@ Apply this spine unless a command recipe narrows it further:
 4. Source corpus lock: for source-backed outputs, lock PMID/DOI/accession/NCT,
    database record, local artifact, software version, retrieval date, inclusion
    status, and claim use before final wording.
-5. `life-science-lead-scientist` plus `scenario-playbook-router`: task graph,
+5. Connector binding lock: before external literature, trial, omics, chemical,
+   protein, pathway, or repository lookup, consult
+   `references/connector-binding-matrix.md` and record unavailable or
+   unauthorized connectors as downgrade reasons.
+6. `life-science-lead-scientist` plus `scenario-playbook-router`: task graph,
    playbook, selected specialist lanes, and output path/worktree assumptions.
-6. Execution strategy lock: choose `inline_only`,
+7. Execution strategy lock: choose `inline_only`,
    `inline_first_selective_review`, `team_level_selective_dag`,
    `user_requested_full_spawn`, or `blocked`; record spawned reviewer/team
    budgets, nested-spawn policy, and all-role spawn avoidance reason.
-7. Team-level selective DAG, if chosen: run dependency-aware command-level team
+8. Team-level selective DAG, if chosen: run dependency-aware command-level team
    bundles after the lead lock and before final ledger synthesis. Phase 1
    teams may run independently; Phase 2 teams must wait for narrowed candidate
    claims or designs. Nested spawning remains disabled unless explicitly
-   authorized.
-8. Specialist lanes: use only the lanes needed for the request.
-9. `central-claim-ledger-evidence-graph`: maintain atomic claims, evidence
+   authorized. Completed team lanes require matching `team_output_artifacts`
+   before the `team_spawn_outputs` stage passes.
+9. Specialist lanes: use only the lanes needed for the request.
+10. `central-claim-ledger-evidence-graph`: maintain atomic claims, evidence
    links, uncertainty, contradictions, and audit status throughout the workflow.
-10. Workflow-run state and biomedical passport: for
+11. Workflow-run state and biomedical passport: for
    deep/audit/omics-run/translational/manuscript/generated-file or long-running
    work, maintain a compact state record using
    `templates/workflow-run-template.md` and
    `templates/biomedical-passport-template.md` or the same field order.
-11. Stage evaluation: for omics run/audit, generated-file, or long-running work,
+12. Loop state: for recurring, scheduled, monitor, watch, inbox, or triage-loop
+   work, maintain loop state and run `scripts/bmat_loop_check.py` before
+   stopped/complete/release-ready labels.
+13. Stage evaluation: for omics run/audit, generated-file, or long-running work,
    evaluate S1 Plan, S2 Setup, S3 Validate, S4 Inference/Synthesis, and S5
    Submit/Report. If S3 Validate does not pass, S4/S5 claims must be blocked,
    downgraded, or labeled exploratory/not assessable.
-12. Audit gates: claim boundary, causal/confounder, biostats/reproducibility,
+14. Audit gates: claim boundary, causal/confounder, biostats/reproducibility,
    provenance, risk-of-bias/study quality, safety/ethics/privacy/dual-use,
    contradiction red-team, and uncertainty/evidence-to-decision.
-13. Selective spawned review, if chosen: spawn only reviewer lanes that improve
+15. Selective spawned review, if chosen: spawn only reviewer lanes that improve
    independence after ledger claims exist; collect formal outputs, block bare
    "done" reports, and merge accepted reviewer findings into the central claim
    ledger.
-14. Pre-synthesis claim and citation verification.
-15. `scientific-writer-citation-agent`: write only from verified claim-ledger
+16. Pre-synthesis claim and citation verification.
+17. `scientific-writer-citation-agent`: write only from verified claim-ledger
    material.
-16. Independent-review policy: do not call validation independent unless a
+18. Independent-review policy: do not call validation independent unless a
    separate spawned subagent, separate model, tool-backed validator, external
    verifier, or human reviewer was actually used. Same-model separate-pass
    validation must be labeled as such and may require workflow downgrade.
-17. `post-write-final-validator`: block unsupported claims, citation mismatch,
+19. `post-write-final-validator`: block unsupported claims, citation mismatch,
    missing uncertainty, provenance gaps, unsafe advice, and claim-strength
    inflation.
-18. Final output plus claim-strength verdict, workflow-run state, downgrade
+20. Final output plus claim-strength verdict, workflow-run state, downgrade
    reasons, and audit bundle summary.
 
 Use the full spine for `deep`, `audit`, translational, clinical, privacy-sensitive,
@@ -409,10 +491,10 @@ Use `safety-ethics-privacy-dual-use-auditor` selectively:
 
 - Optional for low-risk quick conceptual answers using public, non-sensitive
   knowledge and no browsing or file writes.
-- Required before external browsing, downloads, file writes, code execution,
-  private or unpublished data handling, wet-lab operational details, clinical or
-  patient-facing language, patent/IP strategy, controlled-access data, PHI/PII,
-  or dual-use-sensitive content.
+- Required before external browsing, connector calls, downloads, recurring loop
+  release, file writes, code execution, private or unpublished data handling,
+  wet-lab operational details, clinical or patient-facing language, patent/IP
+  strategy, controlled-access data, PHI/PII, or dual-use-sensitive content.
 - If any safety-auditor trigger is present but the task is low risk and
   public-only, produce a one-paragraph `safe_mode_note` instead of silently
   skipping the auditor. State that no private or unpublished data are used, no
@@ -630,11 +712,17 @@ reproduction scripts, scoring scripts, Dockerfiles, or result archives:
 - `contracts/runtime-capability-preflight.schema.json`: actual runtime capability lock.
 - `contracts/preflight-contract.schema.json`: machine-checkable preflight.
 - `contracts/role-output.schema.json`: common formal role output shape.
-- `contracts/workflow-run.schema.json`: stage DAG and downgrade state.
+- `contracts/workflow-run.schema.json`: stage DAG, team output artifacts, and downgrade state.
 - `contracts/source-corpus.schema.json`: source identity, retrieval, and inclusion lock.
 - `contracts/hypothesis-tournament.schema.json`: idea tournament state and ranking.
 - `contracts/stage-evaluation.schema.json`: S1-S5 stage validation record.
 - `contracts/biomedical-passport.schema.json`: resumable workflow state.
+- `contracts/loop-state.schema.json`: recurring loop state, privacy boundary,
+  source-delta status, reviewer objections, and stop-condition status.
+- `contracts/agent-registry.schema.json`: machine-checkable registry for
+  role-prompt spawnability, privacy boundary, and TOML-template binding.
+- `contracts/spawned-agent-output.schema.json`: common required output contract
+  for spawned reviewer or validator outputs.
 - `contracts/omics-run-manifest.schema.json`: omics run provenance shape.
 - `contracts/post-write-validation.schema.json`: final validator shape.
 - `templates/runtime-capability-preflight-template.md`: compact runtime capability table.
@@ -648,6 +736,10 @@ reproduction scripts, scoring scripts, Dockerfiles, or result archives:
 - `templates/team-spawn-plan-template.md`: selective spawned review and
   team-level dependency DAG plan.
 - `templates/rollback-resume-template.md`: durable artifact and resume convention.
+- `loops/weekly-literature-watch.md`: recurring public literature source-delta loop.
+- `loops/public-omics-dataset-watch.md`: recurring public omics dataset feasibility loop.
+- `loops/claim-audit-inbox.md`: recurring source-backed claim audit inbox loop.
+- `loops/hypothesis-triage.md`: recurring hypothesis ranking and kill-test triage loop.
 - `references/contract-gated-workflows.md`: when and how to use contracts.
 - `references/biomedical-failure-modes.md`: BMAT-specific block/warn taxonomy.
 - `references/independent-review-policy.md`: independent versus same-model validation rules.
@@ -659,3 +751,11 @@ reproduction scripts, scoring scripts, Dockerfiles, or result archives:
 - `references/data-safety-floor.md`: bundled non-negotiable data-safety floor
   (raw-data read-only, smoke test, statistical floor, privacy) applied even when
   the host workspace has no AGENTS.md/CLAUDE.md.
+- `references/connector-binding-matrix.md`: workflow and loop connector
+  permissions, downgrade labels, and reviewer lane bindings.
+- `agent-registry.json`: 35-role registry mapping prompt files to allowed
+  workflows, execution surface, privacy level, output schema, and TOML template.
+- `scripts/bmat_loop_check.py`: deterministic loop-state policy validator.
+- `codex-agents/*.toml`: optional Codex reviewer-agent templates for claim,
+  citation, contradiction, causal/confounder, safety/privacy, biostats,
+  provenance, risk-of-bias, post-write, omics code, and omics provenance review.

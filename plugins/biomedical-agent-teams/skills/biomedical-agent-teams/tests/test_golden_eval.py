@@ -52,6 +52,7 @@ def test_eval_reports_unknown_and_duplicate_output_task_ids(tmp_path: Path) -> N
     payload = json.loads(result.stdout)
     assert payload["unknown_output_task_ids"] == ["GT-999"]
     assert payload["duplicate_output_task_ids"] == ["GT-001"]
+    assert "GT-002" in payload["missing_output_task_ids"]
     assert payload["output_integrity_ok"] is False
 
 
@@ -73,6 +74,25 @@ def test_eval_strict_fails_on_unknown_or_duplicate_outputs(tmp_path: Path) -> No
     assert payload["output_integrity_ok"] is False
 
 
+def test_eval_strict_fails_on_missing_outputs(tmp_path: Path) -> None:
+    outputs = tmp_path / "outputs.jsonl"
+    write_jsonl(
+        outputs,
+        [
+            {"task_id": "GT-001", "detected_failure_modes": ["fabricated_identifier"], "blocked": True},
+            {"task_id": "GT-021", "detected_failure_modes": [], "blocked": False},
+            {"task_id": "GT-022", "detected_failure_modes": [], "blocked": False},
+        ],
+    )
+
+    result = run_eval(outputs, "--strict")
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert "GT-002" in payload["missing_output_task_ids"]
+    assert payload["output_integrity_ok"] is False
+
+
 def test_eval_false_positive_rate_has_negative_control_denominator(tmp_path: Path) -> None:
     outputs = tmp_path / "outputs.jsonl"
     write_jsonl(
@@ -88,4 +108,5 @@ def test_eval_false_positive_rate_has_negative_control_denominator(tmp_path: Pat
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["false_positive_block_rate"] == 0.5
-    assert payload["output_integrity_ok"] is True
+    assert payload["output_integrity_ok"] is False
+    assert "GT-001" in payload["missing_output_task_ids"]

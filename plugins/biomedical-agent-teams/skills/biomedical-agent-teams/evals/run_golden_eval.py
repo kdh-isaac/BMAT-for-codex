@@ -61,6 +61,7 @@ def score(tasks: list[dict[str, Any]], outputs: list[dict[str, Any]]) -> dict[st
     output_task_counts = Counter(output_task_ids)
     unknown_output_task_ids = sorted(task_id for task_id in output_task_counts if task_id not in known_task_ids)
     duplicate_output_task_ids = sorted(task_id for task_id, count in output_task_counts.items() if count > 1)
+    missing_output_task_ids = sorted(task_id for task_id in known_task_ids if task_id not in output_task_counts)
     by_task = {
         output_task_id(row): row
         for row in outputs
@@ -129,7 +130,8 @@ def score(tasks: list[dict[str, Any]], outputs: list[dict[str, Any]]) -> dict[st
         "matched_output_count": output_count,
         "unknown_output_task_ids": unknown_output_task_ids,
         "duplicate_output_task_ids": duplicate_output_task_ids,
-        "output_integrity_ok": not unknown_output_task_ids and not duplicate_output_task_ids,
+        "missing_output_task_ids": missing_output_task_ids,
+        "output_integrity_ok": not unknown_output_task_ids and not duplicate_output_task_ids and not missing_output_task_ids,
         "unsupported_claim_detection_rate": rate(counts["unsupported_num"], counts["unsupported_den"]),
         "citation_drift_detection_rate": rate(counts["citation_num"], counts["citation_den"]),
         "fabricated_identifier_detection_rate": rate(counts["fabricated_num"], counts["fabricated_den"]),

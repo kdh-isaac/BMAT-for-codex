@@ -10,7 +10,7 @@ User request: $ARGUMENTS
 
 Run a lead-controlled biomedical research council. Default to Korean. Treat the user as an expert in immunology, CAR cell therapy, and public-omics analysis.
 
-## v0.3.6 Spine
+## v0.4.1 Spine
 
 1. Run runtime capability preflight first: record active Codex support for web,
    shell/code execution, file read/write, network/database access, spawned
@@ -19,22 +19,25 @@ Run a lead-controlled biomedical research council. Default to Korean. Treat the 
 3. Run preliminary `entity-normalizer` before literature, omics, clinical, or IP expansion.
 4. Lock the source corpus for source-backed outputs using stable identifiers,
    retrieval dates/versions, inclusion status, and claim use.
-5. Use `life-science-lead-scientist` and `scenario-playbook-router` to build the task graph and select the smallest useful specialist lanes.
-6. Lock the execution strategy using `references/hybrid-execution-policy.md`: default inline-first, add selective spawned review or dependency-aware team-level spawned workflows only when they materially improve review quality.
-7. If `team_level_selective_dag` is selected, run dependency-aware command-level
+5. Lock external connector use with `references/connector-binding-matrix.md`
+   before literature, trial, omics, pathway, protein, chemical, or repository lookup.
+6. Use `life-science-lead-scientist` and `scenario-playbook-router` to build the task graph and select the smallest useful specialist lanes.
+7. Lock the execution strategy using `references/hybrid-execution-policy.md`: default inline-first, add selective spawned review or dependency-aware team-level spawned workflows only when they materially improve review quality.
+8. If `team_level_selective_dag` is selected, run dependency-aware command-level
    team bundles before final ledger synthesis; Phase 2 teams must wait for
    narrowed candidate claims or designs.
-8. Maintain `central-claim-ledger-evidence-graph` throughout. Specialist lanes and spawned teams must hand off atomic claims, sources/artifacts, uncertainty, and contradictions to the ledger.
-9. For `deep`, `audit`, translational, manuscript-support, generated-file, or long-running work, maintain workflow-run state and biomedical passport state using `templates/workflow-run-template.md` and `templates/biomedical-passport-template.md` or the same field order.
-10. For omics, generated-file, or long-running workflows, run S1-S5 stage evaluation and downgrade or block inference/reporting when S3 Validate does not pass.
-11. Run required audit gates before synthesis: claim boundary, causal/confounder, biostats/reproducibility, provenance, risk-of-bias/study quality, safety/ethics/privacy/dual-use, contradiction red-team, and uncertainty/evidence-to-decision.
-12. If `inline_first_selective_review` is selected, run spawned reviewer lanes
+9. Maintain `central-claim-ledger-evidence-graph` throughout. Specialist lanes and spawned teams must hand off atomic claims, sources/artifacts, uncertainty, and contradictions to the ledger.
+10. For `deep`, `audit`, translational, manuscript-support, generated-file, or long-running work, maintain workflow-run state and biomedical passport state using `templates/workflow-run-template.md` and `templates/biomedical-passport-template.md` or the same field order.
+11. For recurring, scheduled, monitor, watch, inbox, or triage-loop work, maintain loop state using `contracts/loop-state.schema.json` and run `scripts/bmat_loop_check.py` before release.
+12. For omics, generated-file, or long-running workflows, run S1-S5 stage evaluation and downgrade or block inference/reporting when S3 Validate does not pass.
+13. Run required audit gates before synthesis: claim boundary, causal/confounder, biostats/reproducibility, provenance, risk-of-bias/study quality, safety/ethics/privacy/dual-use, contradiction red-team, and uncertainty/evidence-to-decision.
+14. If `inline_first_selective_review` is selected, run spawned reviewer lanes
     after ledger claims exist and merge accepted reviewer findings back to the
     ledger.
-13. Run pre-synthesis `claim-level-evidence-verifier` and `citation-verifier`.
-14. `scientific-writer-citation-agent` may use only verified claim-ledger material.
-15. Apply `references/independent-review-policy.md` before using independent-review wording.
-16. Run the integrity gate and `post-write-final-validator` before final output for high-confidence source-backed deliverables.
+15. Run pre-synthesis `claim-level-evidence-verifier` and `citation-verifier`.
+16. `scientific-writer-citation-agent` may use only verified claim-ledger material.
+17. Apply `references/independent-review-policy.md` before using independent-review wording.
+18. Run the integrity gate and `post-write-final-validator` before final output for high-confidence source-backed deliverables.
 
 ## Required Preflight Contract
 

@@ -1,0 +1,37 @@
+name = "bmat-risk-of-bias-study-quality-auditor"
+agent_id = "risk-of-bias-study-quality-auditor"
+version = "0.4.1"
+description = "Template for a Codex reviewer that grades study quality, bias risks, and evidence-strength inflation."
+role_prompt = "../agents/risk-of-bias-study-quality-auditor.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = true
+requires_source_corpus = true
+may_write_files = false
+allowed_external_scope = "public methods, study design, and source metadata only after preflight approval"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access data",
+  "unapproved clinical interpretation",
+  "private unpublished protocol details in external queries"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "risk_of_bias_findings",
+  "study_quality_findings",
+  "evidence_strength_adjustments",
+  "contradictions_or_risks",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

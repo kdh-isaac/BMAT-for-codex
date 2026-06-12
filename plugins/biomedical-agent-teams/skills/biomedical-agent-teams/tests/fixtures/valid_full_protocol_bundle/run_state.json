@@ -2,7 +2,7 @@
   "run_id": "run-valid-001",
   "alias": "evidence-audit-team",
   "mode": "audit",
-  "plugin_version": "0.3.6",
+  "plugin_version": "0.4.1",
   "execution_strategy": "inline_first_selective_review",
   "nested_spawn_allowed": false,
   "spawned_review_lanes": [
@@ -14,6 +14,26 @@
     }
   ],
   "team_spawn_lanes": [],
+  "spawned_agent_instances": [
+    {
+      "instance_id": "BMAT-SPAWN-001",
+      "agent_id": "citation-verifier",
+      "execution_surface": "tool_backed_validator",
+      "spawn_tool": "offline-fixture",
+      "thread_or_task_id": "fixture-citation-check",
+      "parent_run_id": "run-valid-001",
+      "status": "complete",
+      "started_at": "2026-06-10T00:00:00Z",
+      "completed_at": "2026-06-10T00:00:01Z",
+      "input_scope": "synthetic claim CL-001 and source S-001",
+      "output_artifact": "post_write_validation.json",
+      "checks_run": [
+        "source identity checked",
+        "claim wording checked"
+      ],
+      "ledger_handoff": "CL-001 checked against S-001"
+    }
+  ],
   "stages": [
     {
       "id": "S0",

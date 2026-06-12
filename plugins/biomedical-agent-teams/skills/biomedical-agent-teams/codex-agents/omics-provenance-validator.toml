@@ -1,0 +1,37 @@
+name = "bmat-omics-provenance-validator"
+agent_id = "omics-provenance-validator"
+version = "0.4.1"
+description = "Template for a Codex reviewer that validates omics metadata, design, provenance, and claim proportionality."
+role_prompt = "../agents/omics-provenance-validator.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = true
+requires_source_corpus = true
+may_write_files = false
+allowed_external_scope = "public accession and metadata lookup only after preflight approval"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access human data",
+  "private sample IDs in external queries",
+  "raw data upload to external services"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "metadata_and_design_findings",
+  "provenance_gaps",
+  "claim_proportionality_findings",
+  "contradictions_or_risks",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

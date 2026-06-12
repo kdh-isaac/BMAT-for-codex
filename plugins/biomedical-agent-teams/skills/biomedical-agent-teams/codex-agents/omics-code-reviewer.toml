@@ -1,0 +1,37 @@
+name = "bmat-omics-code-reviewer"
+agent_id = "omics-code-reviewer"
+version = "0.4.1"
+description = "Template for a Codex reviewer that audits omics scripts, notebooks, reproducibility, leakage, and parameter provenance."
+role_prompt = "../agents/omics-code-reviewer.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = false
+requires_source_corpus = false
+may_write_files = false
+allowed_external_scope = "public package documentation only after preflight approval"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access data",
+  "raw private data upload",
+  "secrets or credentials"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "code_reproducibility_findings",
+  "leakage_or_design_findings",
+  "minimum_fix",
+  "contradictions_or_risks",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

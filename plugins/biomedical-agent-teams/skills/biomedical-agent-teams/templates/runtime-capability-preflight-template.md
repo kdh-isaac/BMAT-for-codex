@@ -8,7 +8,7 @@ workflow wording grants unavailable tools.
 |---|---|
 | runtime_id | RCP-YYYYMMDD-001 |
 | codex_client |  |
-| plugin_version | 0.3.6 |
+| plugin_version | 0.4.1 |
 | workspace_root |  |
 | web_search_available | yes / no / unknown / not-applicable |
 | shell_available | yes / no / unknown / not-applicable |

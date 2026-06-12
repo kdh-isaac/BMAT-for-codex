@@ -64,6 +64,20 @@ FULL_PROTOCOL_SURFACES = {
     "external database",
 }
 SAME_MODEL_MARKERS = {"same-model", "same model", "same_model", "self-ratification", "same pass"}
+TEAM_LEVEL_STRATEGY = "team_level_selective_dag"
+REQUIRED_RUN_STATE_FIELDS = {
+    "run_id",
+    "alias",
+    "mode",
+    "plugin_version",
+    "execution_strategy",
+    "nested_spawn_allowed",
+    "spawned_review_lanes",
+    "team_spawn_lanes",
+    "stages",
+    "final_label",
+    "downgrade_reasons",
+}
 
 
 @dataclass(frozen=True)
@@ -158,6 +172,24 @@ def validate_schemas(artifacts: dict[str, Any], findings: list[Finding]) -> None
             findings.append(Finding("ERROR", "SCHEMA_VALIDATION_FAILED", f"{key}: {exc.message}", str(schema_path)))
 
 
+def validate_required_artifact_fields(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    run_state = artifacts.get("run_state")
+    if run_state is None:
+        return
+    if not isinstance(run_state, dict):
+        findings.append(Finding("ERROR", "RUN_STATE_INVALID_SHAPE", "run_state must be a JSON object"))
+        return
+    for field in sorted(REQUIRED_RUN_STATE_FIELDS - set(run_state)):
+        findings.append(
+            Finding(
+                "ERROR",
+                "RUN_STATE_REQUIRED_FIELD_MISSING",
+                f"{field} is required in run_state",
+                "run_state.json",
+            )
+        )
+
+
 def normalized_text(value: Any) -> str:
     if value is None:
         return ""
@@ -173,6 +205,12 @@ def workflow_label(run_state: Any) -> str:
 def run_mode(run_state: Any) -> str:
     if isinstance(run_state, dict):
         return str(run_state.get("mode", ""))
+    return ""
+
+
+def execution_strategy(run_state: Any) -> str:
+    if isinstance(run_state, dict):
+        return str(run_state.get("execution_strategy", ""))
     return ""
 
 
@@ -279,6 +317,14 @@ def review_surface_text(post_write_validation: Any, run_state: Any) -> str:
             for lane in run_state.get(lane_key, []):
                 if isinstance(lane, dict):
                     parts.extend(str(lane.get(field, "")) for field in ("role", "status", "rationale", "ledger_handoff"))
+        for instance in run_state.get("spawned_agent_instances", []):
+            if isinstance(instance, dict):
+                status = str(instance.get("status", ""))
+                if status == "complete":
+                    parts.extend(
+                        str(instance.get(field, ""))
+                        for field in ("agent_id", "execution_surface", "status", "spawn_tool", "ledger_handoff")
+                    )
     return normalized_text(" ".join(parts))
 
 
@@ -288,6 +334,289 @@ def has_independent_surface(surface_text: str) -> bool:
 
 def has_same_model_marker(surface_text: str) -> bool:
     return any(marker in surface_text for marker in SAME_MODEL_MARKERS)
+
+
+def registry_agent_ids(findings: list[Finding]) -> set[str]:
+    registry_path = Path(__file__).resolve().parents[1] / "agent-registry.json"
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        findings.append(Finding("ERROR", "AGENT_REGISTRY_MISSING", "agent-registry.json is missing", str(registry_path)))
+        return set()
+    except json.JSONDecodeError as exc:
+        findings.append(Finding("ERROR", "AGENT_REGISTRY_INVALID_JSON", f"agent-registry.json is invalid: {exc}", str(registry_path)))
+        return set()
+
+    agents = registry.get("agents", []) if isinstance(registry, dict) else []
+    return {
+        str(agent.get("agent_id"))
+        for agent in agents
+        if isinstance(agent, dict) and str(agent.get("agent_id", "")).strip()
+    }
+
+
+def spawned_agent_instances(run_state: Any) -> list[dict[str, Any]]:
+    if not isinstance(run_state, dict):
+        return []
+    instances = run_state.get("spawned_agent_instances", [])
+    if not isinstance(instances, list):
+        return []
+    return [instance for instance in instances if isinstance(instance, dict)]
+
+
+def complete_independent_instances(run_state: Any) -> list[dict[str, Any]]:
+    independent_surfaces = {
+        "spawned_subagent",
+        "tool_backed_validator",
+        "external_verifier",
+        "human_reviewer",
+    }
+    return [
+        instance
+        for instance in spawned_agent_instances(run_state)
+        if instance.get("status") == "complete" and instance.get("execution_surface") in independent_surfaces
+    ]
+
+
+def complete_spawned_review_roles(run_state: Any) -> list[str]:
+    if not isinstance(run_state, dict):
+        return []
+    roles: list[str] = []
+    for lane in run_state.get("spawned_review_lanes", []):
+        if not isinstance(lane, dict):
+            continue
+        if lane.get("status") == "complete" and str(lane.get("role", "")).strip():
+            roles.append(str(lane["role"]))
+    return roles
+
+
+def team_spawn_lanes(run_state: Any) -> list[dict[str, Any]]:
+    if not isinstance(run_state, dict):
+        return []
+    lanes = run_state.get("team_spawn_lanes", [])
+    if not isinstance(lanes, list):
+        return []
+    return [lane for lane in lanes if isinstance(lane, dict)]
+
+
+def validate_team_output_artifact_shape(run_state: Any, findings: list[Finding]) -> list[dict[str, Any]]:
+    if not isinstance(run_state, dict) or "team_output_artifacts" not in run_state:
+        return []
+    raw_outputs = run_state.get("team_output_artifacts")
+    if not isinstance(raw_outputs, list):
+        findings.append(
+            Finding(
+                "ERROR",
+                "INVALID_TEAM_OUTPUT_ARTIFACTS",
+                "team_output_artifacts must be an array",
+            )
+        )
+        return []
+
+    outputs: list[dict[str, Any]] = []
+    for index, output in enumerate(raw_outputs):
+        if not isinstance(output, dict):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "INVALID_TEAM_OUTPUT_ARTIFACT",
+                    f"team_output_artifacts[{index}] must be an object",
+                )
+            )
+            continue
+        outputs.append(output)
+    return outputs
+
+
+def team_artifact_key(value: dict[str, Any]) -> tuple[str, int] | None:
+    try:
+        phase = int(value.get("phase"))
+    except (TypeError, ValueError):
+        return None
+    team = str(value.get("team", "")).strip()
+    if not team:
+        return None
+    return team, phase
+
+
+def validate_complete_team_output_fields(output: dict[str, Any], findings: list[Finding]) -> None:
+    team = str(output.get("team", "unknown")).strip() or "unknown"
+    artifact_id = str(output.get("artifact_id", "")).strip()
+    path = str(output.get("path", "")).strip()
+    ledger_handoff = str(output.get("ledger_handoff", "")).strip()
+    checks_run = output.get("checks_run", [])
+
+    if not artifact_id:
+        findings.append(
+            Finding(
+                "ERROR",
+                "TEAM_OUTPUT_MISSING_ARTIFACT_ID",
+                f"complete team output for {team} must record an artifact_id",
+            )
+        )
+    if not path:
+        findings.append(
+            Finding(
+                "ERROR",
+                "TEAM_OUTPUT_MISSING_PATH",
+                f"complete team output for {team} must record an output path",
+            )
+        )
+    if not ledger_handoff:
+        findings.append(
+            Finding(
+                "ERROR",
+                "TEAM_OUTPUT_MISSING_LEDGER_HANDOFF",
+                f"complete team output for {team} must record a ledger_handoff",
+            )
+        )
+    if not isinstance(checks_run, list) or not [check for check in checks_run if str(check).strip()]:
+        findings.append(
+            Finding(
+                "ERROR",
+                "TEAM_OUTPUT_MISSING_CHECKS",
+                f"complete team output for {team} must record checks_run",
+            )
+        )
+
+
+def validate_team_dag_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    run_state = artifacts.get("run_state")
+    if not isinstance(run_state, dict):
+        return
+
+    lanes = team_spawn_lanes(run_state)
+    outputs = validate_team_output_artifact_shape(run_state, findings)
+    if execution_strategy(run_state) == TEAM_LEVEL_STRATEGY and not lanes:
+        findings.append(
+            Finding(
+                "ERROR",
+                "TEAM_DAG_REQUIRES_TEAM_SPAWN_LANES",
+                "team_level_selective_dag requires at least one team_spawn_lanes record",
+            )
+        )
+
+    lane_keys = {key for lane in lanes if (key := team_artifact_key(lane)) is not None}
+    complete_lanes = [lane for lane in lanes if lane.get("status") == "complete"]
+    complete_outputs = [output for output in outputs if output.get("status") == "complete"]
+    complete_output_by_key = {
+        key: output
+        for output in complete_outputs
+        if (key := team_artifact_key(output)) is not None
+    }
+    complete_output_by_id = {
+        str(output.get("artifact_id", "")).strip(): output
+        for output in complete_outputs
+        if str(output.get("artifact_id", "")).strip()
+    }
+    complete_lanes_by_team = {
+        str(lane.get("team", "")).strip(): lane
+        for lane in complete_lanes
+        if str(lane.get("team", "")).strip()
+    }
+
+    nested_allowed = run_state.get("nested_spawn_allowed") is True
+    for lane in lanes:
+        team = str(lane.get("team", "unknown")).strip() or "unknown"
+        if lane.get("nested_spawn_used") is True and not nested_allowed:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TEAM_NESTED_SPAWN_NOT_ALLOWED",
+                    f"{team} records nested_spawn_used=true but nested_spawn_allowed is false",
+                )
+            )
+
+    for output in complete_outputs:
+        validate_complete_team_output_fields(output, findings)
+        key = team_artifact_key(output)
+        if key is not None and key not in lane_keys:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TEAM_OUTPUT_WITHOUT_LANE",
+                    f"complete team output {output.get('artifact_id', 'unknown')} has no matching team_spawn_lanes record",
+                )
+            )
+
+    for lane in complete_lanes:
+        key = team_artifact_key(lane)
+        team = str(lane.get("team", "unknown")).strip() or "unknown"
+        phase = key[1] if key else 0
+        if not str(lane.get("ledger_handoff", "")).strip():
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TEAM_SPAWN_LANE_MISSING_LEDGER_HANDOFF",
+                    f"complete team_spawn_lanes record for {team} must include ledger_handoff",
+                )
+            )
+        if key is None or key not in complete_output_by_key:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TEAM_SPAWN_LANE_MISSING_OUTPUT_ARTIFACT",
+                    f"team_spawn_lanes marks {team} phase {phase} complete but no matching complete team_output_artifacts entry exists",
+                )
+            )
+
+        dependencies = lane.get("depends_on", [])
+        if phase > 1 and not dependencies:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TEAM_DAG_DEPENDENCY_MISSING",
+                    f"{team} phase {phase} must list prior team or artifact dependencies",
+                )
+            )
+        if phase > 1 and isinstance(dependencies, list):
+            for dependency in dependencies:
+                dependency_id = str(dependency).strip()
+                if not dependency_id:
+                    continue
+                dep_lane = complete_lanes_by_team.get(dependency_id)
+                dep_output = complete_output_by_id.get(dependency_id)
+                dep_key = team_artifact_key(dep_lane or dep_output or {})
+                if dep_key is None:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "TEAM_DAG_DEPENDENCY_UNRESOLVED",
+                            f"{team} phase {phase} depends on {dependency_id}, but no prior complete team lane or output artifact exists",
+                        )
+                    )
+                elif dep_key[1] >= phase:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "TEAM_DAG_DEPENDENCY_ORDER_INVALID",
+                            f"{team} phase {phase} depends on non-prior dependency {dependency_id}",
+                        )
+                    )
+
+    for output in complete_outputs:
+        team = str(output.get("team", "unknown")).strip() or "unknown"
+        artifact_id = str(output.get("artifact_id", "unknown")).strip() or "unknown"
+        depends_on_outputs = output.get("depends_on_outputs", [])
+        if not isinstance(depends_on_outputs, list):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TEAM_OUTPUT_DEPENDENCIES_INVALID",
+                    f"team output {artifact_id} depends_on_outputs must be an array",
+                )
+            )
+            continue
+        for dependency_id in depends_on_outputs:
+            dependency = str(dependency_id).strip()
+            if dependency and dependency not in complete_output_by_id:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "TEAM_OUTPUT_DEPENDENCY_UNRESOLVED",
+                        f"complete team output {artifact_id} for {team} depends on missing complete output {dependency}",
+                    )
+                )
 
 
 def validate_full_protocol(artifacts: dict[str, Any], findings: list[Finding]) -> None:
@@ -343,6 +672,79 @@ def validate_full_protocol(artifacts: dict[str, Any], findings: list[Finding]) -
                 "Full protocol requires spawned, separate-model, tool-backed, external, human, or tool-corroborated review",
             )
         )
+
+    if not complete_independent_instances(run_state):
+        findings.append(
+            Finding(
+                "ERROR",
+                "FULL_PROTOCOL_REQUIRES_INDEPENDENT_INSTANCE",
+                "Full protocol requires at least one complete spawned_agent_instances record with an independent execution surface",
+            )
+        )
+
+
+def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    run_state = artifacts.get("run_state")
+    if isinstance(run_state, dict) and "spawned_agent_instances" in run_state:
+        raw_instances = run_state.get("spawned_agent_instances")
+        if not isinstance(raw_instances, list):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "INVALID_SPAWNED_AGENT_INSTANCES",
+                    "spawned_agent_instances must be an array",
+                )
+            )
+            return
+        for index, instance in enumerate(raw_instances):
+            if not isinstance(instance, dict):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "INVALID_SPAWNED_AGENT_INSTANCE",
+                        f"spawned_agent_instances[{index}] must be an object",
+                    )
+                )
+
+    instances = spawned_agent_instances(run_state)
+    complete_roles = complete_spawned_review_roles(run_state)
+    if not instances and not complete_roles:
+        return
+
+    known_agent_ids = registry_agent_ids(findings)
+    complete_instance_agents: set[str] = set()
+    for instance in instances:
+        agent_id = str(instance.get("agent_id", ""))
+        status = str(instance.get("status", ""))
+        output_artifact = str(instance.get("output_artifact", "")).strip()
+        if known_agent_ids and agent_id not in known_agent_ids:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "SPAWNED_INSTANCE_UNKNOWN_AGENT",
+                    f"spawned instance references unknown agent_id {agent_id}",
+                )
+            )
+        if status == "complete":
+            complete_instance_agents.add(agent_id)
+            if not output_artifact:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SPAWNED_INSTANCE_MISSING_OUTPUT_ARTIFACT",
+                        f"complete spawned instance for {agent_id} must record an output_artifact",
+                    )
+                )
+
+    for role in complete_roles:
+        if role not in complete_instance_agents:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "SPAWNED_LANE_MISSING_INSTANCE",
+                    f"spawned_review_lanes marks {role} complete but no matching complete spawned_agent_instances entry exists",
+                )
+            )
 
 
 def validate_s3_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
@@ -448,6 +850,8 @@ def validate_post_write_release(artifacts: dict[str, Any], findings: list[Findin
 
 def validate_policies(artifacts: dict[str, Any], findings: list[Finding]) -> None:
     validate_full_protocol(artifacts, findings)
+    validate_spawned_instance_policy(artifacts, findings)
+    validate_team_dag_policy(artifacts, findings)
     validate_s3_policy(artifacts, findings)
     validate_source_policy(artifacts, findings)
     validate_final_wording(artifacts, findings)
@@ -474,6 +878,7 @@ def main() -> int:
     findings: list[Finding] = []
     artifacts = load_artifacts(input_paths(args), findings)
     validate_schemas(artifacts, findings)
+    validate_required_artifact_fields(artifacts, findings)
     validate_policies(artifacts, findings)
     emit(findings, args.json)
     return 1 if any(finding.level == "ERROR" for finding in findings) else 0

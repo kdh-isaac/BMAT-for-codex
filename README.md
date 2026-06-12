@@ -1,83 +1,100 @@
 # Biomedical Agent Teams Codex Marketplace
 
-Local Codex Desktop marketplace package for the Biomedical Agent Teams plugin.
+Codex Desktop marketplace package for the Biomedical Agent Teams plugin.
 
-Current plugin version: `0.3.5+codex.20260610`.
+Current plugin version: `0.4.1`.
 
 ## Install
 
+Clone this repository, then register the local marketplace path:
+
 ```powershell
-codex plugin marketplace add "G:\내 드라이브\work\codex\work\plugins\biomedical-agent-teams-codex-marketplace"
+git clone https://github.com/kdh-isaac/biomedical-agent-teams-codex-marketplace
+codex plugin marketplace add "<path-to-clone>"
 codex plugin add biomedical-agent-teams@biomedical-agent-teams-marketplace
 ```
 
 The plugin body is in `plugins/biomedical-agent-teams/` and exposes the
-`biomedical-agent-teams` skill with 35 agent prompts, 6 command recipes, a
-fixed-field claim-ledger template, contract schemas, biomedical passport state,
-runtime capability preflight, source corpus lock, workflow-run state, stage
-evaluation, hypothesis tournament, independent-review policy, and
-inline-first hybrid execution, selective spawned review, team-level spawned
-workflow DAGs, and integrity-gate resources.
+`biomedical-agent-teams` skill with 35 agent prompts, 6 command recipes, loop
+engineering resources, connector binding, agent registry metadata, Codex
+reviewer-agent TOML templates, workflow-run spawned instance tracking,
+team-level DAG output tracking, deterministic artifact validators, and
+validator-backed release gates.
 
 ## Workflow Structure
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT Hybrid Workflow Structure
-    accDescr: Lead-controlled BMAT workflow showing the inline spine, optional team-level spawned DAG before final ledger synthesis, and optional selective spawned review after audit gates.
+    accTitle: BMAT v0.4.1 Workflow Structure
+    accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
-    subgraph lead_controlled_inline_spine["Lead-controlled inline spine"]
-        user_request["User request or BMAT alias"]
-        runtime_preflight["Runtime capability preflight"]
-        protocol_lock["Protocol and context lock"]
-        entity_normalization["Entity normalization"]
-        source_corpus_lock["Source corpus lock"]
-        playbook_route["Lead scientist and playbook router"]
-        strategy_lock{"Execution strategy lock"}
-        inline_lanes["Selected specialist lanes inline"]
-        claim_ledger["Central claim ledger and evidence graph"]
-        workflow_state["Workflow-run state and biomedical passport"]
-        stage_evaluation["Stage S1-S5 evaluation when applicable"]
-        audit_gates["Audit gates"]
-        claim_citation_check["Pre-synthesis claim and citation verification"]
-        ledger_only_writer["Ledger-only scientific writer"]
-        post_write_validator["Post-write final validator"]
-        final_output["Final label, downgrade reasons, and audit summary"]
+    request["User request or BMAT alias"]
+    lock["1. Runtime, scope, source, and strategy lock"]
+    route{"2. Execution strategy"}
+    spine["3. Selected inline specialist work"]
+    ledger["4. Central claim ledger<br/>source corpus<br/>workflow-run state"]
+    synth["5. Ledger-only synthesis"]
+    release{"6. Release gates<br/>post-write + bmat_validate.py"}
+    label["7. Final workflow label<br/>Full / Compact / Partial / Blocked"]
+
+    request --> lock --> route --> spine --> ledger --> synth --> release --> label
+
+    subgraph team_dag["Optional lane: team_level_selective_dag"]
+        direction TB
+        t1["Phase 1 teams<br/>idea / omics / translational"]
+        t2["Phase 2 teams<br/>experiment design / evidence audit"]
+        tout["team_output_artifacts<br/>artifact path + checks + dependencies"]
+        tgate{"team_spawn_outputs<br/>stage pass?"}
+        t1 --> t2 --> tout --> tgate
     end
 
-    subgraph team_level_spawned_dag["Optional team-level spawned subagent DAG"]
-        phase_zero["Phase 0: main lead locks scope and team graph"]
-        phase_one["Phase 1: idea, omics, translational teams"]
-        phase_two["Phase 2: experiment design and evidence audit teams"]
-        team_handoff["Formal team outputs and ledger handoff"]
+    subgraph review_lane["Optional lane: selective spawned review"]
+        direction TB
+        registry["agent-registry.json<br/>codex-agents/*.toml"]
+        instances["spawned_agent_instances"]
+        rcontract["spawned-agent-output contract"]
+        rhandoff["accepted findings<br/>ledger handoff"]
+        registry --> instances --> rcontract --> rhandoff
     end
 
-    subgraph selective_spawned_review["Optional selective spawned review"]
-        review_decision{"Independent review needed?"}
-        reviewer_lanes["Claim, citation, stats, provenance, contradiction, bias reviewers"]
-        reviewer_handoff["Accepted findings merged into ledger"]
+    subgraph loop_layer["Optional lane: recurring loop layer"]
+        direction TB
+        loop_recipe["loops/*.md recipe"]
+        loop_state["loop_state.json"]
+        loop_check["bmat_loop_check.py"]
+        loop_recipe --> loop_state --> loop_check
     end
 
-    user_request --> runtime_preflight --> protocol_lock --> entity_normalization
-    entity_normalization --> source_corpus_lock --> playbook_route --> strategy_lock
-    strategy_lock -->|"inline_only or inline_first_selective_review"| inline_lanes
-    strategy_lock -->|"team_level_selective_dag"| phase_zero
-    strategy_lock -->|"blocked"| final_output
-    phase_zero --> phase_one --> phase_two --> team_handoff --> claim_ledger
-    inline_lanes --> claim_ledger
-    claim_ledger --> workflow_state --> stage_evaluation --> audit_gates
-    audit_gates --> review_decision
-    review_decision -->|"yes"| reviewer_lanes --> reviewer_handoff --> claim_citation_check
-    review_decision -->|"no"| claim_citation_check
-    claim_citation_check --> ledger_only_writer --> post_write_validator --> final_output
+    route -. "broad independent axes" .-> t1
+    tgate --> ledger
+    ledger -. "independent audit needed" .-> registry
+    rhandoff --> ledger
+    route -. "watch / inbox / triage" .-> loop_recipe
+    loop_check --> ledger
+    loop_check --> release
 ```
 
-The main lead owns the protocol lock, source scope, central claim ledger,
-workflow-run state, and final synthesis. Team-level spawned subagents are used
-only for separable decision axes; selective spawned reviewers are used only
-after ledger claims exist. Nested spawning is disabled by default.
+The main workflow progresses vertically from request lock to final label. The
+lead owns the lock, selected inline work, claim ledger, workflow-run state, and
+final synthesis. Optional lanes run only when the strategy calls for them, then
+feed evidence back into the ledger: team DAG outputs are proven by
+`team_output_artifacts`, reviewer execution is proven by
+`spawned_agent_instances`, and recurring loops are checked by
+`bmat_loop_check.py`. Full-protocol release requires the post-write validator
+and `bmat_validate.py` to pass against the complete artifact bundle.
 
-For BioAgentBench-style tasks, the benchmark protocol is locked before solving.
-Truth files, result archives, scoring scripts, reproduction scripts, and task
-Dockerfiles are scoring-phase materials and are not exposed to the solving
-agent before the candidate output is frozen.
+## Contents
+
+- `.agents/plugins/marketplace.json`: local marketplace metadata.
+- `plugins/biomedical-agent-teams/`: Codex plugin body.
+- `plugins/biomedical-agent-teams/skills/biomedical-agent-teams/`: skill
+  router, agents, commands, contracts, templates, references, loops, tests, and
+  validators.
+
+## Validation
+
+The 0.4.1 package is validated with:
+
+```powershell
+uvx pytest plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
+```

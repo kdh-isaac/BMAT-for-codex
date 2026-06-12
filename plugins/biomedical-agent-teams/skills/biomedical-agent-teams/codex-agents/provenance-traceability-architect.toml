@@ -1,0 +1,37 @@
+name = "bmat-provenance-traceability-architect"
+agent_id = "provenance-traceability-architect"
+version = "0.4.1"
+description = "Template for a Codex reviewer that audits source, data, code, artifact, and ledger traceability."
+role_prompt = "../agents/provenance-traceability-architect.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = true
+requires_source_corpus = true
+may_write_files = false
+allowed_external_scope = "public accession, package, or database metadata only after preflight approval"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access data",
+  "raw private sample IDs in external queries",
+  "secrets or environment values"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "provenance_findings",
+  "traceability_gaps",
+  "artifact_or_checksum_findings",
+  "contradictions_or_risks",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

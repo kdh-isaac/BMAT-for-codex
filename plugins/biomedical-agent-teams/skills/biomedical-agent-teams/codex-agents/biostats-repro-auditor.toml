@@ -1,0 +1,37 @@
+name = "bmat-biostats-repro-auditor"
+agent_id = "biostats-repro-auditor"
+version = "0.4.1"
+description = "Template for a Codex reviewer that audits experimental unit, statistics, multiplicity, uncertainty, and reproducibility."
+role_prompt = "../agents/biostats-repro-auditor.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = true
+requires_source_corpus = false
+may_write_files = false
+allowed_external_scope = "public methods or package documentation only after preflight approval"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access data",
+  "raw private sample metadata unless local-only and approved",
+  "unapproved cloud or external analysis submission"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "statistical_design_findings",
+  "reproducibility_findings",
+  "contradictions_or_risks",
+  "minimum_fix",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

@@ -9,7 +9,7 @@ enough to paste into a final answer or save as a local artifact.
 | run_id | BMAT-RUN-YYYYMMDD-001 |
 | alias | biomedical-research-council / idea-discovery-team / omics-analysis-team / evidence-audit-team / experiment-design-team / translational-scout-team |
 | mode | quick / standard / deep / audit / plan / run |
-| plugin_version | 0.3.6 |
+| plugin_version | 0.4.1 |
 | artifacts_root |  |
 | resume_pointer |  |
 | execution_strategy | inline_only / inline_first_selective_review / team_level_selective_dag / user_requested_full_spawn / blocked |
@@ -34,6 +34,30 @@ enough to paste into a final answer or save as a local artifact.
 | translational-scout-team | 1 | phase 0 | planned / running / complete / skipped / blocked | false |  |
 | experiment-design-team | 2 | narrowed candidate claims | planned / running / complete / skipped / blocked | false |  |
 | evidence-audit-team | 2 | draft claims or results | planned / running / complete / skipped / blocked | false |  |
+
+## Team Output Artifacts
+
+Use this table for actual command-level spawned team bundle outputs. The
+`team_spawn_lanes` table records the intended DAG; this table records the
+completed output artifact that the lead can map into the central claim ledger.
+For Phase 2+ team outputs, `depends_on_outputs` must reference complete prior
+team artifact IDs.
+
+| team | phase | artifact_id | path | status | input_scope | checks_run | ledger_handoff | depends_on_outputs | failure_or_downgrade_reason |
+|---|---|---|---|---|---|---|---|---|---|
+| idea-discovery-team | 1 | TEAM-IDEA-001 | team-outputs/idea-discovery-team.md | planned / running / complete / skipped / blocked / failed |  |  |  |  |  |
+| experiment-design-team | 2 | TEAM-EXPERIMENT-001 | team-outputs/experiment-design-team.md | planned / running / complete / skipped / blocked / failed |  |  |  | TEAM-IDEA-001 |  |
+
+## Spawned Agent Instances
+
+Use this table for actual spawned reviewers or tool-backed validators. The
+`spawned_review_lanes` table records intent; this table records reviewer or
+validator instances that actually ran. Command-level team bundles are recorded
+separately in `team_output_artifacts`.
+
+| instance_id | agent_id | execution_surface | spawn_tool | thread_or_task_id | status | input_scope | output_artifact | checks_run | ledger_handoff | failure_or_downgrade_reason |
+|---|---|---|---|---|---|---|---|---|---|---|
+| BMAT-SPAWN-001 | citation-verifier | spawned_subagent / tool_backed_validator / external_verifier / human_reviewer | multi_agent / cli / human |  | planned / running / complete / skipped / blocked / failed |  |  |  |  |  |
 
 ## Stage DAG
 

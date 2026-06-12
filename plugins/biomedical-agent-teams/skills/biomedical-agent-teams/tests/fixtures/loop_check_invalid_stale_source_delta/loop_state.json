@@ -1,0 +1,31 @@
+{
+  "loop_id": "BMAT-LOOP-20260612-003",
+  "loop_name": "Public omics dataset watch",
+  "loop_type": "public_omics_dataset_watch",
+  "plugin_version": "0.4.1",
+  "status": "complete",
+  "public_only": true,
+  "private_context_allowed": false,
+  "external_tools_allowed": true,
+  "connectors_allowed": ["GEO", "SRA"],
+  "human_review_required": false,
+  "human_gate_status": "not-required",
+  "state_path": ".bmat/loops/BMAT-LOOP-20260612-003/loop_state.json",
+  "source_delta_status": "pending",
+  "source_delta_summary": "New accession not yet triaged.",
+  "cycle_count": 1,
+  "cycle_budget": 3,
+  "open_items": [],
+  "reviewer_objections": [],
+  "stop_conditions": ["all source deltas processed"],
+  "stop_status": "stop",
+  "output_artifacts": [
+    {
+      "artifact_id": "OUT-001",
+      "path": ".bmat/loops/BMAT-LOOP-20260612-003/feasibility.md",
+      "artifact_type": "triage_report",
+      "status": "released"
+    }
+  ],
+  "privacy_boundary": "Public-only repository search."
+}

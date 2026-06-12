@@ -1,0 +1,37 @@
+name = "bmat-safety-ethics-privacy-dual-use-auditor"
+agent_id = "safety-ethics-privacy-dual-use-auditor"
+version = "0.4.1"
+description = "Template for a Codex reviewer that checks safety, ethics, privacy, dual-use, and external-tool boundaries."
+role_prompt = "../agents/safety-ethics-privacy-dual-use-auditor.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = false
+requires_source_corpus = false
+may_write_files = false
+allowed_external_scope = "none unless the preflight explicitly approves public-only lookups"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access data",
+  "raw private sample identifiers in external tools",
+  "operational wet-lab or dual-use-sensitive detail beyond approved scope"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "safety_privacy_findings",
+  "external_tool_boundary_findings",
+  "required_mitigations",
+  "contradictions_or_risks",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

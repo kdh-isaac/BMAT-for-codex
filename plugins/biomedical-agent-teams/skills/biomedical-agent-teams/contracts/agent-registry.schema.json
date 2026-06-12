@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Agent Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "runtime", "agents"],
+  "properties": {
+    "version": { "type": "string" },
+    "runtime": { "type": "string", "enum": ["codex"] },
+    "agents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "agent_id",
+          "prompt_path",
+          "spawnable",
+          "default_execution_surface",
+          "allowed_workflows",
+          "required_output_schema",
+          "privacy_level",
+          "recommended_modes"
+        ],
+        "properties": {
+          "agent_id": { "type": "string" },
+          "prompt_path": { "type": "string" },
+          "spawnable": { "type": "boolean" },
+          "default_execution_surface": {
+            "type": "string",
+            "enum": ["inline_only", "spawned_reviewer", "spawned_team"]
+          },
+          "allowed_workflows": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "required_output_schema": { "type": "string" },
+          "privacy_level": {
+            "type": "string",
+            "enum": ["public_only", "public_or_local_private", "local_private_with_gate"]
+          },
+          "recommended_modes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "toml_template_path": { "type": "string" }
+        }
+      }
+    }
+  }
+}

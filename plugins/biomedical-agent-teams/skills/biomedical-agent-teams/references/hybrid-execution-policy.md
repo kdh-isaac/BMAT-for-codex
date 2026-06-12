@@ -26,14 +26,25 @@ answer should look and behave like an audited output.
    - `claim-level-evidence-verifier`
    - `citation-verifier`
    - `contradiction-red-team`
+   - `causal-inference-confounder-analyst`
    - `biostats-repro-auditor`
+   - `provenance-traceability-architect`
    - `omics-provenance-validator`
+   - `omics-code-reviewer` for omics `run` or code-bearing outputs
    - `risk-of-bias-study-quality-auditor`
+   - `post-write-final-validator` for high-confidence final prose
    - `safety-ethics-privacy-dual-use-auditor` when triggered
 4. Reviewer outputs must map to claim IDs or clearly state that no ledger was
    available.
 5. Main lead accepts, rejects, or downgrades reviewer findings in the ledger
    before final writing.
+
+Use `agent-registry.json` before spawning. A reviewer must be marked
+`spawnable: true`, its `codex-agents/*.toml` template must point to an existing
+role prompt and `contracts/spawned-agent-output.schema.json`, and the workflow
+run must record the concrete execution in `spawned_agent_instances`. A planned
+or completed `spawned_review_lanes` row without a matching instance is only a
+planning record and must not be used as proof of independent execution.
 
 Do not call same-model separate-pass review independent unless a spawned
 subagent, separate model, tool-backed validator, external verifier, or human
@@ -77,6 +88,17 @@ Phase 3, inline synthesis:
 - report execution strategy, spawned outputs, skipped gates, and downgrade
   reasons
 
+The deterministic verification point for this DAG is the `team_spawn_outputs`
+stage in workflow-run state. A completed `team_spawn_lanes` row is only a plan
+record until there is a matching complete `team_output_artifacts` entry with
+the same `team` and `phase`, a non-empty artifact path, `checks_run`,
+`ledger_handoff`, and dependency links. For Phase 2+ lanes, `depends_on` must
+resolve to a complete prior-phase team lane or prior team output artifact, and
+`depends_on_outputs` must resolve to complete prior team artifact IDs.
+`scripts/bmat_validate.py` enforces these checks before a bundle can honestly
+claim full-protocol release. If a team output uses nested child agents while
+`nested_spawn_allowed` is false, the validator blocks the run.
+
 ## Anti-Patterns
 
 - Spawning every role by default.
@@ -113,3 +135,14 @@ Every spawned reviewer or spawned team must return:
 - claim IDs or ledger rows affected when available
 
 A bare "done" is not sufficient for BMAT review or team output.
+
+For reviewer subagents, the output must also satisfy
+`contracts/spawned-agent-output.schema.json` plus any role-specific TOML fields.
+Record the output artifact path in `workflow-run.spawned_agent_instances` so a
+validator can connect the actual subagent execution to the final claim ledger.
+
+For spawned command-level teams, record the formal team report in
+`workflow-run.team_output_artifacts`. Reviewer instances and team bundle
+outputs are deliberately separate: `spawned_agent_instances` proves a reviewer
+or tool-backed validator ran, while `team_output_artifacts` proves a selected
+team DAG node produced a dependency-resolved handoff artifact.

@@ -1,0 +1,37 @@
+name = "bmat-causal-inference-confounder-analyst"
+agent_id = "causal-inference-confounder-analyst"
+version = "0.4.1"
+description = "Template for a Codex reviewer that checks causal language, confounding, endpoint definition, and observational-data limits."
+role_prompt = "../agents/causal-inference-confounder-analyst.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = true
+requires_source_corpus = false
+may_write_files = false
+allowed_external_scope = "public cohort or methods metadata only after preflight approval"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access individual-level data",
+  "private sample metadata in external queries",
+  "clinical recommendation framing"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "causal_language_findings",
+  "confounder_and_bias_findings",
+  "recommended_claim_downgrades",
+  "contradictions_or_risks",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

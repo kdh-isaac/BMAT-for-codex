@@ -1,0 +1,36 @@
+name = "bmat-contradiction-red-team"
+agent_id = "contradiction-red-team"
+version = "0.4.1"
+description = "Template for a Codex reviewer that searches for negative evidence, scope drift, and overclaim risks."
+role_prompt = "../agents/contradiction-red-team.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = true
+requires_source_corpus = false
+may_write_files = false
+allowed_external_scope = "public contradiction search only after preflight approval"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access data",
+  "unapproved private project details",
+  "unapproved patent-sensitive search strategy"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "contradictions",
+  "contradictions_or_risks",
+  "downgrade_recommendations",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

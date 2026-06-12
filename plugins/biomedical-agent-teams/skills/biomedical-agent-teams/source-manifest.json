@@ -1,16 +1,19 @@
 {
-  "version": "0.3.6",
+  "version": "0.4.1",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 35,
   "command_count": 6,
   "template_count": 10,
-  "contract_count": 10,
-  "reference_count": 8,
-  "script_count": 1,
-  "test_fixture_count": 5,
+  "contract_count": 13,
+  "reference_count": 9,
+  "script_count": 2,
+  "test_fixture_count": 11,
   "eval_count": 1,
   "golden_task_count": 22,
+  "loop_count": 4,
+  "codex_agent_template_count": 11,
+  "agent_registry_count": 1,
   "workflow_spine": [
     "runtime-capability-preflight",
     "protocol-context-locker",
@@ -23,7 +26,9 @@
     "specialist-lanes",
     "central-claim-ledger-evidence-graph",
     "workflow-run-state",
+    "loop-state",
     "biomedical-passport-state",
+    "connector-binding-lock",
     "stage-evaluation",
     "audit-gates",
     "selective-spawned-review",
@@ -165,9 +170,12 @@
     "preflight-contract.schema",
     "role-output.schema",
     "biomedical-passport.schema",
+    "loop-state.schema",
     "omics-run-manifest.schema",
     "post-write-validation.schema",
     "runtime-capability-preflight.schema",
+    "agent-registry.schema",
+    "spawned-agent-output.schema",
     "workflow-run.schema",
     "source-corpus.schema",
     "hypothesis-tournament.schema",
@@ -181,7 +189,27 @@
     "codex-runtime-capability-matrix",
     "omics-stage-validation-failure-modes",
     "hybrid-execution-policy",
-    "data-safety-floor"
+    "data-safety-floor",
+    "connector-binding-matrix"
+  ],
+  "loops": [
+    "weekly-literature-watch",
+    "public-omics-dataset-watch",
+    "claim-audit-inbox",
+    "hypothesis-triage"
+  ],
+  "codex_agent_templates": [
+    "claim-level-evidence-verifier",
+    "citation-verifier",
+    "causal-inference-confounder-analyst",
+    "contradiction-red-team",
+    "biostats-repro-auditor",
+    "omics-code-reviewer",
+    "post-write-final-validator",
+    "provenance-traceability-architect",
+    "risk-of-bias-study-quality-auditor",
+    "safety-ethics-privacy-dual-use-auditor",
+    "omics-provenance-validator"
   ],
   "new_in_v0_3_5": [
     "concrete-mcp-tool-binding-for-citation-literature-and-clinical-agents",
@@ -198,5 +226,29 @@
     "source-backed-claim-source-corpus-checks",
     "final-wording-drift-fixtures",
     "offline-golden-task-eval-scaffold"
+  ],
+  "new_in_v0_4_0": [
+    "loop-engineering-recipes-for-literature-omics-claim-and-hypothesis-workflows",
+    "loop-state-schema-for-recurring-workflow-state-and-stop-conditions",
+    "bmat_loop_check_cli_for_privacy-source-delta-reviewer-objection-and-budget_policy",
+    "loop-check-tests-and-fixtures",
+    "connector-binding-matrix-for-workflows-and-loops",
+    "loop-check-connector-allowlist-and-release-artifact-enforcement",
+    "spawned-reviewer-template-output-contract-expansion",
+    "agent-registry-for-35-role-spawnability-and-template-binding",
+    "workflow-run-spawned-agent-instance-tracking",
+    "validator-cross-check-for-complete-spawned-lanes-and-actual-instances",
+    "expanded-spawnable-reviewer-toml-template-set",
+    "codex-reviewer-agent-toml-templates",
+    "package-metadata-version-bump-to-0-4-0"
+  ],
+  "new_in_v0_4_1": [
+    "workflow-run-team-output-artifact-tracking",
+    "team-level-selective-dag-output-artifact-contract",
+    "validator-enforcement-for-complete-team-lanes",
+    "team-phase-dependency-resolution-checks",
+    "nested-spawn-policy-enforcement-for-team-dag",
+    "workflow-template-and-hybrid-policy-team-dag-verification-docs",
+    "package-metadata-version-bump-to-0-4-1"
   ]
 }

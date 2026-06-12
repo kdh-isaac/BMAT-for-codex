@@ -1,7 +1,7 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "0.3.6",
-  "description": "Codex-native biomedical audit workflow router for life-science research, hypothesis validation, literature and public-omics evidence synthesis, claim-level verification, statistical audit, experiment design, translational scouting, scientific writing support, and validator-backed artifact checks.",
+  "version": "0.4.1",
+  "description": "Codex-native biomedical audit and loop-engineering workflow router for life-science research, hypothesis validation, literature and public-omics evidence synthesis, claim-level verification, statistical audit, experiment design, translational scouting, scientific writing support, recurring loop state, connector binding, and validator-backed artifact checks.",
   "author": {
     "name": "Donghyun Kim Local Research Workflow"
   },
@@ -23,8 +23,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Biomedical Agent Teams",
-    "shortDescription": "Lead-controlled biomedical audit workflow with inline-first hybrid execution, optional spawned or tool-backed review, claim ledgers, passports, integrity gates, and artifact validation.",
-    "longDescription": "A Codex-native biomedical audit workflow suite for structured life-science research. It locks context of use, requires command-level preflight contracts, normalizes biomedical entities, coordinates specialist lanes for hypothesis discovery, literature retrieval, public omics analysis, mechanism and causal reasoning, experiment design, clinical/regulatory/IP scouting, and routes all claims through a fixed-field central claim ledger, contract-shaped role outputs, biomedical passport state, audit gates, citation verification, ledger-only writing, excluded-claim tracking, integrity-gate failure-mode checks, inline-first hybrid execution, selective spawned reviewer lanes, dependency-aware team-level spawned workflows, post-write validation, and optional validator-backed artifact checks.",
+    "shortDescription": "Lead-controlled biomedical audit workflow with loop state, connector binding, inline-first hybrid execution, optional spawned or tool-backed review, team DAG output tracking, claim ledgers, passports, integrity gates, and artifact validation.",
+    "longDescription": "A Codex-native biomedical audit and loop-engineering workflow suite for structured life-science research. It locks context of use, requires command-level preflight contracts, normalizes biomedical entities, coordinates specialist lanes for hypothesis discovery, literature retrieval, public omics analysis, mechanism and causal reasoning, experiment design, clinical/regulatory/IP scouting, recurring literature or omics watch loops, claim-audit inboxes, and hypothesis triage, and routes all claims through a fixed-field central claim ledger, contract-shaped role outputs, loop state, biomedical passport state, audit gates, citation verification, ledger-only writing, excluded-claim tracking, connector binding rules, integrity-gate failure-mode checks, inline-first hybrid execution, selective spawned reviewer lanes, dependency-aware team-level spawned workflows with explicit team output artifacts, post-write validation, and optional validator-backed artifact checks.",
     "developerName": "Donghyun Kim Local Research Workflow",
     "category": "Research",
     "capabilities": [

@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Loop State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "loop_id",
+    "loop_name",
+    "loop_type",
+    "plugin_version",
+    "status",
+    "public_only",
+    "private_context_allowed",
+    "external_tools_allowed",
+    "connectors_allowed",
+    "human_review_required",
+    "human_gate_status",
+    "state_path",
+    "source_delta_status",
+    "cycle_count",
+    "cycle_budget",
+    "open_items",
+    "reviewer_objections",
+    "stop_conditions",
+    "stop_status",
+    "output_artifacts",
+    "privacy_boundary"
+  ],
+  "properties": {
+    "loop_id": { "type": "string" },
+    "loop_name": { "type": "string" },
+    "loop_type": {
+      "type": "string",
+      "enum": [
+        "weekly_literature_watch",
+        "public_omics_dataset_watch",
+        "claim_audit_inbox",
+        "hypothesis_triage",
+        "custom"
+      ]
+    },
+    "plugin_version": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["planned", "running", "paused", "complete", "blocked"]
+    },
+    "public_only": { "type": "boolean" },
+    "private_context_allowed": { "type": "boolean" },
+    "external_tools_allowed": { "type": "boolean" },
+    "connectors_allowed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "human_review_required": { "type": "boolean" },
+    "human_gate_status": {
+      "type": "string",
+      "enum": ["not-required", "pending", "approved", "rejected"]
+    },
+    "state_path": { "type": "string" },
+    "last_run_at": { "type": "string" },
+    "next_run_at": { "type": "string" },
+    "source_delta_status": {
+      "type": "string",
+      "enum": ["none", "pending", "processed", "blocked"]
+    },
+    "source_delta_summary": { "type": "string" },
+    "cycle_count": { "type": "integer", "minimum": 0 },
+    "cycle_budget": { "type": "integer", "minimum": 1 },
+    "open_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["item_id", "item_type", "status", "description"],
+        "properties": {
+          "item_id": { "type": "string" },
+          "item_type": {
+            "type": "string",
+            "enum": ["source_delta", "claim", "hypothesis", "dataset", "review_task", "other"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "triaged", "accepted", "rejected", "deferred", "resolved", "blocked"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "description": { "type": "string" },
+          "source_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "claim_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "owner": { "type": "string" }
+        }
+      }
+    },
+    "reviewer_objections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["objection_id", "reviewer_role", "status", "description"],
+        "properties": {
+          "objection_id": { "type": "string" },
+          "reviewer_role": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["open", "accepted", "rejected", "deferred", "resolved"]
+          },
+          "description": { "type": "string" },
+          "affected_claim_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "required_action": { "type": "string" }
+        }
+      }
+    },
+    "stop_conditions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "stop_status": {
+      "type": "string",
+      "enum": ["continue", "stop", "blocked"]
+    },
+    "output_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact_id", "path", "artifact_type", "status"],
+        "properties": {
+          "artifact_id": { "type": "string" },
+          "path": { "type": "string" },
+          "artifact_type": {
+            "type": "string",
+            "enum": [
+              "source_delta",
+              "claim_ledger_delta",
+              "audit_report",
+              "triage_report",
+              "review_packet",
+              "other"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "reviewed", "released", "blocked"]
+          }
+        }
+      }
+    },
+    "privacy_boundary": { "type": "string" },
+    "notes": { "type": "string" }
+  }
+}

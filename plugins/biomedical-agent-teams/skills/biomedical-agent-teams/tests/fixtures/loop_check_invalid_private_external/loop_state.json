@@ -1,0 +1,23 @@
+{
+  "loop_id": "BMAT-LOOP-20260612-002",
+  "loop_name": "Private strategy literature watch",
+  "loop_type": "weekly_literature_watch",
+  "plugin_version": "0.4.1",
+  "status": "running",
+  "public_only": false,
+  "private_context_allowed": true,
+  "external_tools_allowed": true,
+  "connectors_allowed": ["PubMed"],
+  "human_review_required": true,
+  "human_gate_status": "pending",
+  "state_path": ".bmat/loops/BMAT-LOOP-20260612-002/loop_state.json",
+  "source_delta_status": "none",
+  "cycle_count": 1,
+  "cycle_budget": 3,
+  "open_items": [],
+  "reviewer_objections": [],
+  "stop_conditions": ["human gate approved before external search"],
+  "stop_status": "continue",
+  "output_artifacts": [],
+  "privacy_boundary": "Private context is present but not yet approved for external query use."
+}

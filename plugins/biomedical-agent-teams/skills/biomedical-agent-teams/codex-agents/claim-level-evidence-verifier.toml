@@ -1,0 +1,36 @@
+name = "bmat-claim-level-evidence-verifier"
+agent_id = "claim-level-evidence-verifier"
+version = "0.4.1"
+description = "Template for a Codex reviewer that checks atomic claim support, source fit, and ledger-ready wording."
+role_prompt = "../agents/claim-level-evidence-verifier.md"
+output_contract_schema = "../contracts/spawned-agent-output.schema.json"
+execution_surface = "spawned_reviewer_template"
+default_mode = "review"
+independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+requires_claim_ledger = true
+requires_source_corpus = true
+may_write_files = false
+allowed_external_scope = "public source metadata and cited evidence only after preflight approval"
+blocked_inputs = [
+  "PHI/PII",
+  "controlled-access data",
+  "unapproved private manuscript text",
+  "unapproved patent-sensitive unpublished strategy"
+]
+required_output_fields = [
+  "objective",
+  "assigned_scope",
+  "inputs_checked",
+  "tools_skills_commands_or_databases_used",
+  "key_findings",
+  "claim_support_findings",
+  "unsupported_or_overstated_claims",
+  "contradictions_or_risks",
+  "confidence",
+  "files_changed_or_none",
+  "checks_run_or_skipped",
+  "recommended_handoff",
+  "affected_claim_ids",
+  "verdict",
+  "ledger_handoff"
+]

@@ -1,10 +1,103 @@
 # Biomedical Agent Teams
 
 Codex biomedical agent-team bundle with a protocol lock, central claim ledger,
-audit gates, writer restriction, post-write final validation, and an optional
-deterministic artifact validator.
+audit gates, writer restriction, post-write final validation, loop-state
+resources, connector binding, team output artifact tracking, and optional
+deterministic artifact validators.
 
 Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
+
+## v0.4.1 Updates
+
+- Adds `workflow-run.team_output_artifacts` for actual command-level spawned
+  team bundle outputs, separate from reviewer `spawned_agent_instances`.
+- Hardens `scripts/bmat_validate.py` so complete `team_spawn_lanes` rows require
+  matching complete team output artifacts, ledger handoff, and checks.
+- Enforces Phase 2+ team DAG dependencies against prior complete team lanes or
+  prior complete team output artifact IDs.
+- Blocks nested team spawning when `nested_spawn_allowed` is false.
+- Updates workflow templates and hybrid execution docs to make
+  `team_spawn_outputs` the deterministic team DAG verification stage.
+
+## v0.4.0 Updates
+
+- Adds loop-engineering recipes under `loops/` for recurring literature watch,
+  public omics dataset watch, claim audit inbox, and hypothesis triage.
+- Adds `contracts/loop-state.schema.json` and `scripts/bmat_loop_check.py` to
+  validate loop privacy boundaries, source-delta completion, reviewer-objection
+  resolution, human gates, and cycle budgets before release.
+- Adds loop-check tests and fixtures for valid, private-external, pending-source,
+  and unhandled-reviewer-objection loop states.
+- Adds `references/connector-binding-matrix.md` to bind workflows and loops to
+  preferred public connectors and downgrade labels.
+- Adds `agent-registry.json`, `contracts/agent-registry.schema.json`, and
+  `contracts/spawned-agent-output.schema.json` to bind spawnable role prompts,
+  TOML templates, privacy levels, and output contracts.
+- Expands `codex-agents/*.toml` reviewer templates from 4 to 11 and records
+  actual spawned executions via `workflow-run.spawned_agent_instances`.
+- Bumps package metadata and templates to 0.4.0.
+
+## Workflow Structure
+
+```mermaid
+flowchart TD
+    accTitle: BMAT v0.4.1 Workflow Structure
+    accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
+
+    request["User request or BMAT alias"]
+    lock["1. Runtime, scope, source, and strategy lock"]
+    route{"2. Execution strategy"}
+    spine["3. Selected inline specialist work"]
+    ledger["4. Central claim ledger<br/>source corpus<br/>workflow-run state"]
+    synth["5. Ledger-only synthesis"]
+    release{"6. Release gates<br/>post-write + bmat_validate.py"}
+    label["7. Final workflow label<br/>Full / Compact / Partial / Blocked"]
+
+    request --> lock --> route --> spine --> ledger --> synth --> release --> label
+
+    subgraph team_dag["Optional lane: team_level_selective_dag"]
+        direction TB
+        t1["Phase 1 teams<br/>idea / omics / translational"]
+        t2["Phase 2 teams<br/>experiment design / evidence audit"]
+        tout["team_output_artifacts<br/>artifact path + checks + dependencies"]
+        tgate{"team_spawn_outputs<br/>stage pass?"}
+        t1 --> t2 --> tout --> tgate
+    end
+
+    subgraph review_lane["Optional lane: selective spawned review"]
+        direction TB
+        registry["agent-registry.json<br/>codex-agents/*.toml"]
+        instances["spawned_agent_instances"]
+        rcontract["spawned-agent-output contract"]
+        rhandoff["accepted findings<br/>ledger handoff"]
+        registry --> instances --> rcontract --> rhandoff
+    end
+
+    subgraph loop_layer["Optional lane: recurring loop layer"]
+        direction TB
+        loop_recipe["loops/*.md recipe"]
+        loop_state["loop_state.json"]
+        loop_check["bmat_loop_check.py"]
+        loop_recipe --> loop_state --> loop_check
+    end
+
+    route -. "broad independent axes" .-> t1
+    tgate --> ledger
+    ledger -. "independent audit needed" .-> registry
+    rhandoff --> ledger
+    route -. "watch / inbox / triage" .-> loop_recipe
+    loop_check --> ledger
+    loop_check --> release
+```
+
+The main workflow progresses vertically from request lock to final label. The
+lead owns the lock, selected inline work, claim ledger, workflow-run state, and
+final synthesis. Optional lanes run only when the strategy calls for them, then
+feed evidence back into the ledger: team DAG outputs are proven by
+`team_output_artifacts`, reviewer execution is proven by
+`spawned_agent_instances`, and recurring loops are checked by
+`bmat_loop_check.py`. Full-protocol release requires the post-write validator
+and `bmat_validate.py` to pass against the complete artifact bundle.
 
 ## v0.3.6 Updates
 

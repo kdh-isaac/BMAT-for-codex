@@ -74,6 +74,89 @@
         }
       }
     },
+    "team_output_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "team",
+          "phase",
+          "artifact_id",
+          "path",
+          "status",
+          "checks_run",
+          "ledger_handoff",
+          "depends_on_outputs"
+        ],
+        "properties": {
+          "team": { "type": "string" },
+          "phase": { "type": "integer", "minimum": 0 },
+          "artifact_id": { "type": "string" },
+          "path": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["planned", "running", "complete", "skipped", "blocked", "failed"]
+          },
+          "started_at": { "type": "string" },
+          "completed_at": { "type": "string" },
+          "input_scope": { "type": "string" },
+          "checks_run": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "ledger_handoff": { "type": "string" },
+          "depends_on_outputs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "failure_or_downgrade_reason": { "type": "string" }
+        }
+      }
+    },
+    "spawned_agent_instances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instance_id",
+          "agent_id",
+          "execution_surface",
+          "status",
+          "input_scope",
+          "output_artifact",
+          "checks_run",
+          "ledger_handoff"
+        ],
+        "properties": {
+          "instance_id": { "type": "string" },
+          "agent_id": { "type": "string" },
+          "execution_surface": {
+            "type": "string",
+            "enum": ["spawned_subagent", "tool_backed_validator", "external_verifier", "human_reviewer"]
+          },
+          "spawn_tool": { "type": "string" },
+          "thread_or_task_id": { "type": "string" },
+          "parent_run_id": { "type": "string" },
+          "parent_instance_id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["planned", "running", "complete", "skipped", "blocked", "failed"]
+          },
+          "started_at": { "type": "string" },
+          "completed_at": { "type": "string" },
+          "input_scope": { "type": "string" },
+          "output_artifact": { "type": "string" },
+          "checks_run": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "ledger_handoff": { "type": "string" },
+          "failure_or_downgrade_reason": { "type": "string" }
+        }
+      }
+    },
     "stages": {
       "type": "array",
       "minItems": 1,
