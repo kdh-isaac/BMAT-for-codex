@@ -62,6 +62,7 @@ WORKFLOW_LABELS = {
     PARTIAL_LABEL,
     BLOCKED_LABEL,
 }
+UTF8_BOM = "\ufeff"
 NEGATED_LABEL_PREFIXES = (
     "not labeled ",
     "not label ",
@@ -160,9 +161,19 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def strip_bom(text: str) -> str:
+    if text.startswith(UTF8_BOM):
+        return text[len(UTF8_BOM) :]
+    return text
+
+
+def read_text_file(path: Path) -> str:
+    return strip_bom(path.read_text(encoding="utf-8-sig"))
+
+
 def read_json(path: Path, key: str, findings: list[Finding]) -> Any:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(read_text_file(path))
     except FileNotFoundError:
         findings.append(Finding("WARN", "ARTIFACT_MISSING", f"{key} artifact not found", str(path)))
     except json.JSONDecodeError as exc:
@@ -172,7 +183,7 @@ def read_json(path: Path, key: str, findings: list[Finding]) -> Any:
 
 def read_text(path: Path, key: str, findings: list[Finding]) -> str:
     try:
-        return path.read_text(encoding="utf-8")
+        return read_text_file(path)
     except FileNotFoundError:
         findings.append(Finding("WARN", "ARTIFACT_MISSING", f"{key} artifact not found", str(path)))
     return ""
@@ -226,7 +237,7 @@ def validate_schemas(artifacts: dict[str, Any], findings: list[Finding]) -> None
             continue
         schema_path = contracts_dir / schema_name
         try:
-            schema = json.loads(schema_path.read_text(encoding="utf-8"))
+            schema = json.loads(read_text_file(schema_path))
             jsonschema.validate(artifact, schema)
         except FileNotFoundError:
             findings.append(Finding("WARN", "SCHEMA_FILE_MISSING", f"schema missing for {key}", str(schema_path)))
@@ -429,7 +440,7 @@ def has_same_model_marker(surface_text: str) -> bool:
 def registry_agent_ids(findings: list[Finding]) -> set[str]:
     registry_path = Path(__file__).resolve().parents[1] / "agent-registry.json"
     try:
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        registry = json.loads(read_text_file(registry_path))
     except FileNotFoundError:
         findings.append(Finding("ERROR", "AGENT_REGISTRY_MISSING", "agent-registry.json is missing", str(registry_path)))
         return set()

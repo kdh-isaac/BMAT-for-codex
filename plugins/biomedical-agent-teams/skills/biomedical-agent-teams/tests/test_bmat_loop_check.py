@@ -8,15 +8,20 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 LOOP_CHECK = SKILL_ROOT / "scripts" / "bmat_loop_check.py"
 FIXTURES = SKILL_ROOT / "tests" / "fixtures"
+UTF8_BOM_BYTES = b"\xef\xbb\xbf"
 
 
 def run_loop_check(fixture_name: str) -> subprocess.CompletedProcess[str]:
+    return run_loop_check_path(FIXTURES / fixture_name / "loop_state.json")
+
+
+def run_loop_check_path(loop_state: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [
             sys.executable,
             str(LOOP_CHECK),
             "--loop-state",
-            str(FIXTURES / fixture_name / "loop_state.json"),
+            str(loop_state),
         ],
         text=True,
         capture_output=True,
@@ -28,8 +33,23 @@ def combined_output(result: subprocess.CompletedProcess[str]) -> str:
     return result.stdout + result.stderr
 
 
+def prefix_utf8_bom(path: Path) -> None:
+    path.write_bytes(UTF8_BOM_BYTES + path.read_bytes())
+
+
 def test_valid_loop_state_passes() -> None:
     result = run_loop_check("loop_check_valid")
+    assert result.returncode == 0, combined_output(result)
+    assert "ERROR" not in result.stdout
+
+
+def test_valid_loop_state_accepts_utf8_bom_prefix(tmp_path: Path) -> None:
+    loop_state = tmp_path / "loop_state.json"
+    loop_state.write_bytes((FIXTURES / "loop_check_valid" / "loop_state.json").read_bytes())
+    prefix_utf8_bom(loop_state)
+
+    result = run_loop_check_path(loop_state)
+
     assert result.returncode == 0, combined_output(result)
     assert "ERROR" not in result.stdout
 

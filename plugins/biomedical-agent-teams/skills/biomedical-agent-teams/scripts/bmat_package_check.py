@@ -64,6 +64,7 @@ CODEX_ONLY_BLOCKED_TERMS = {
     "NON_CODEX_MARKETPLACE_REFERENCE": "Clau" + "de marketplace",
     "NON_CODEX_ONLY_COMMAND_REFERENCE": "Clau" + "de-only slash command",
 }
+UTF8_BOM = "\ufeff"
 
 
 def count_golden_tasks(skill_root: Path, findings: list[Finding]) -> int:
@@ -95,9 +96,13 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def strip_bom(text: str) -> str:
+    return text[1:] if text.startswith(UTF8_BOM) else text
+
+
 def read_json(path: Path, findings: list[Finding]) -> Any:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(strip_bom(path.read_text(encoding="utf-8-sig")))
     except FileNotFoundError:
         findings.append(Finding("ERROR", "FILE_MISSING", "JSON file missing", str(path)))
     except json.JSONDecodeError as exc:
@@ -107,7 +112,7 @@ def read_json(path: Path, findings: list[Finding]) -> Any:
 
 def read_text(path: Path, findings: list[Finding]) -> str:
     try:
-        return path.read_text(encoding="utf-8")
+        return strip_bom(path.read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
         findings.append(Finding("ERROR", "FILE_MISSING", "file missing", str(path)))
     return ""
@@ -169,6 +174,7 @@ def frontmatter_value(frontmatter: str, key: str) -> str | None:
 
 
 def extract_frontmatter(text: str, path: Path, findings: list[Finding]) -> dict[str, str]:
+    text = strip_bom(text)
     match = re.match(r"\A---\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", text, re.S)
     if not match:
         findings.append(Finding("ERROR", "FRONTMATTER_MISSING", "frontmatter missing", str(path)))

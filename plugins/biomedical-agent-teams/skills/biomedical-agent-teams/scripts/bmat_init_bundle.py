@@ -34,6 +34,7 @@ BUNDLE_FILES = (
     "final.md",
     "README.md",
 )
+UTF8_BOM = "\ufeff"
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,10 +47,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def strip_bom(text: str) -> str:
+    if text.startswith(UTF8_BOM):
+        return text[len(UTF8_BOM) :]
+    return text
+
+
+def read_text_file(path: Path) -> str:
+    return strip_bom(path.read_text(encoding="utf-8-sig"))
+
+
 def plugin_version() -> str:
     version_path = Path(__file__).resolve().parents[1] / "VERSION"
     try:
-        return version_path.read_text(encoding="utf-8").strip()
+        return read_text_file(version_path).strip()
     except FileNotFoundError:
         return "unknown"
 

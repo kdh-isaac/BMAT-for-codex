@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 RESOURCE_DIRS = ("commands", "references", "loops", "templates")
+UTF8_BOM = "\ufeff"
 
 
 def parse_args() -> argparse.Namespace:
@@ -37,7 +38,16 @@ def resolve_skill_root(root: Path) -> Path:
     raise SystemExit(2)
 
 
+def strip_bom(text: str) -> str:
+    return text[1:] if text.startswith(UTF8_BOM) else text
+
+
+def read_markdown(path: Path) -> str:
+    return strip_bom(path.read_text(encoding="utf-8-sig"))
+
+
 def _first_heading(text: str) -> str:
+    text = strip_bom(text)
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith("# "):
@@ -46,6 +56,7 @@ def _first_heading(text: str) -> str:
 
 
 def _body_after_frontmatter(text: str) -> str:
+    text = strip_bom(text)
     match = re.match(r"\A---\r?\n.*?\r?\n---[ \t]*(?:\r?\n|\Z)", text, re.S)
     if match:
         return text[match.end() :]
@@ -85,6 +96,7 @@ def fallback_summary(text: str, path: Path) -> str:
 
 
 def frontmatter(text: str) -> dict[str, list[str] | str]:
+    text = strip_bom(text)
     match = re.match(r"\A---\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", text, re.S)
     if not match:
         return {}
@@ -124,7 +136,7 @@ def main() -> int:
             continue
         print(f"\n## {folder.replace('-', ' ').title()}")
         for path in sorted(folder_path.glob("*.md")):
-            text = path.read_text(encoding="utf-8")
+            text = read_markdown(path)
             meta = frontmatter(text)
             rel = path.relative_to(root)
             summary = meta.get("summary")

@@ -10,7 +10,9 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = SKILL_ROOT.parents[1]
 PACKAGE_CHECK = SKILL_ROOT / "scripts" / "bmat_package_check.py"
+DOCS_LIST = SKILL_ROOT / "scripts" / "bmat_docs_list.py"
 PLUGIN_JSON = PLUGIN_ROOT / ".codex-plugin" / "plugin.json"
+UTF8_BOM_BYTES = b"\xef\xbb\xbf"
 ROUTER_ROOT_GUARD_PHRASE = (
     "Resolve every command recipe path relative to the directory containing this `SKILL.md`"
 )
@@ -59,11 +61,27 @@ def run_package_check(root: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def run_docs_list(root: Path) -> subprocess.CompletedProcess[str]:
+    script = root / "skills" / "biomedical-agent-teams" / "scripts" / "bmat_docs_list.py"
+    if not script.exists():
+        script = DOCS_LIST
+    return subprocess.run(
+        [sys.executable, str(script), "--root", str(root)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
 def copy_plugin(tmp_path: Path) -> Path:
     target = tmp_path / "biomedical-agent-teams"
     ignore = shutil.ignore_patterns("__pycache__", ".pytest_cache")
     shutil.copytree(PLUGIN_ROOT, target, ignore=ignore)
     return target
+
+
+def prefix_utf8_bom(path: Path) -> None:
+    path.write_bytes(UTF8_BOM_BYTES + path.read_bytes())
 
 
 def test_current_plugin_default_prompts_fit_codex_limit() -> None:
@@ -102,6 +120,29 @@ def test_package_check_accepts_standalone_installed_skill_root(tmp_path: Path) -
     result = run_package_check(skill_root)
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_package_check_accepts_utf8_bom_prefixed_command_and_agent(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    skill_root = plugin_root / "skills" / "biomedical-agent-teams"
+    prefix_utf8_bom(skill_root / "commands" / "evidence-audit-team.md")
+    prefix_utf8_bom(skill_root / "agents" / "citation-verifier.md")
+
+    result = run_package_check(plugin_root)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_docs_list_accepts_utf8_bom_prefixed_command_frontmatter(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    skill_root = plugin_root / "skills" / "biomedical-agent-teams"
+    prefix_utf8_bom(skill_root / "commands" / "evidence-audit-team.md")
+
+    result = run_docs_list(plugin_root)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "\ufeff" not in result.stdout
+    assert "`commands\\evidence-audit-team.md` - Biomedical evidence-audit team" in result.stdout
 
 
 def test_runtime_preflight_schema_has_codex_cross_platform_fields() -> None:

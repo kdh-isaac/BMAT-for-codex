@@ -36,12 +36,23 @@ CATEGORY_TERMS = {
     "pmid_drift": ("pmid", "citation_drift", "fabricated_identifier"),
     "contradiction": ("contradiction", "negative_evidence"),
 }
+UTF8_BOM = "\ufeff"
+
+
+def strip_bom(text: str) -> str:
+    if text.startswith(UTF8_BOM):
+        return text[len(UTF8_BOM) :]
+    return text
+
+
+def read_text_file(path: Path) -> str:
+    return strip_bom(path.read_text(encoding="utf-8-sig"))
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-        stripped = line.strip()
+    for line_number, line in enumerate(read_text_file(path).splitlines(), start=1):
+        stripped = strip_bom(line.strip())
         if not stripped:
             continue
         try:

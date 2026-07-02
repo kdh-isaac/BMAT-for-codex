@@ -16,7 +16,7 @@ def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_v080_release_surface_files_exist() -> None:
+def test_release_surface_files_exist() -> None:
     required_paths = [
         SKILL_ROOT / "references" / "tool-registry.md",
         SKILL_ROOT / "contracts" / "results-integration.schema.json",
@@ -28,10 +28,10 @@ def test_v080_release_surface_files_exist() -> None:
         assert path.exists(), path
 
 
-def test_v080_version_aligned_in_primary_metadata() -> None:
+def test_version_aligned_in_primary_metadata() -> None:
     version = (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
-    assert version == "0.8.0"
+    assert version == "0.8.4"
     assert read_json(SKILL_ROOT / "manifest.json")["version"] == version
     assert read_json(SKILL_ROOT / "manifest.json")["adapter_version"] == version
     assert read_json(SKILL_ROOT / "source-manifest.json")["version"] == version
@@ -39,15 +39,23 @@ def test_v080_version_aligned_in_primary_metadata() -> None:
     assert read_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")["version"] == version
 
 
-def test_v080_manifest_lists_new_resources() -> None:
+def test_manifest_lists_release_resources() -> None:
     source_manifest = read_json(SKILL_ROOT / "source-manifest.json")
 
     assert "tool-registry" in source_manifest["references"]
     assert "results-integration.schema" in source_manifest["contracts"]
     assert "results-integration-template" in source_manifest["templates"]
     assert "research-overview-template" in source_manifest["templates"]
-    assert "tool-registry-and-honest-tool-use-log" in source_manifest["new_in_v0_7_0"]
-    assert "research-overview-one-page-synthesis-template" in source_manifest["new_in_v0_8_0"]
+    assert "utf8-bom-tolerant-command-and-agent-markdown-loading" in source_manifest["new_in_v0_8_1"]
+    assert (
+        "utf8-bom-tolerant-validator-loop-golden-eval-elo-and-init-bundle-loading"
+        in source_manifest["new_in_v0_8_2"]
+    )
+    assert "elo-cli-zero-override-preservation" in source_manifest["new_in_v0_8_3"]
+    assert (
+        "utf8-bom-tolerant-codex-agent-toml-template-test-loader"
+        in source_manifest["new_in_v0_8_4"]
+    )
 
 
 def test_tool_registry_blocks_unlogged_tool_claims() -> None:
@@ -75,7 +83,7 @@ def valid_results_integration_payload() -> dict:
     return {
         "schema_version": "0.8",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "0.8.0",
+        "plugin_version": "0.8.4",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {

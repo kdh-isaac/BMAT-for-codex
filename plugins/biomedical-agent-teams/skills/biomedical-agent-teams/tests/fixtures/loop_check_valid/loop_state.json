@@ -2,7 +2,7 @@
   "loop_id": "BMAT-LOOP-20260612-001",
   "loop_name": "CAR-T IL-21 weekly literature watch",
   "loop_type": "weekly_literature_watch",
-  "plugin_version": "0.8.0",
+  "plugin_version": "0.8.4",
   "status": "complete",
   "public_only": true,
   "private_context_allowed": false,

@@ -8,13 +8,23 @@ from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 ELO_SCRIPT = SKILL_ROOT / "scripts" / "bmat_elo.py"
+UTF8_BOM_BYTES = b"\xef\xbb\xbf"
 
 
-def run_elo(input_path: Path, output_path: Path | None = None) -> subprocess.CompletedProcess[str]:
+def run_elo(
+    input_path: Path,
+    output_path: Path | None = None,
+    *extra_args: str,
+) -> subprocess.CompletedProcess[str]:
     cmd = [sys.executable, str(ELO_SCRIPT), "--input", str(input_path)]
     if output_path is not None:
         cmd.extend(["--output", str(output_path)])
+    cmd.extend(extra_args)
     return subprocess.run(cmd, text=True, capture_output=True, check=False)
+
+
+def prefix_utf8_bom(path: Path) -> None:
+    path.write_bytes(UTF8_BOM_BYTES + path.read_bytes())
 
 
 def test_bmat_elo_deterministic_stdout(tmp_path: Path) -> None:
@@ -42,6 +52,94 @@ def test_bmat_elo_deterministic_stdout(tmp_path: Path) -> None:
     assert result["rating_interpretation"] == "prioritization-only; not evidence strength or biological validation"
     assert result["ratings"][0]["hypothesis_id"] in {"H1", "H3"}
     assert all(row["rating_is_prioritization_not_evidence"] is True for row in result["ratings"])
+
+
+def test_bmat_elo_accepts_utf8_bom_prefixed_input(tmp_path: Path) -> None:
+    input_path = tmp_path / "matches.json"
+    input_path.write_text(
+        json.dumps(
+            {
+                "tournament_id": "HT-bom",
+                "matches": [
+                    {"match_id": "M1", "candidate_a": "H1", "candidate_b": "H2", "outcome": "a_wins"}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    prefix_utf8_bom(input_path)
+
+    result = run_elo(input_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads(result.stdout)["tournament_id"] == "HT-bom"
+
+
+def test_bmat_elo_honors_zero_cli_numeric_overrides(tmp_path: Path) -> None:
+    input_path = tmp_path / "matches.json"
+    input_path.write_text(
+        json.dumps(
+            {
+                "tournament_id": "HT-zero",
+                "matches": [
+                    {"match_id": "M1", "candidate_a": "H1", "candidate_b": "H2", "outcome": "a_wins"}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_elo(input_path, None, "--initial-rating", "0", "--k-factor", "0")
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["initial_rating"] == 0.0
+    assert payload["k_factor"] == 0.0
+    assert [row["elo_rating"] for row in payload["ratings"]] == [0.0, 0.0]
+    assert payload["processed_matches"][0]["rating_a_after"] == 0.0
+    assert payload["processed_matches"][0]["rating_b_after"] == 0.0
+
+
+def test_bmat_elo_rejects_invalid_numeric_settings_without_traceback(tmp_path: Path) -> None:
+    input_path = tmp_path / "matches.json"
+    input_path.write_text(
+        json.dumps(
+            {
+                "initial_rating": "not-a-number",
+                "matches": [
+                    {"match_id": "M1", "candidate_a": "H1", "candidate_b": "H2", "outcome": "a_wins"}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_elo(input_path)
+
+    assert result.returncode != 0
+    assert "initial_rating must be numeric" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_bmat_elo_rejects_negative_k_factor_without_traceback(tmp_path: Path) -> None:
+    input_path = tmp_path / "matches.json"
+    input_path.write_text(
+        json.dumps(
+            {
+                "k_factor": -1,
+                "matches": [
+                    {"match_id": "M1", "candidate_a": "H1", "candidate_b": "H2", "outcome": "a_wins"}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_elo(input_path)
+
+    assert result.returncode != 0
+    assert "k_factor must be >= 0" in result.stderr
+    assert "Traceback" not in result.stderr
 
 
 def test_bmat_elo_writes_output_file_with_unicode_path(tmp_path: Path) -> None:

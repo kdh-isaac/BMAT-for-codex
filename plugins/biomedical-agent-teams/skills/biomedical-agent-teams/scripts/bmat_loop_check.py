@@ -167,6 +167,7 @@ LOOP_RELEASE_ARTIFACT_RULES = {
         "required_any": {"triage_report", "claim_ledger_delta"},
     },
 }
+UTF8_BOM = "\ufeff"
 
 
 @dataclass(frozen=True)
@@ -184,9 +185,19 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def strip_bom(text: str) -> str:
+    if text.startswith(UTF8_BOM):
+        return text[len(UTF8_BOM) :]
+    return text
+
+
+def read_text_file(path: Path) -> str:
+    return strip_bom(path.read_text(encoding="utf-8-sig"))
+
+
 def read_json(path: Path, findings: list[Finding]) -> Any:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(read_text_file(path))
     except FileNotFoundError:
         findings.append(Finding("ERROR", "LOOP_STATE_MISSING", "loop-state artifact not found", str(path)))
     except json.JSONDecodeError as exc:
@@ -204,7 +215,7 @@ def validate_schema(loop_state: Any, findings: list[Finding]) -> None:
         return
     schema_path = Path(__file__).resolve().parents[1] / "contracts" / "loop-state.schema.json"
     try:
-        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        schema = json.loads(read_text_file(schema_path))
         jsonschema.validate(loop_state, schema)
     except FileNotFoundError:
         findings.append(Finding("ERROR", "SCHEMA_FILE_MISSING", "loop-state schema file missing", str(schema_path)))

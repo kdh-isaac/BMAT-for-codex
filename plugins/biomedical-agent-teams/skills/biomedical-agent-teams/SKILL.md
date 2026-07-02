@@ -1,10 +1,10 @@
 ---
 name: biomedical-agent-teams
 description: >
-  BMAT for Codex v0.8.0 router for biomedical evidence audit, public-omics
+  BMAT for Codex v0.8.4 router for biomedical evidence audit, public-omics
   analysis, hypothesis tournaments, experiment design, translational scouting,
   loop workflows, tool-use/result integration, and validator-backed artifacts.
-version: "0.8.0"
+version: "0.8.4"
 ---
 
 # Biomedical Agent Teams Router

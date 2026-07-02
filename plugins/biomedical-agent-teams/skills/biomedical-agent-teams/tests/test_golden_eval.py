@@ -11,6 +11,7 @@ EVAL_SCRIPT = SKILL_ROOT / "evals" / "run_golden_eval.py"
 SCHEMA_WRAPPER = SKILL_ROOT / "evals" / "validate_golden_eval_schema.py"
 TASKS = SKILL_ROOT / "evals" / "golden_tasks.jsonl"
 SAMPLE_OUTPUTS = SKILL_ROOT / "evals" / "sample_outputs.jsonl"
+UTF8_BOM_BYTES = b"\xef\xbb\xbf"
 
 
 def write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
@@ -20,13 +21,17 @@ def write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
     )
 
 
-def run_eval(outputs: Path, *extra_args: str) -> subprocess.CompletedProcess[str]:
+def prefix_utf8_bom(src: Path, dest: Path) -> None:
+    dest.write_bytes(UTF8_BOM_BYTES + src.read_bytes())
+
+
+def run_eval_with_tasks(tasks: Path, outputs: Path, *extra_args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [
             sys.executable,
             str(EVAL_SCRIPT),
             "--tasks",
-            str(TASKS),
+            str(tasks),
             "--outputs",
             str(outputs),
             *extra_args,
@@ -37,21 +42,33 @@ def run_eval(outputs: Path, *extra_args: str) -> subprocess.CompletedProcess[str
     )
 
 
+def run_eval(outputs: Path, *extra_args: str) -> subprocess.CompletedProcess[str]:
+    return run_eval_with_tasks(TASKS, outputs, *extra_args)
+
+
 def read_jsonl(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-def run_schema_wrapper(outputs: Path | None = None, *extra_args: str) -> subprocess.CompletedProcess[str]:
+def run_schema_wrapper_with_tasks(
+    tasks: Path,
+    outputs: Path | None = None,
+    *extra_args: str,
+) -> subprocess.CompletedProcess[str]:
     cmd = [
         sys.executable,
         str(SCHEMA_WRAPPER),
         "--tasks",
-        str(TASKS),
+        str(tasks),
         *extra_args,
     ]
     if outputs is not None:
         cmd.extend(["--outputs", str(outputs)])
     return subprocess.run(cmd, text=True, capture_output=True, check=False)
+
+
+def run_schema_wrapper(outputs: Path | None = None, *extra_args: str) -> subprocess.CompletedProcess[str]:
+    return run_schema_wrapper_with_tasks(TASKS, outputs, *extra_args)
 
 
 def sample_rows_with_task(task_id: str, **updates: object) -> list[dict[str, object]]:
@@ -86,6 +103,21 @@ def test_schema_wrapper_accepts_sample_tasks_and_outputs() -> None:
     payload = json.loads(result.stdout)
     assert payload["schema_valid"] is True
     assert payload["schema_errors"] == []
+
+
+def test_golden_eval_accepts_utf8_bom_prefixed_jsonl(tmp_path: Path) -> None:
+    tasks = tmp_path / "golden_tasks.jsonl"
+    outputs = tmp_path / "sample_outputs.jsonl"
+    prefix_utf8_bom(TASKS, tasks)
+    prefix_utf8_bom(SAMPLE_OUTPUTS, outputs)
+
+    schema_result = run_schema_wrapper_with_tasks(tasks, outputs, "--json")
+    eval_result = run_eval_with_tasks(tasks, outputs, "--strict", "--gate")
+
+    assert schema_result.returncode == 0, schema_result.stdout + schema_result.stderr
+    assert json.loads(schema_result.stdout)["schema_valid"] is True
+    assert eval_result.returncode == 0, eval_result.stdout + eval_result.stderr
+    assert json.loads(eval_result.stdout)["gate"]["passed"] is True
 
 
 def test_schema_wrapper_flags_malformed_output_shape(tmp_path: Path) -> None:

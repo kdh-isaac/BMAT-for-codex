@@ -9,6 +9,7 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE_ROOT = SKILL_ROOT / "codex-agents"
 AGENT_ROOT = SKILL_ROOT / "agents"
 REGISTRY_PATH = SKILL_ROOT / "agent-registry.json"
+UTF8_BOM_BYTES = b"\xef\xbb\xbf"
 EXPECTED_SPAWNABLE_TEMPLATES = {
     "biostats-repro-auditor",
     "causal-inference-confounder-analyst",
@@ -40,12 +41,16 @@ GLOBAL_SPAWNED_OUTPUT_FIELDS = {
 }
 
 
+def read_text_file(path: Path) -> str:
+    return path.read_text(encoding="utf-8-sig").lstrip("\ufeff")
+
+
 def load_template(path: Path) -> dict[str, object]:
-    return tomllib.loads(path.read_text(encoding="utf-8"))
+    return tomllib.loads(read_text_file(path))
 
 
 def load_registry() -> dict[str, object]:
-    return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    return json.loads(read_text_file(REGISTRY_PATH))
 
 
 def registry_agents() -> dict[str, dict[str, object]]:
@@ -73,6 +78,16 @@ def test_codex_agent_templates_include_global_spawned_output_contract() -> None:
         output_contract = payload.get("output_contract_schema")
         assert isinstance(output_contract, str)
         assert (path.parent / output_contract).resolve().exists(), f"{path.name} output contract missing: {output_contract}"
+
+
+def test_codex_agent_template_loader_accepts_utf8_bom_prefix(tmp_path: Path) -> None:
+    source = TEMPLATE_ROOT / "citation-verifier.toml"
+    template = tmp_path / source.name
+    template.write_bytes(UTF8_BOM_BYTES + source.read_bytes())
+
+    payload = load_template(template)
+
+    assert payload["agent_id"] == "citation-verifier"
 
 
 def test_codex_agent_template_role_prompts_exist() -> None:

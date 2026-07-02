@@ -2,7 +2,7 @@
 
 Codex Desktop marketplace package for the Biomedical Agent Teams (BMAT) plugin.
 
-Current plugin version: `0.8.0`.
+Current plugin version: `0.8.4`.
 
 ## Install
 
@@ -27,7 +27,7 @@ PMID drift, contradiction, overclaim, runtime mismatch, and ranking honesty.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.8.0 Workflow Structure
+    accTitle: BMAT v0.8.4 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]
@@ -95,13 +95,13 @@ and `bmat_validate.py` to pass against the complete artifact bundle.
 
 ## Release Surface
 
-Version `0.8.0` is the only supported release surface in this repository. Old
+Version `0.8.4` is the only supported release surface in this repository. Old
 version changelog blocks and workspace-specific install paths have been removed
 from the runtime docs; historical behavior is covered by tests and git history.
 
 ## Validation
 
-The 0.8.0 package is validated with:
+The 0.8.4 package is validated with:
 
 ```bash
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams

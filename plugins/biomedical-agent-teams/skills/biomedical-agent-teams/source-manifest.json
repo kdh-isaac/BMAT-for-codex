@@ -1,5 +1,5 @@
 {
-  "version": "0.8.0",
+  "version": "0.8.4",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 36,
@@ -328,5 +328,25 @@
     "compute-budget-and-team-level-selective-dag-release-surface-alignment",
     "loop-policy-edge-hardening-for-private-public-boundaries-and-blocked-release-artifacts",
     "package-metadata-version-bump-to-0-8-0"
+  ],
+  "new_in_v0_8_1": [
+    "utf8-bom-tolerant-command-and-agent-markdown-loading",
+    "docs-inventory-bom-regression-tests",
+    "package-metadata-version-bump-to-0-8-1"
+  ],
+  "new_in_v0_8_2": [
+    "utf8-bom-tolerant-validator-loop-golden-eval-elo-and-init-bundle-loading",
+    "json-jsonl-version-bom-regression-tests",
+    "package-metadata-version-bump-to-0-8-2"
+  ],
+  "new_in_v0_8_3": [
+    "elo-cli-zero-override-preservation",
+    "elo-numeric-setting-validation-without-tracebacks",
+    "package-metadata-version-bump-to-0-8-3"
+  ],
+  "new_in_v0_8_4": [
+    "utf8-bom-tolerant-codex-agent-toml-template-test-loader",
+    "toml-agent-template-bom-regression-test",
+    "package-metadata-version-bump-to-0-8-4"
   ]
 }

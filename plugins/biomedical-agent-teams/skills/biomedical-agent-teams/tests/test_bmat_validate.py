@@ -11,6 +11,7 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
 FIXTURES = SKILL_ROOT / "tests" / "fixtures"
+UTF8_BOM_BYTES = b"\xef\xbb\xbf"
 
 
 def run_validator(fixture_name: str) -> subprocess.CompletedProcess[str]:
@@ -47,7 +48,7 @@ def valid_results_integration_payload() -> dict[str, object]:
     return {
         "schema_version": "0.8",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "0.8.0",
+        "plugin_version": "0.8.4",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {
@@ -80,6 +81,10 @@ def valid_results_integration_payload() -> dict[str, object]:
 
 def combined_output(result: subprocess.CompletedProcess[str]) -> str:
     return result.stdout + result.stderr
+
+
+def prefix_utf8_bom(path: Path) -> None:
+    path.write_bytes(UTF8_BOM_BYTES + path.read_bytes())
 
 
 def add_valid_team_dag(run_state: dict[str, object]) -> None:
@@ -191,6 +196,42 @@ def make_omics_run_bundle(
 
 def test_valid_bundle_passes() -> None:
     result = run_validator("valid_full_protocol_bundle")
+    assert result.returncode == 0, combined_output(result)
+    assert "ERROR" not in result.stdout
+
+
+def test_valid_bundle_accepts_utf8_bom_prefixed_artifacts(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    for filename in (
+        "run_state.json",
+        "preflight.json",
+        "source_corpus.json",
+        "claim_ledger.json",
+        "stage_evaluation.json",
+        "post_write_validation.json",
+        "final.md",
+    ):
+        prefix_utf8_bom(bundle / filename)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 0, combined_output(result)
+    assert "ERROR" not in result.stdout
+
+
+def test_results_integration_accepts_utf8_bom_prefix(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    results_integration = bundle / "results_integration.json"
+    results_integration.write_text(
+        json.dumps(valid_results_integration_payload(), indent=2),
+        encoding="utf-8",
+    )
+    prefix_utf8_bom(results_integration)
+
+    result = run_validator_path(bundle)
+
     assert result.returncode == 0, combined_output(result)
     assert "ERROR" not in result.stdout
 

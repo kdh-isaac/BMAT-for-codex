@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 from typing import Any
 
 
 DEFAULT_INITIAL_RATING = 1000.0
 DEFAULT_K_FACTOR = 32.0
+UTF8_BOM = "\ufeff"
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,11 +28,41 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def strip_bom(text: str) -> str:
+    if text.startswith(UTF8_BOM):
+        return text[len(UTF8_BOM) :]
+    return text
+
+
+def read_text_file(path: Path) -> str:
+    return strip_bom(path.read_text(encoding="utf-8-sig"))
+
+
 def load_payload(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(read_text_file(path))
     if not isinstance(payload, dict):
         raise SystemExit("input JSON must be an object")
     return payload
+
+
+def numeric_setting(
+    payload: dict[str, Any],
+    key: str,
+    cli_value: float | None,
+    default: float,
+    *,
+    minimum: float | None = None,
+) -> float:
+    raw = payload[key] if key in payload else cli_value if cli_value is not None else default
+    try:
+        value = float(raw)
+    except (TypeError, ValueError) as exc:
+        raise SystemExit(f"{key} must be numeric") from exc
+    if not math.isfinite(value):
+        raise SystemExit(f"{key} must be finite")
+    if minimum is not None and value < minimum:
+        raise SystemExit(f"{key} must be >= {minimum:g}")
+    return value
 
 
 def expected_score(rating_a: float, rating_b: float) -> float:
@@ -64,8 +96,8 @@ def normalized_outcome(match: dict[str, Any]) -> tuple[str, str, float, float]:
 
 
 def aggregate(payload: dict[str, Any], initial_rating: float | None = None, k_factor: float | None = None) -> dict[str, Any]:
-    initial = float(payload.get("initial_rating", initial_rating or DEFAULT_INITIAL_RATING))
-    k = float(payload.get("k_factor", k_factor or DEFAULT_K_FACTOR))
+    initial = numeric_setting(payload, "initial_rating", initial_rating, DEFAULT_INITIAL_RATING)
+    k = numeric_setting(payload, "k_factor", k_factor, DEFAULT_K_FACTOR, minimum=0.0)
     matches = payload.get("matches", [])
     if not isinstance(matches, list):
         raise SystemExit("matches must be a list")
