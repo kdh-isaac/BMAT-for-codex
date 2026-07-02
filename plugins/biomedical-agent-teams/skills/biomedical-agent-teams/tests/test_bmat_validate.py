@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
@@ -48,7 +50,7 @@ def valid_results_integration_payload() -> dict[str, object]:
     return {
         "schema_version": "0.8",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "0.8.4",
+        "plugin_version": "0.8.7",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {
@@ -77,6 +79,17 @@ def valid_results_integration_payload() -> dict[str, object]:
         "final_claim_policy": "ledger-only",
         "human_review_status": "not-needed",
     }
+
+
+def spawnable_agent_ids() -> list[str]:
+    registry = json.loads((SKILL_ROOT / "agent-registry.json").read_text(encoding="utf-8-sig"))
+    agents = registry.get("agents", [])
+    assert isinstance(agents, list)
+    return sorted(
+        str(agent["agent_id"])
+        for agent in agents
+        if isinstance(agent, dict) and agent.get("spawnable") is True
+    )
 
 
 def combined_output(result: subprocess.CompletedProcess[str]) -> str:
@@ -335,6 +348,48 @@ def test_complete_spawned_review_lane_requires_actual_instance(tmp_path: Path) -
     assert "SPAWNED_LANE_MISSING_INSTANCE" in combined_output(result)
 
 
+@pytest.mark.parametrize("agent_id", spawnable_agent_ids())
+def test_each_spawnable_agent_instance_contract_passes_validator(tmp_path: Path, agent_id: str) -> None:
+    bundle = tmp_path / agent_id
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["spawned_review_lanes"] = [
+        {
+            "role": agent_id,
+            "status": "complete",
+            "rationale": f"{agent_id} synthetic spawned reviewer smoke check",
+            "ledger_handoff": f"{agent_id} handoff accepted into CL-001",
+        }
+    ]
+    run_state["spawned_agent_instances"] = [
+        {
+            "instance_id": f"BMAT-SPAWN-{agent_id}",
+            "agent_id": agent_id,
+            "execution_surface": "spawned_subagent",
+            "spawn_tool": "synthetic-contract-smoke",
+            "thread_or_task_id": f"synthetic-{agent_id}",
+            "parent_run_id": "run-valid-001",
+            "status": "complete",
+            "input_scope": "synthetic CL-001/S-001 full-protocol fixture",
+            "output_artifact": f"review/{agent_id}.md",
+            "checks_run": ["spawn contract smoke", "ledger handoff smoke"],
+            "ledger_handoff": f"{agent_id} handoff accepted into CL-001",
+        }
+    ]
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    post_write_path = bundle / "post_write_validation.json"
+    post_write = json.loads(post_write_path.read_text(encoding="utf-8"))
+    post_write["independent_review_status"] = f"spawned_subagent {agent_id} complete"
+    post_write_path.write_text(json.dumps(post_write, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 0, combined_output(result)
+    assert "VALIDATION_PASSED" in combined_output(result)
+
+
 def test_full_protocol_requires_complete_independent_instance(tmp_path: Path) -> None:
     bundle = tmp_path / "bundle"
     shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
@@ -392,6 +447,91 @@ def test_complete_spawned_instance_requires_output_artifact(tmp_path: Path) -> N
 
     assert result.returncode == 1
     assert "SPAWNED_INSTANCE_MISSING_OUTPUT_ARTIFACT" in combined_output(result)
+
+
+def test_complete_spawned_instance_requires_execution_evidence(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["spawned_agent_instances"][0]["input_scope"] = " "
+    run_state["spawned_agent_instances"][0]["checks_run"] = []
+    run_state["spawned_agent_instances"][0]["ledger_handoff"] = ""
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+    output = combined_output(result)
+
+    assert result.returncode == 1
+    assert "SPAWNED_INSTANCE_MISSING_INPUT_SCOPE" in output
+    assert "SPAWNED_INSTANCE_MISSING_CHECKS_RUN" in output
+    assert "SPAWNED_INSTANCE_MISSING_LEDGER_HANDOFF" in output
+
+
+def test_complete_spawned_instance_rejects_non_independent_surface(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["spawned_agent_instances"][0]["execution_surface"] = "same_model_inline"
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+    output = combined_output(result)
+
+    assert result.returncode == 1
+    assert "SPAWNED_INSTANCE_INVALID_EXECUTION_SURFACE" in output
+    assert "SPAWNED_LANE_MISSING_INSTANCE" in output
+
+
+def test_complete_spawned_review_lane_requires_ledger_handoff(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["spawned_review_lanes"][0]["ledger_handoff"] = ""
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "SPAWNED_LANE_MISSING_LEDGER_HANDOFF" in combined_output(result)
+
+
+def test_duplicate_complete_spawned_review_lane_fails(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["spawned_review_lanes"].append(dict(run_state["spawned_review_lanes"][0]))
+    run_state["spawned_agent_instances"].append(
+        {
+            **run_state["spawned_agent_instances"][0],
+            "instance_id": "BMAT-SPAWN-002",
+        }
+    )
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "SPAWNED_LANE_DUPLICATE_ROLE" in combined_output(result)
+
+
+def test_malformed_spawned_review_lanes_shape_returns_policy_error(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["spawned_review_lanes"] = {"role": "citation-verifier"}
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    output = combined_output(result)
+    assert result.returncode == 1
+    assert "INVALID_SPAWNED_REVIEW_LANES" in output
+    assert "Traceback" not in output
 
 
 def test_duplicate_spawned_instance_id_fails(tmp_path: Path) -> None:

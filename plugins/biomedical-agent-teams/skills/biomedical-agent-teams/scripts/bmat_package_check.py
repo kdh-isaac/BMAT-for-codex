@@ -65,6 +65,24 @@ CODEX_ONLY_BLOCKED_TERMS = {
     "NON_CODEX_ONLY_COMMAND_REFERENCE": "Clau" + "de-only slash command",
 }
 UTF8_BOM = "\ufeff"
+BOM_SIGNATURES = (
+    (b"\xff\xfe\x00\x00", "UTF-32 LE BOM"),
+    (b"\x00\x00\xfe\xff", "UTF-32 BE BOM"),
+    (b"\xef\xbb\xbf", "UTF-8 BOM"),
+    (b"\xff\xfe", "UTF-16 LE BOM"),
+    (b"\xfe\xff", "UTF-16 BE BOM"),
+)
+BOM_CHECK_EXTENSIONS = {
+    ".json",
+    ".jsonl",
+    ".md",
+    ".py",
+    ".toml",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+BOM_CHECK_FILENAMES = {"VERSION"}
 
 
 def count_golden_tasks(skill_root: Path, findings: list[Finding]) -> int:
@@ -105,6 +123,8 @@ def read_json(path: Path, findings: list[Finding]) -> Any:
         return json.loads(strip_bom(path.read_text(encoding="utf-8-sig")))
     except FileNotFoundError:
         findings.append(Finding("ERROR", "FILE_MISSING", "JSON file missing", str(path)))
+    except UnicodeDecodeError as exc:
+        findings.append(Finding("ERROR", "TEXT_DECODE_ERROR", f"could not decode as UTF-8: {exc}", str(path)))
     except json.JSONDecodeError as exc:
         findings.append(Finding("ERROR", "INVALID_JSON", f"invalid JSON: {exc}", str(path)))
     return None
@@ -115,7 +135,45 @@ def read_text(path: Path, findings: list[Finding]) -> str:
         return strip_bom(path.read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
         findings.append(Finding("ERROR", "FILE_MISSING", "file missing", str(path)))
+    except UnicodeDecodeError as exc:
+        findings.append(Finding("ERROR", "TEXT_DECODE_ERROR", f"could not decode as UTF-8: {exc}", str(path)))
     return ""
+
+
+def bom_check_paths(skill_root: Path) -> list[Path]:
+    paths: list[Path] = []
+    plugin_json_path = plugin_json_path_for(skill_root)
+    if plugin_json_path is not None:
+        paths.append(plugin_json_path)
+
+    for path in sorted(skill_root.rglob("*")):
+        if not path.is_file():
+            continue
+        if any(part in {"__pycache__", ".pytest_cache"} for part in path.parts):
+            continue
+        if path.name in BOM_CHECK_FILENAMES or path.suffix.lower() in BOM_CHECK_EXTENSIONS:
+            paths.append(path)
+    return paths
+
+
+def validate_no_bom_bytes(skill_root: Path, findings: list[Finding]) -> None:
+    for path in bom_check_paths(skill_root):
+        try:
+            prefix = path.read_bytes()[:4]
+        except OSError as exc:
+            findings.append(Finding("ERROR", "FILE_READ_ERROR", f"could not read file bytes: {exc}", str(path)))
+            continue
+        for signature, label in BOM_SIGNATURES:
+            if prefix.startswith(signature):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "BOM_BYTES_PRESENT",
+                        f"{label} detected at file start; release files must be BOM-free",
+                        str(path),
+                    )
+                )
+                break
 
 
 def resolve_skill_root(root: Path, findings: list[Finding]) -> Path:
@@ -507,6 +565,7 @@ def main() -> int:
     findings: list[Finding] = []
     skill_root = resolve_skill_root(args.root, findings)
     if skill_root.exists():
+        validate_no_bom_bytes(skill_root, findings)
         version = validate_versions(skill_root, findings)
         validate_plugin_interface(skill_root, findings)
         validate_counts(skill_root, findings)

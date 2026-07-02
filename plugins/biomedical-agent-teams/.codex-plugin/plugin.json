@@ -1,7 +1,7 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "0.8.4",
-  "description": "BMAT for Codex v0.8.4: a Codex-native biomedical workflow router for evidence audit, public-omics analysis, hypothesis tournaments, experiment design, translational scouting, loop-state validation, tool-use/result integration, golden eval gates, and validator-backed artifact bundles.",
+  "version": "0.8.7",
+  "description": "BMAT for Codex v0.8.7: a Codex-native biomedical workflow router for evidence audit, public-omics analysis, hypothesis tournaments, experiment design, translational scouting, loop-state validation, tool-use/result integration, golden eval gates, and validator-backed artifact bundles.",
   "author": {
     "name": "Donghyun Kim Local Research Workflow"
   },
@@ -23,8 +23,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Biomedical Agent Teams",
-    "shortDescription": "BMAT for Codex 0.8.4: lazy-loaded biomedical audit, omics, hypothesis, loop, and validator workflows.",
-    "longDescription": "BMAT for Codex v0.8.4 is a Codex-native biomedical workflow suite for structured life-science research. It uses a lightweight SKILL.md router with lazy-loaded command recipes, runtime capability preflight, source corpus lock, fixed-field claim ledger, tool-use/result integration, research overview synthesis, hypothesis tournament checks, public-omics routing, experiment-design and translational-scout workflows, loop-state validation, selective reviewer lanes, dependency-aware team DAG outputs, post-write validation, golden-case eval gates for PMID drift, contradiction, overclaim, ranking honesty, and runtime mismatch, and validator-backed artifact checks with explicit downgrade handling.",
+    "shortDescription": "BMAT for Codex 0.8.7: lazy-loaded biomedical audit, omics, hypothesis, loop, and validator workflows.",
+    "longDescription": "BMAT for Codex v0.8.7 is a Codex-native biomedical workflow suite for structured life-science research. It uses a lightweight SKILL.md router with lazy-loaded command recipes, runtime capability preflight, source corpus lock, fixed-field claim ledger, tool-use/result integration, research overview synthesis, hypothesis tournament checks, public-omics routing, experiment-design and translational-scout workflows, loop-state validation, selective reviewer lanes, dependency-aware team DAG outputs, post-write validation, golden-case eval gates for PMID drift, contradiction, overclaim, ranking honesty, and runtime mismatch, and validator-backed artifact checks with explicit downgrade handling.",
     "developerName": "Donghyun Kim Local Research Workflow",
     "category": "Research",
     "capabilities": [

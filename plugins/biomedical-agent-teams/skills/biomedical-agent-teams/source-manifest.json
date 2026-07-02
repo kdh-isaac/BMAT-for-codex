@@ -1,5 +1,5 @@
 {
-  "version": "0.8.4",
+  "version": "0.8.7",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 36,
@@ -348,5 +348,22 @@
     "utf8-bom-tolerant-codex-agent-toml-template-test-loader",
     "toml-agent-template-bom-regression-test",
     "package-metadata-version-bump-to-0-8-4"
+  ],
+  "new_in_v0_8_5": [
+    "spawned-agent-instance-complete-evidence-policy",
+    "spawned-review-lane-ledger-handoff-and-duplicate-role-policy",
+    "codex-agent-template-registry-schema-contract-regression-tests",
+    "package-metadata-version-bump-to-0-8-5"
+  ],
+  "new_in_v0_8_6": [
+    "posix-stable-docs-inventory-path-output",
+    "docs-list-cross-platform-path-regression-test",
+    "package-metadata-version-bump-to-0-8-6"
+  ],
+  "new_in_v0_8_7": [
+    "omics-run-init-bundle-scaffold-downgrade-policy",
+    "unicode-and-space-path-omics-scaffold-validation-regression-test",
+    "bom-free-release-surface-package-gate",
+    "package-metadata-version-bump-to-0-8-7"
   ]
 }

@@ -9,7 +9,7 @@ enough to paste into a final answer or save as a local artifact.
 | run_id | BMAT-RUN-YYYYMMDD-001 |
 | alias | biomedical-research-council / idea-discovery-team / omics-analysis-team / evidence-audit-team / experiment-design-team / translational-scout-team |
 | mode | quick / standard / deep / audit / plan / run |
-| plugin_version | 0.8.4 |
+| plugin_version | 0.8.7 |
 | artifacts_root |  |
 | resume_pointer |  |
 | execution_strategy | inline_only / inline_first_selective_review / team_level_selective_dag / user_requested_full_spawn / blocked |
@@ -54,6 +54,11 @@ Use this table for actual spawned reviewers or tool-backed validators. The
 `spawned_review_lanes` table records intent; this table records reviewer or
 validator instances that actually ran. Command-level team bundles are recorded
 separately in `team_output_artifacts`.
+
+For a `complete` reviewer lane, record a matching `complete` instance with an
+independent `execution_surface` and non-empty `input_scope`, `output_artifact`,
+`checks_run`, and `ledger_handoff`. A planned or complete lane without that
+instance is not release evidence.
 
 | instance_id | agent_id | execution_surface | spawn_tool | thread_or_task_id | status | input_scope | output_artifact | checks_run | ledger_handoff | failure_or_downgrade_reason |
 |---|---|---|---|---|---|---|---|---|---|---|

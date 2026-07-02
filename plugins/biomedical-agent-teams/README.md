@@ -8,7 +8,7 @@ bundles.
 
 ## Supported Release
 
-- Current plugin version: `0.8.4`.
+- Current plugin version: `0.8.7`.
 - Target runtime: Codex Desktop on macOS and Windows.
 - Active router: `skills/biomedical-agent-teams/SKILL.md`.
 - Legacy changelog blocks and hard-coded workspace install paths are not part of
@@ -46,7 +46,7 @@ bundles.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.8.4 Workflow Structure
+    accTitle: BMAT v0.8.7 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]

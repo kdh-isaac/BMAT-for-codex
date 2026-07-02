@@ -13,6 +13,7 @@ PACKAGE_CHECK = SKILL_ROOT / "scripts" / "bmat_package_check.py"
 DOCS_LIST = SKILL_ROOT / "scripts" / "bmat_docs_list.py"
 PLUGIN_JSON = PLUGIN_ROOT / ".codex-plugin" / "plugin.json"
 UTF8_BOM_BYTES = b"\xef\xbb\xbf"
+UTF16_LE_BOM_BYTES = b"\xff\xfe"
 ROUTER_ROOT_GUARD_PHRASE = (
     "Resolve every command recipe path relative to the directory containing this `SKILL.md`"
 )
@@ -122,7 +123,20 @@ def test_package_check_accepts_standalone_installed_skill_root(tmp_path: Path) -
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_package_check_accepts_utf8_bom_prefixed_command_and_agent(tmp_path: Path) -> None:
+def test_package_tools_accept_plugin_root_path_with_spaces(tmp_path: Path) -> None:
+    plugin_root = tmp_path / "BMAT Plugin With Spaces"
+    ignore = shutil.ignore_patterns("__pycache__", ".pytest_cache")
+    shutil.copytree(PLUGIN_ROOT, plugin_root, ignore=ignore)
+
+    package_result = run_package_check(plugin_root)
+    docs_result = run_docs_list(plugin_root)
+
+    assert package_result.returncode == 0, package_result.stdout + package_result.stderr
+    assert docs_result.returncode == 0, docs_result.stdout + docs_result.stderr
+    assert "`commands/evidence-audit-team.md`" in docs_result.stdout
+
+
+def test_package_check_flags_utf8_bom_prefixed_command_and_agent(tmp_path: Path) -> None:
     plugin_root = copy_plugin(tmp_path)
     skill_root = plugin_root / "skills" / "biomedical-agent-teams"
     prefix_utf8_bom(skill_root / "commands" / "evidence-audit-team.md")
@@ -130,7 +144,41 @@ def test_package_check_accepts_utf8_bom_prefixed_command_and_agent(tmp_path: Pat
 
     result = run_package_check(plugin_root)
 
-    assert result.returncode == 0, result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    assert result.returncode == 1
+    assert "BOM_BYTES_PRESENT" in output
+    assert "commands" in output
+    assert "agents" in output
+    assert "FRONTMATTER_MISSING" not in output
+    assert "Traceback" not in output
+
+
+def test_package_check_flags_utf8_bom_prefixed_plugin_json(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    prefix_utf8_bom(plugin_root / ".codex-plugin" / "plugin.json")
+
+    result = run_package_check(plugin_root)
+
+    output = result.stdout + result.stderr
+    assert result.returncode == 1
+    assert "BOM_BYTES_PRESENT" in output
+    assert "plugin.json" in output
+    assert "INVALID_JSON" not in output
+    assert "Traceback" not in output
+
+
+def test_package_check_flags_utf16_bom_without_traceback(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    command_path = plugin_root / "skills" / "biomedical-agent-teams" / "commands" / "evidence-audit-team.md"
+    command_path.write_bytes(UTF16_LE_BOM_BYTES + "# invalid utf-16-like command\n".encode("utf-8"))
+
+    result = run_package_check(plugin_root)
+
+    output = result.stdout + result.stderr
+    assert result.returncode == 1
+    assert "BOM_BYTES_PRESENT" in output
+    assert "UTF-16 LE BOM" in output
+    assert "Traceback" not in output
 
 
 def test_docs_list_accepts_utf8_bom_prefixed_command_frontmatter(tmp_path: Path) -> None:
@@ -142,7 +190,18 @@ def test_docs_list_accepts_utf8_bom_prefixed_command_frontmatter(tmp_path: Path)
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert "\ufeff" not in result.stdout
-    assert "`commands\\evidence-audit-team.md` - Biomedical evidence-audit team" in result.stdout
+    assert "`commands/evidence-audit-team.md` - Biomedical evidence-audit team" in result.stdout
+    assert "commands\\evidence-audit-team.md" not in result.stdout
+
+
+def test_docs_list_emits_posix_paths_for_cross_platform_inventory() -> None:
+    result = run_docs_list(PLUGIN_ROOT)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "`commands/evidence-audit-team.md`" in result.stdout
+    assert "`references/independent-review-policy.md`" in result.stdout
+    assert "`templates/workflow-run-template.md`" in result.stdout
+    assert "`commands\\evidence-audit-team.md`" not in result.stdout
 
 
 def test_runtime_preflight_schema_has_codex_cross_platform_fields() -> None:

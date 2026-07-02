@@ -2,7 +2,7 @@
   "loop_id": "BMAT-LOOP-20260612-002",
   "loop_name": "Private strategy literature watch",
   "loop_type": "weekly_literature_watch",
-  "plugin_version": "0.8.4",
+  "plugin_version": "0.8.7",
   "status": "running",
   "public_only": false,
   "private_context_allowed": true,

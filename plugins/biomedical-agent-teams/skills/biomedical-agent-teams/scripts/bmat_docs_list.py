@@ -138,7 +138,7 @@ def main() -> int:
         for path in sorted(folder_path.glob("*.md")):
             text = read_markdown(path)
             meta = frontmatter(text)
-            rel = path.relative_to(root)
+            rel = path.relative_to(root).as_posix()
             summary = meta.get("summary")
             if isinstance(summary, str):
                 print(f"- `{rel}` - {summary}")

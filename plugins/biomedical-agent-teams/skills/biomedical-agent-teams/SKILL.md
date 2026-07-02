@@ -1,10 +1,10 @@
 ---
 name: biomedical-agent-teams
 description: >
-  BMAT for Codex v0.8.4 router for biomedical evidence audit, public-omics
+  BMAT for Codex v0.8.7 router for biomedical evidence audit, public-omics
   analysis, hypothesis tournaments, experiment design, translational scouting,
   loop workflows, tool-use/result integration, and validator-backed artifacts.
-version: "0.8.4"
+version: "0.8.7"
 ---
 
 # Biomedical Agent Teams Router
@@ -29,9 +29,10 @@ contracts.
 7. If routing is ambiguous, choose the smallest reversible command and state the
    assumption in the runtime capability preflight.
 
-The current version adds tool-use honesty, results integration, one-page
-research overview, compute-budget, team-DAG, loop-policy, and release-surface
-checks on top of the golden eval and lightweight-router gates.
+The current version adds stricter spawned-instance evidence checks, tool-use
+honesty, results integration, one-page research overview, compute-budget,
+team-DAG, loop-policy, and release-surface checks on top of the golden eval and
+lightweight-router gates.
 
 ## Command Aliases
 

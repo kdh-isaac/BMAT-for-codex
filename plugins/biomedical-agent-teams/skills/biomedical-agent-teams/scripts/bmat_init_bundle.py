@@ -65,6 +65,19 @@ def plugin_version() -> str:
         return "unknown"
 
 
+def is_omics_run_scaffold(workflow: str, mode: str) -> bool:
+    return workflow == "omics-analysis-team" and mode == "run"
+
+
+def scaffold_review_skip_reason(workflow: str, mode: str) -> str:
+    if is_omics_run_scaffold(workflow, mode):
+        return (
+            "scaffold default: spawned-subagent support unavailable in the initial scaffold; "
+            "compact inline-only downgrade recorded until a core omics reviewer is completed"
+        )
+    return "scaffold default; fill during workflow execution"
+
+
 def utc_now() -> tuple[str, str]:
     now = datetime.now(timezone.utc).replace(microsecond=0)
     return now.isoformat().replace("+00:00", "Z"), now.date().isoformat()
@@ -87,6 +100,7 @@ def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, 
     version = plugin_version()
     run_id = f"bmat-{workflow}-{mode}-{timestamp.replace(':', '').replace('-', '')}"
     corpus_id = f"corpus-{run_id}"
+    review_skip_reason = scaffold_review_skip_reason(workflow, mode)
 
     preflight = {
         "runtime_capability_preflight_id": f"rt-{run_id}",
@@ -102,8 +116,8 @@ def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, 
         "required_role_outputs": [],
         "skipped_role_outputs_with_reason": [
             {
-                "role": "TODO",
-                "reason": "scaffold only; fill during workflow execution",
+                "role": "omics-code-reviewer" if is_omics_run_scaffold(workflow, mode) else "TODO",
+                "reason": review_skip_reason,
             }
         ],
         "external_tools_allowed": {
@@ -130,7 +144,7 @@ def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, 
             "allowed": False,
             "budget": 0,
             "selected_roles": [],
-            "rationale": "scaffold default; update if independent review is available and useful",
+            "rationale": review_skip_reason,
         },
         "team_spawn_plan": {
             "allowed": False,
@@ -140,7 +154,7 @@ def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, 
             "nested_spawn_allowed": False,
             "rationale": "scaffold default; use only for independent decision axes",
         },
-        "all_role_spawn_avoidance_reason": "scaffold default: lead-controlled inline-first workflow",
+        "all_role_spawn_avoidance_reason": review_skip_reason,
         "nested_spawn_policy": {
             "allowed": False,
             "authorization": "not requested",
@@ -177,7 +191,10 @@ def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, 
             },
         ],
         "final_label": "Partial workflow; formal gates skipped",
-        "downgrade_reasons": ["scaffold created before evidence collection, review, and validation"],
+        "downgrade_reasons": [
+            "scaffold created before evidence collection, review, and validation",
+            review_skip_reason,
+        ],
     }
 
     source_corpus = {
@@ -224,7 +241,7 @@ def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, 
         "safety_ethics_privacy_issues": [],
         "failure_mode_checklist": [],
         "excluded_claim_handling": "not assessed in scaffold",
-        "independent_review_status": "not-run",
+        "independent_review_status": review_skip_reason if is_omics_run_scaffold(workflow, mode) else "not-run",
         "minimal_required_corrections": ["complete workflow artifacts before claiming Compact standard or Full protocol"],
         "release_ready_claim_strength": "not-release-ready",
     }

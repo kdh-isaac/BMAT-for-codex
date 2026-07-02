@@ -53,6 +53,52 @@ def load_registry() -> dict[str, object]:
     return json.loads(read_text_file(REGISTRY_PATH))
 
 
+def load_schema(path: Path) -> dict[str, object]:
+    return json.loads(read_text_file(path))
+
+
+def sample_value_for_schema(property_schema: dict[str, object], field_name: str) -> object:
+    enum_values = property_schema.get("enum")
+    if isinstance(enum_values, list) and enum_values:
+        return enum_values[0]
+
+    field_type = property_schema.get("type")
+    if field_type == "array":
+        return [f"{field_name} fixture"]
+    if field_type == "object":
+        return {}
+    if field_type == "boolean":
+        return True
+    if field_type == "integer":
+        minimum = property_schema.get("minimum")
+        return minimum if isinstance(minimum, int) else 1
+    return f"{field_name} fixture"
+
+
+def assert_portable_schema_sample_is_valid(sample: dict[str, object], schema: dict[str, object]) -> None:
+    properties = schema.get("properties")
+    assert isinstance(properties, dict)
+    for field, value in sample.items():
+        property_schema = properties[field]
+        assert isinstance(property_schema, dict)
+        field_type = property_schema.get("type")
+        if field_type == "array":
+            assert isinstance(value, list) and value
+            assert all(isinstance(item, str) and item for item in value)
+        elif field_type == "object":
+            assert isinstance(value, dict)
+        elif field_type == "boolean":
+            assert isinstance(value, bool)
+        elif field_type == "integer":
+            assert isinstance(value, int) and not isinstance(value, bool)
+        else:
+            assert isinstance(value, str) and value
+
+        enum_values = property_schema.get("enum")
+        if isinstance(enum_values, list):
+            assert value in enum_values
+
+
 def registry_agents() -> dict[str, dict[str, object]]:
     registry = load_registry()
     agents = registry.get("agents", [])
@@ -130,3 +176,49 @@ def test_spawnable_registry_entries_have_matching_toml_templates() -> None:
 
     assert spawnable_agents == EXPECTED_SPAWNABLE_TEMPLATES
     assert template_agent_ids == EXPECTED_SPAWNABLE_TEMPLATES
+
+
+def test_spawnable_templates_match_registry_paths_and_schema_required_fields() -> None:
+    agents = registry_agents()
+    for agent_id, agent in sorted(agents.items()):
+        if agent.get("spawnable") is not True:
+            continue
+
+        template_rel = agent.get("toml_template_path")
+        prompt_rel = agent.get("prompt_path")
+        schema_rel = agent.get("required_output_schema")
+        assert isinstance(template_rel, str)
+        assert isinstance(prompt_rel, str)
+        assert isinstance(schema_rel, str)
+
+        template_path = SKILL_ROOT / template_rel
+        assert template_path.exists(), f"{agent_id} template missing: {template_rel}"
+        payload = load_template(template_path)
+
+        assert payload.get("agent_id") == agent_id
+        assert (template_path.parent / str(payload.get("role_prompt"))).resolve() == (SKILL_ROOT / prompt_rel).resolve()
+        assert (template_path.parent / str(payload.get("output_contract_schema"))).resolve() == (
+            SKILL_ROOT / schema_rel
+        ).resolve()
+
+        required_output_fields = payload.get("required_output_fields")
+        assert isinstance(required_output_fields, list)
+        assert all(isinstance(field, str) and field.strip() for field in required_output_fields)
+
+        schema = load_schema(SKILL_ROOT / schema_rel)
+        required = schema.get("required")
+        properties = schema.get("properties")
+        assert isinstance(required, list)
+        assert isinstance(properties, dict)
+
+        missing = set(required) - set(required_output_fields)
+        assert not missing, f"{agent_id} template omits schema-required fields: {sorted(missing)}"
+
+        sample = {}
+        for field in required:
+            assert isinstance(field, str)
+            assert field in properties, f"{agent_id} schema required field lacks property: {field}"
+            property_schema = properties[field]
+            assert isinstance(property_schema, dict)
+            sample[field] = sample_value_for_schema(property_schema, field)
+        assert_portable_schema_sample_is_valid(sample, schema)

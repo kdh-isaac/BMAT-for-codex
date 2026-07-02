@@ -2,7 +2,7 @@
   "loop_id": "BMAT-LOOP-20260612-004",
   "loop_name": "Claim audit inbox",
   "loop_type": "claim_audit_inbox",
-  "plugin_version": "0.8.4",
+  "plugin_version": "0.8.7",
   "status": "complete",
   "public_only": true,
   "private_context_allowed": false,

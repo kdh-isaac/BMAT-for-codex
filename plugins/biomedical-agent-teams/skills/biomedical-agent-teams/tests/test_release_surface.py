@@ -10,10 +10,40 @@ jsonschema = pytest.importorskip("jsonschema")
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = SKILL_ROOT.parents[1]
+BOM_SIGNATURES = (
+    (b"\xff\xfe\x00\x00", "UTF-32 LE BOM"),
+    (b"\x00\x00\xfe\xff", "UTF-32 BE BOM"),
+    (b"\xef\xbb\xbf", "UTF-8 BOM"),
+    (b"\xff\xfe", "UTF-16 LE BOM"),
+    (b"\xfe\xff", "UTF-16 BE BOM"),
+)
+BOM_CHECK_EXTENSIONS = {
+    ".json",
+    ".jsonl",
+    ".md",
+    ".py",
+    ".toml",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+BOM_CHECK_FILENAMES = {"VERSION"}
 
 
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def release_text_paths() -> list[Path]:
+    paths = [PLUGIN_ROOT / ".codex-plugin" / "plugin.json"]
+    for path in sorted(SKILL_ROOT.rglob("*")):
+        if not path.is_file():
+            continue
+        if any(part in {"__pycache__", ".pytest_cache"} for part in path.parts):
+            continue
+        if path.name in BOM_CHECK_FILENAMES or path.suffix.lower() in BOM_CHECK_EXTENSIONS:
+            paths.append(path)
+    return paths
 
 
 def test_release_surface_files_exist() -> None:
@@ -28,10 +58,17 @@ def test_release_surface_files_exist() -> None:
         assert path.exists(), path
 
 
+def test_release_surface_text_files_are_bom_free() -> None:
+    for path in release_text_paths():
+        prefix = path.read_bytes()[:4]
+        for signature, label in BOM_SIGNATURES:
+            assert not prefix.startswith(signature), f"{label} present in {path}"
+
+
 def test_version_aligned_in_primary_metadata() -> None:
     version = (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
-    assert version == "0.8.4"
+    assert version == "0.8.7"
     assert read_json(SKILL_ROOT / "manifest.json")["version"] == version
     assert read_json(SKILL_ROOT / "manifest.json")["adapter_version"] == version
     assert read_json(SKILL_ROOT / "source-manifest.json")["version"] == version
@@ -55,6 +92,22 @@ def test_manifest_lists_release_resources() -> None:
     assert (
         "utf8-bom-tolerant-codex-agent-toml-template-test-loader"
         in source_manifest["new_in_v0_8_4"]
+    )
+    assert (
+        "spawned-agent-instance-complete-evidence-policy"
+        in source_manifest["new_in_v0_8_5"]
+    )
+    assert (
+        "posix-stable-docs-inventory-path-output"
+        in source_manifest["new_in_v0_8_6"]
+    )
+    assert (
+        "omics-run-init-bundle-scaffold-downgrade-policy"
+        in source_manifest["new_in_v0_8_7"]
+    )
+    assert (
+        "bom-free-release-surface-package-gate"
+        in source_manifest["new_in_v0_8_7"]
     )
 
 
@@ -83,7 +136,7 @@ def valid_results_integration_payload() -> dict:
     return {
         "schema_version": "0.8",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "0.8.4",
+        "plugin_version": "0.8.7",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {

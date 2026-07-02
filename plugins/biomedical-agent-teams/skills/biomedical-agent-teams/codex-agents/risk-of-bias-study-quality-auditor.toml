@@ -1,6 +1,6 @@
 name = "bmat-risk-of-bias-study-quality-auditor"
 agent_id = "risk-of-bias-study-quality-auditor"
-version = "0.8.4"
+version = "0.8.7"
 description = "Template for a Codex reviewer that grades study quality, bias risks, and evidence-strength inflation."
 role_prompt = "../agents/risk-of-bias-study-quality-auditor.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

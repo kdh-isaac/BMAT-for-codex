@@ -12,7 +12,7 @@ contracts, and scripts that are lazy-loaded only when needed.
 
 ## Supported Release
 
-- Current version: `0.8.4`.
+- Current version: `0.8.7`.
 - Runtime target: Codex Desktop on macOS and Windows.
 - Legacy version history is intentionally excluded from this runtime README.
   Use git history for old release notes.
@@ -53,7 +53,7 @@ contracts, and scripts that are lazy-loaded only when needed.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.8.4 Workflow Structure
+    accTitle: BMAT v0.8.7 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]

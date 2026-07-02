@@ -1,7 +1,7 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "0.8.4",
-  "adapter_version": "0.8.4",
+  "version": "0.8.7",
+  "adapter_version": "0.8.7",
   "upstream_suite": "biomedical-agent-teams",
   "codex_adapter": true,
   "agent_count": 36,

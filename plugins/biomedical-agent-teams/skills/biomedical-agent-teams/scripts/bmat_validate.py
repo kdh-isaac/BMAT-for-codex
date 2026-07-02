@@ -101,6 +101,12 @@ FULL_PROTOCOL_SURFACES = {
     "external database",
 }
 SAME_MODEL_MARKERS = {"same-model", "same model", "same_model", "self-ratification", "same pass"}
+INDEPENDENT_INSTANCE_SURFACES = {
+    "spawned_subagent",
+    "tool_backed_validator",
+    "external_verifier",
+    "human_reviewer",
+}
 TEAM_LEVEL_STRATEGY = "team_level_selective_dag"
 REQUIRED_RUN_STATE_FIELDS = {
     "run_id",
@@ -466,26 +472,25 @@ def spawned_agent_instances(run_state: Any) -> list[dict[str, Any]]:
 
 
 def complete_independent_instances(run_state: Any) -> list[dict[str, Any]]:
-    independent_surfaces = {
-        "spawned_subagent",
-        "tool_backed_validator",
-        "external_verifier",
-        "human_reviewer",
-    }
     return [
         instance
         for instance in spawned_agent_instances(run_state)
-        if instance.get("status") == "complete" and instance.get("execution_surface") in independent_surfaces
+        if instance.get("status") == "complete" and instance.get("execution_surface") in INDEPENDENT_INSTANCE_SURFACES
     ]
 
 
-def complete_spawned_review_roles(run_state: Any) -> list[str]:
+def spawned_review_lanes(run_state: Any) -> list[dict[str, Any]]:
     if not isinstance(run_state, dict):
         return []
+    lanes = run_state.get("spawned_review_lanes", [])
+    if not isinstance(lanes, list):
+        return []
+    return [lane for lane in lanes if isinstance(lane, dict)]
+
+
+def complete_spawned_review_roles(run_state: Any) -> list[str]:
     roles: list[str] = []
-    for lane in run_state.get("spawned_review_lanes", []):
-        if not isinstance(lane, dict):
-            continue
+    for lane in spawned_review_lanes(run_state):
         if lane.get("status") == "complete" and str(lane.get("role", "")).strip():
             roles.append(str(lane["role"]))
     return roles
@@ -989,6 +994,46 @@ def validate_compact_standard_artifacts(artifacts: dict[str, Any], findings: lis
 
 def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
     run_state = artifacts.get("run_state")
+    if isinstance(run_state, dict) and "spawned_review_lanes" in run_state:
+        raw_lanes = run_state.get("spawned_review_lanes")
+        if not isinstance(raw_lanes, list):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "INVALID_SPAWNED_REVIEW_LANES",
+                    "spawned_review_lanes must be an array",
+                )
+            )
+        else:
+            for index, lane in enumerate(raw_lanes):
+                if not isinstance(lane, dict):
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "INVALID_SPAWNED_REVIEW_LANE",
+                            f"spawned_review_lanes[{index}] must be an object",
+                        )
+                    )
+                    continue
+                if lane.get("status") == "complete":
+                    role = str(lane.get("role", "")).strip()
+                    if not role:
+                        findings.append(
+                            Finding(
+                                "ERROR",
+                                "SPAWNED_LANE_MISSING_ROLE",
+                                f"complete spawned_review_lanes[{index}] must include role",
+                            )
+                        )
+                    if not str(lane.get("ledger_handoff", "")).strip():
+                        findings.append(
+                            Finding(
+                                "ERROR",
+                                "SPAWNED_LANE_MISSING_LEDGER_HANDOFF",
+                                f"complete spawned_review_lanes record for {role or index} must include ledger_handoff",
+                            )
+                        )
+
     if isinstance(run_state, dict) and "spawned_agent_instances" in run_state:
         raw_instances = run_state.get("spawned_agent_instances")
         if not isinstance(raw_instances, list):
@@ -1030,11 +1075,15 @@ def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[F
         )
 
     known_agent_ids = registry_agent_ids(findings)
-    complete_instance_agents: set[str] = set()
+    complete_independent_instance_agents: set[str] = set()
     for instance in instances:
-        agent_id = str(instance.get("agent_id", ""))
+        agent_id = str(instance.get("agent_id", "")).strip()
         status = str(instance.get("status", ""))
+        execution_surface = str(instance.get("execution_surface", "")).strip()
+        input_scope = str(instance.get("input_scope", "")).strip()
         output_artifact = str(instance.get("output_artifact", "")).strip()
+        ledger_handoff = str(instance.get("ledger_handoff", "")).strip()
+        checks_run = instance.get("checks_run")
         if known_agent_ids and agent_id not in known_agent_ids:
             findings.append(
                 Finding(
@@ -1044,7 +1093,24 @@ def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[F
                 )
             )
         if status == "complete":
-            complete_instance_agents.add(agent_id)
+            if execution_surface in INDEPENDENT_INSTANCE_SURFACES:
+                complete_independent_instance_agents.add(agent_id)
+            else:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SPAWNED_INSTANCE_INVALID_EXECUTION_SURFACE",
+                        f"complete spawned instance for {agent_id} must use an independent execution_surface",
+                    )
+                )
+            if not input_scope:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SPAWNED_INSTANCE_MISSING_INPUT_SCOPE",
+                        f"complete spawned instance for {agent_id} must record an input_scope",
+                    )
+                )
             if not output_artifact:
                 findings.append(
                     Finding(
@@ -1053,14 +1119,46 @@ def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[F
                         f"complete spawned instance for {agent_id} must record an output_artifact",
                     )
                 )
+            if not isinstance(checks_run, list) or not checks_run:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SPAWNED_INSTANCE_MISSING_CHECKS_RUN",
+                        f"complete spawned instance for {agent_id} must record non-empty checks_run",
+                    )
+                )
+            elif any(not isinstance(check, str) or not check.strip() for check in checks_run):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SPAWNED_INSTANCE_INVALID_CHECKS_RUN",
+                        f"complete spawned instance for {agent_id} has invalid checks_run entries",
+                    )
+                )
+            if not ledger_handoff:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SPAWNED_INSTANCE_MISSING_LEDGER_HANDOFF",
+                        f"complete spawned instance for {agent_id} must record a ledger_handoff",
+                    )
+                )
 
+    for role in find_duplicate_values(complete_roles):
+        findings.append(
+            Finding(
+                "ERROR",
+                "SPAWNED_LANE_DUPLICATE_ROLE",
+                f"spawned_review_lanes contains duplicate complete role {role}",
+            )
+        )
     for role in complete_roles:
-        if role not in complete_instance_agents:
+        if role not in complete_independent_instance_agents:
             findings.append(
                 Finding(
                     "ERROR",
                     "SPAWNED_LANE_MISSING_INSTANCE",
-                    f"spawned_review_lanes marks {role} complete but no matching complete spawned_agent_instances entry exists",
+                    f"spawned_review_lanes marks {role} complete but no matching complete independent spawned_agent_instances entry exists",
                 )
             )
 

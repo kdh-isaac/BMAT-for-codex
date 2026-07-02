@@ -2,7 +2,7 @@
   "loop_id": "BMAT-LOOP-20260612-006",
   "loop_name": "Weekly literature watch with unsupported release artifact",
   "loop_type": "weekly_literature_watch",
-  "plugin_version": "0.8.4",
+  "plugin_version": "0.8.7",
   "status": "complete",
   "public_only": true,
   "private_context_allowed": false,
