@@ -412,6 +412,47 @@ class BmatPackageTest(unittest.TestCase):
                 "minimal_required_corrections": [],
                 "release_ready_claim_strength": "low",
             },
+            "results-integration.schema.json": {
+                "schema_version": "0.8",
+                "integration_id": "RI-20260610-001",
+                "plugin_version": version,
+                "workflow_run_id": "BMAT-RUN-20260610-001",
+                "source_corpus_lock": "locked",
+                "input_artifacts": ["source-corpus.json", "claim-ledger.tsv"],
+                "tool_use_log": [
+                    {
+                        "tool_id": "local-bmat-validators",
+                        "invocation_surface": "local script",
+                        "status": "used",
+                        "used": True,
+                        "retrieval_date": "not-applicable",
+                        "source_corpus_rows": ["SC-001"],
+                        "result_rows": ["RI-ROW-001"],
+                        "downgrade_reason": "",
+                    }
+                ],
+                "rows": [
+                    {
+                        "result_id": "RI-ROW-001",
+                        "result_type": "tool-output",
+                        "source_ref": "SC-001",
+                        "claim_ids": ["CL-001"],
+                        "status": "support",
+                        "evidence_direction": "supports",
+                        "confidence": "moderate",
+                        "effect_or_observation": "schema smoke result",
+                        "sample_or_model_scope": "not-applicable",
+                        "statistical_support": "not-applicable",
+                        "interpretation": "Sample maps a validator result to a bounded claim.",
+                        "limitations": "Schema smoke sample, not a real audit.",
+                        "ledger_action": "update",
+                        "reviewer_or_human_gate": "not-needed",
+                    }
+                ],
+                "final_claim_policy": "ledger-only",
+                "human_review_status": "not-needed",
+                "release_notes": ["schema smoke sample"],
+            },
             "role-output.schema.json": {
                 "role": "claim-level-evidence-verifier",
                 "task_scope": "schema smoke sample",
