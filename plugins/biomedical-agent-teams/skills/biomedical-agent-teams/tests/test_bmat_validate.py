@@ -50,7 +50,7 @@ def valid_results_integration_payload() -> dict[str, object]:
     return {
         "schema_version": "0.8",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "0.8.7",
+        "plugin_version": "0.8.8",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {

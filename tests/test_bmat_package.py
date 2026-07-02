@@ -125,6 +125,35 @@ class BmatPackageTest(unittest.TestCase):
             self.assertIsInstance(source_manifest[collection], list)
             self.assertGreater(len(source_manifest[collection]), 0)
 
+    def test_package_maintenance_commands_are_repo_root_consistent(self):
+        skill_text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        expected_commands = (
+            "python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/"
+            "bmat_package_check.py --root plugins/biomedical-agent-teams",
+            "python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/"
+            "bmat_selftest.py --root plugins/biomedical-agent-teams",
+            "python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/"
+            "validate_golden_eval_schema.py --tasks plugins/biomedical-agent-teams/skills/"
+            "biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/"
+            "biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl",
+            "python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/"
+            "run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/"
+            "biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/"
+            "biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate",
+            "uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/"
+            "biomedical-agent-teams/tests -q",
+        )
+
+        self.assertIn("from the repository or marketplace root", skill_text)
+        for command in expected_commands:
+            with self.subTest(command=command):
+                self.assertIn(command, skill_text)
+
+        self.assertIn(expected_commands[-1], root_readme)
+        self.assertNotIn("python scripts/bmat_package_check.py --root <plugin-root>", skill_text)
+        self.assertNotIn("pytest plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests tests -q", skill_text)
+
     def test_all_command_recipes_have_v03_preflight_language(self):
         for command in (SKILL_ROOT / "commands").glob("*.md"):
             text = command.read_text(encoding="utf-8")

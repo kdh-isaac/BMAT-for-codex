@@ -1,6 +1,6 @@
 name = "bmat-causal-inference-confounder-analyst"
 agent_id = "causal-inference-confounder-analyst"
-version = "0.8.7"
+version = "0.8.8"
 description = "Template for a Codex reviewer that checks causal language, confounding, endpoint definition, and observational-data limits."
 role_prompt = "../agents/causal-inference-confounder-analyst.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

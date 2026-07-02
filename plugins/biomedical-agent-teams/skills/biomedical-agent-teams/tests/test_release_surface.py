@@ -68,7 +68,7 @@ def test_release_surface_text_files_are_bom_free() -> None:
 def test_version_aligned_in_primary_metadata() -> None:
     version = (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
-    assert version == "0.8.7"
+    assert version == "0.8.8"
     assert read_json(SKILL_ROOT / "manifest.json")["version"] == version
     assert read_json(SKILL_ROOT / "manifest.json")["adapter_version"] == version
     assert read_json(SKILL_ROOT / "source-manifest.json")["version"] == version
@@ -109,6 +109,14 @@ def test_manifest_lists_release_resources() -> None:
         "bom-free-release-surface-package-gate"
         in source_manifest["new_in_v0_8_7"]
     )
+    assert (
+        "bundle-readme-validator-plugin-script-path"
+        in source_manifest["new_in_v0_8_8"]
+    )
+    assert (
+        "repo-root-maintenance-gate-command-alignment"
+        in source_manifest["new_in_v0_8_8"]
+    )
 
 
 def test_tool_registry_blocks_unlogged_tool_claims() -> None:
@@ -136,7 +144,7 @@ def valid_results_integration_payload() -> dict:
     return {
         "schema_version": "0.8",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "0.8.7",
+        "plugin_version": "0.8.8",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {

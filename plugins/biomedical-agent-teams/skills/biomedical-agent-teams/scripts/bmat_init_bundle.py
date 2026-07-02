@@ -95,12 +95,24 @@ def write_text(path: Path, text: str, force: bool) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, Any] | str]:
+def quoted_path(path: Path) -> str:
+    return f'"{path}"'
+
+
+def build_payloads(
+    workflow: str,
+    mode: str,
+    topic: str,
+    output_path: Path | None = None,
+) -> dict[str, dict[str, Any] | str]:
     timestamp, date = utc_now()
     version = plugin_version()
     run_id = f"bmat-{workflow}-{mode}-{timestamp.replace(':', '').replace('-', '')}"
     corpus_id = f"corpus-{run_id}"
     review_skip_reason = scaffold_review_skip_reason(workflow, mode)
+    validator_path = Path(__file__).resolve().parent / "bmat_validate.py"
+    bundle_path = output_path.resolve() if output_path is not None else Path("<this-directory>")
+    validator_command = f"python {quoted_path(validator_path)} --bundle {quoted_path(bundle_path)}"
 
     preflight = {
         "runtime_capability_preflight_id": f"rt-{run_id}",
@@ -266,7 +278,9 @@ def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, 
         "2. Fill `source_corpus.json` with stable PMID/DOI/accession/NCT/local artifact IDs.\n"
         "3. Add atomic claims to `claim_ledger.json`; final prose should use only allowed wording.\n"
         "4. Update `stage_evaluation.json` and `run_state.json` as gates pass or block.\n"
-        "5. Run `scripts/bmat_validate.py --bundle <this-directory>` before using a high-confidence workflow label.\n"
+        "5. Run the BMAT validator with the plugin script path, not a bundle-local `scripts/` directory:\n"
+        f"   `{validator_command}`\n"
+        "   Re-run this command before using a high-confidence workflow label.\n"
     )
 
     return {
@@ -284,7 +298,7 @@ def build_payloads(workflow: str, mode: str, topic: str) -> dict[str, dict[str, 
 def main() -> int:
     args = parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    payloads = build_payloads(args.workflow, args.mode, args.topic)
+    payloads = build_payloads(args.workflow, args.mode, args.topic, args.out)
     for filename in BUNDLE_FILES:
         path = args.out / filename
         payload = payloads[filename]

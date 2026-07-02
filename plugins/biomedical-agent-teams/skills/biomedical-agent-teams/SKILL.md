@@ -1,10 +1,10 @@
 ---
 name: biomedical-agent-teams
 description: >
-  BMAT for Codex v0.8.7 router for biomedical evidence audit, public-omics
+  BMAT for Codex v0.8.8 router for biomedical evidence audit, public-omics
   analysis, hypothesis tournaments, experiment design, translational scouting,
   loop workflows, tool-use/result integration, and validator-backed artifacts.
-version: "0.8.7"
+version: "0.8.8"
 ---
 
 # Biomedical Agent Teams Router
@@ -194,19 +194,19 @@ validator-named files.
 ## Package Maintenance Gates
 
 Before releasing or copying this plugin into a cache directory, run the narrowest
-available checks:
+available checks from the repository or marketplace root:
 
 ```bash
-python scripts/bmat_package_check.py --root <plugin-root>
-python scripts/bmat_selftest.py --root <plugin-root>
-python evals/validate_golden_eval_schema.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl
-python evals/run_golden_eval.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl --strict --gate
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
 ```
 
 When test tooling is available, also run the package tests:
 
 ```bash
-uvx --with jsonschema pytest plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests tests -q
+uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
 ```
 
 The package check enforces that this router remains lightweight and that command
