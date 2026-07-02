@@ -57,12 +57,12 @@ LAZY_LOAD_GUARD_PHRASES = {
     "VALIDATOR_FULL_PROTOCOL_CEILING_MISSING": "Do not claim `Full protocol followed`",
 }
 CODEX_ONLY_BLOCKED_TERMS = {
-    "CLAUDE_MD_REFERENCE": "CLAUDE.md",
-    "CLAUDE_HOST_DELEGATE_REFERENCE": "host.delegate",
-    "CLAUDE_SUBAGENT_REFERENCE": "Claude subagent",
-    "CLAUDE_HOOK_REFERENCE": "Claude hook",
-    "CLAUDE_MARKETPLACE_REFERENCE": "Claude marketplace",
-    "CLAUDE_ONLY_COMMAND_REFERENCE": "Claude-only slash command",
+    "NON_CODEX_MD_REFERENCE": "CLA" + "UDE.md",
+    "NON_CODEX_HOST_DELEGATE_REFERENCE": "host" + ".delegate",
+    "NON_CODEX_SUBAGENT_REFERENCE": "Clau" + "de subagent",
+    "NON_CODEX_HOOK_REFERENCE": "Clau" + "de hook",
+    "NON_CODEX_MARKETPLACE_REFERENCE": "Clau" + "de marketplace",
+    "NON_CODEX_ONLY_COMMAND_REFERENCE": "Clau" + "de-only slash command",
 }
 
 
@@ -490,7 +490,7 @@ def validate_codex_runtime_portability(skill_root: Path, findings: list[Finding]
                         Finding(
                             "ERROR",
                             code,
-                            f"Codex-facing docs must not depend on Claude-only runtime term {term!r}",
+                            f"Codex-facing docs must not depend on non-Codex runtime term {term!r}",
                             str(path),
                         )
                     )

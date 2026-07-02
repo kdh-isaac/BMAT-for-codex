@@ -1,9 +1,9 @@
 ---
 name: biomedical-agent-teams
 description: >
-  Codex biomedical workflow router for life-science research, evidence audit,
-  omics analysis, experiment design, translational scouting, loop workflows,
-  and validator-backed artifact checks.
+  BMAT for Codex v0.8.0 router for biomedical evidence audit, public-omics
+  analysis, hypothesis tournaments, experiment design, translational scouting,
+  loop workflows, tool-use/result integration, and validator-backed artifacts.
 version: "0.8.0"
 ---
 

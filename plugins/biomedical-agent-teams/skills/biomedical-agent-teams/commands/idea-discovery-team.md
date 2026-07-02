@@ -18,11 +18,9 @@ compact preflight contract with:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
-`checkpoint_plan`. For Codex cross-platform use, also record `host_os`,
-`path_style`, `python_invocation`, `shell_family`,
-`codex_runtime_capability_surface`, and `compute_budget`. For v0.4.3+, also
-record `execution_strategy`,
-`spawned_review_plan`, `team_spawn_plan`,
+`checkpoint_plan`, `execution_strategy`, `spawned_review_plan`,
+`team_spawn_plan`, `host_os`, `path_style`, `python_invocation`, `shell_family`,
+`codex_runtime_capability_surface`, and `compute_budget`;
 `all_role_spawn_avoidance_reason`, `nested_spawn_policy`, and
 `post_team_audit_plan`. If runtime capability preflight or this contract is absent,
 use the strongest downgraded workflow label supported by the produced artifacts

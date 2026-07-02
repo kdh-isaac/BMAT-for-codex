@@ -1,33 +1,33 @@
-# Biomedical Agent Teams Codex Marketplace
+# BMAT for Codex
 
-Codex Desktop marketplace package for the Biomedical Agent Teams plugin.
+Codex Desktop marketplace package for the Biomedical Agent Teams (BMAT) plugin.
 
-Current plugin version: `0.4.9`.
+Current plugin version: `0.8.0`.
 
 ## Install
 
-Clone this repository, then register the local marketplace path:
+Clone this repository, then register the local marketplace path from Windows
+PowerShell, macOS, or Linux:
 
-```powershell
-git clone https://github.com/kdh-isaac/biomedical-agent-teams-codex-marketplace
+```bash
+git clone https://github.com/kdh-isaac/BMAT-for-codex.git
 codex plugin marketplace add "<path-to-clone>"
 codex plugin add biomedical-agent-teams@biomedical-agent-teams-marketplace
 ```
 
 The plugin body is in `plugins/biomedical-agent-teams/` and exposes the
-`biomedical-agent-teams` skill with 35 agent prompts, 6 command recipes, loop
-engineering resources, connector binding, a lightweight lazy-loaded router,
-agent registry metadata, Codex
-reviewer-agent TOML templates, workflow-run spawned instance tracking,
-team-level DAG output tracking, deterministic artifact validators, and
-validator-backed release gates with golden-case eval coverage for PMID drift,
-contradiction, and overclaim detection.
+`biomedical-agent-teams` skill with 36 agent prompts, 6 command recipes, 14
+contract schemas, 14 templates, 10 references, 4 loop recipes, 12 Codex reviewer
+templates, a lightweight lazy-loaded router, source/result/claim integration,
+tool-use honesty checks, compute-budget and team-DAG surfaces, loop-state
+validation, deterministic artifact validators, and golden-case eval gates for
+PMID drift, contradiction, overclaim, runtime mismatch, and ranking honesty.
 
 ## Workflow Structure
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.4.9 Workflow Structure
+    accTitle: BMAT v0.8.0 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]
@@ -93,11 +93,17 @@ and `bmat_validate.py` to pass against the complete artifact bundle.
   router, agents, commands, contracts, templates, references, loops, tests, and
   validators.
 
+## Release Surface
+
+Version `0.8.0` is the only supported release surface in this repository. Old
+version changelog blocks and workspace-specific install paths have been removed
+from the runtime docs; historical behavior is covered by tests and git history.
+
 ## Validation
 
-The 0.4.9 package is validated with:
+The 0.8.0 package is validated with:
 
-```powershell
+```bash
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams
 uvx --with jsonschema pytest plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q

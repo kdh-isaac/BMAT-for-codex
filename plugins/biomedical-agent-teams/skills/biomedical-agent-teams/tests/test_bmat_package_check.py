@@ -210,33 +210,33 @@ def test_package_check_flags_missing_validator_runtime_downgrade_guard(tmp_path:
     assert "VALIDATOR_RUNTIME_DOWNGRADE_GUARD_MISSING" in result.stdout
 
 
-def test_package_check_flags_claude_only_runtime_assumption(tmp_path: Path) -> None:
+def test_package_check_flags_non_codex_runtime_assumption(tmp_path: Path) -> None:
     plugin_root = copy_plugin(tmp_path)
     command_path = plugin_root / "skills" / "biomedical-agent-teams" / "commands" / "idea-discovery-team.md"
     command_path.write_text(
         command_path.read_text(encoding="utf-8")
-        + "\n\nRelease-critical execution requires host.delegate fanout.\n",
+        + "\n\nRelease-critical execution requires " + "host" + ".delegate fanout.\n",
         encoding="utf-8",
     )
 
     result = run_package_check(plugin_root)
 
     assert result.returncode == 1
-    assert "CLAUDE_HOST_DELEGATE_REFERENCE" in result.stdout
+    assert "NON_CODEX_HOST_DELEGATE_REFERENCE" in result.stdout
 
 
-def test_package_check_flags_claude_md_instruction_dependency(tmp_path: Path) -> None:
+def test_package_check_flags_non_codex_instruction_dependency(tmp_path: Path) -> None:
     plugin_root = copy_plugin(tmp_path)
     agent_path = plugin_root / "skills" / "biomedical-agent-teams" / "agents" / "omics-reporter.md"
     agent_path.write_text(
-        agent_path.read_text(encoding="utf-8") + "\n\nAlso inherit CLAUDE.md when present.\n",
+        agent_path.read_text(encoding="utf-8") + "\n\nAlso inherit " + "CLA" + "UDE.md when present.\n",
         encoding="utf-8",
     )
 
     result = run_package_check(plugin_root)
 
     assert result.returncode == 1
-    assert "CLAUDE_MD_REFERENCE" in result.stdout
+    assert "NON_CODEX_MD_REFERENCE" in result.stdout
 
 
 def test_package_check_flags_missing_cross_platform_preflight_field(tmp_path: Path) -> None:
@@ -272,7 +272,7 @@ def test_package_check_flags_stale_fixture_plugin_version(tmp_path: Path) -> Non
     plugin_root = copy_plugin(tmp_path)
     fixture_path = plugin_root / "skills" / "biomedical-agent-teams" / "tests" / "fixtures" / "valid_full_protocol_bundle" / "run_state.json"
     payload = json.loads(fixture_path.read_text(encoding="utf-8"))
-    payload["plugin_version"] = "0.4.3"
+    payload["plugin_version"] = "invalid-stale-version"
     fixture_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     result = run_package_check(plugin_root)

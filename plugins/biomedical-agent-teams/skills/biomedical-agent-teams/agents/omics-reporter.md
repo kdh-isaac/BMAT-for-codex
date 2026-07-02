@@ -23,10 +23,10 @@ Objective; skills/tools used; inputs & data provenance (source, accession, versi
 - No raw data / PHI / PII / private sample IDs in the deliverable.
 - **Save final deliverables under the active workspace's dated output folder.**
   Resolve the path from the nearest project `AGENTS.md` or active user
-  instruction first. In this Windows Codex workspace, the expected root is
-  `G:\내 드라이브\work\codex\work\YYYY-MM-DD\`. On macOS, use the matching
-  Google Drive workspace path if that is the active project instruction. Repo
-  intermediates still go to `results/`/`reports/` when the workflow requires it.
+  instruction first. On Windows, macOS, and Linux, preserve the user's active
+  workspace convention instead of hard-coding a local drive, home directory, or
+  cloud-sync path. Repo intermediates still go to `results/`/`reports/` when the
+  workflow requires it.
 - Cite only verified metadata; flag preprints and low-quality evidence.
 
 ## Output

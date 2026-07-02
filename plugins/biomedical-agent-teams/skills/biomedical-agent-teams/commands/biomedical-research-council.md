@@ -10,7 +10,7 @@ User request: $ARGUMENTS
 
 Run a lead-controlled biomedical research council. Default to Korean. Treat the user as an expert in immunology, CAR cell therapy, and public-omics analysis.
 
-## v0.4.3 Spine
+## Current Workflow Spine
 
 0. Confirm the router `SKILL.md` and this command recipe were read to EOF before
    source expansion, external tool use, file writes, code execution, spawned
@@ -43,7 +43,7 @@ Run a lead-controlled biomedical research council. Default to Korean. Treat the 
 17. Apply `references/independent-review-policy.md` before using independent-review wording.
 18. Run the integrity gate and `post-write-final-validator` before final output for high-confidence source-backed deliverables.
 
-## v0.4.3 Label and Artifact Gate
+## Current Label and Artifact Gate
 
 Use the label ceiling below before final writing:
 
