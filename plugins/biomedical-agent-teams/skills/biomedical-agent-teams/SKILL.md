@@ -4,7 +4,7 @@ description: >
   Codex biomedical workflow router for life-science research, evidence audit,
   omics analysis, experiment design, translational scouting, loop workflows,
   and validator-backed artifact checks.
-version: "0.4.9"
+version: "0.8.0"
 ---
 
 # Biomedical Agent Teams Router
@@ -29,10 +29,9 @@ contracts.
 7. If routing is ambiguous, choose the smallest reversible command and state the
    assumption in the runtime capability preflight.
 
-The current version adds a golden-case eval gate for PMID drift, contradiction,
-and overclaim detection, plus a router-size/lazy-load package check. It also
-hardens runtime capability downgrade handling for environments where
-`scripts/bmat_validate.py` cannot execute.
+The current version adds tool-use honesty, results integration, one-page
+research overview, compute-budget, team-DAG, loop-policy, and release-surface
+checks on top of the golden eval and lightweight-router gates.
 
 ## Command Aliases
 
@@ -175,6 +174,11 @@ Use these inventory surfaces instead of expanding this router:
 - `source-manifest.json`: canonical resource lists and versioned package counts.
 - `manifest.json`: marketplace/runtime metadata counts.
 - `agent-registry.json`: spawnable role metadata and TOML template bindings.
+- `references/tool-registry.md`: honest tool-use and downgrade registry.
+- `contracts/results-integration.schema.json`: source/result/claim mapping
+  contract for tool, reviewer, omics, and literature outputs.
+- `templates/research-overview-template.md`: ledger-bound one-page synthesis
+  template for final overview outputs.
 - `scripts/bmat_docs_list.py`: dependency-free docs inventory helper.
 - `scripts/bmat_package_check.py`: package structure, version, count, router,
   and lazy-load guard checks.

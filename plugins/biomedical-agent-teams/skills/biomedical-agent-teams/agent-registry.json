@@ -1,5 +1,5 @@
 {
-  "version": "0.4.9",
+  "version": "0.8.0",
   "runtime": "codex",
   "agents": [
     {
@@ -156,6 +156,17 @@
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
       "recommended_modes": ["standard", "deep"]
+    },
+    {
+      "agent_id": "meta-review-synthesizer",
+      "prompt_path": "agents/meta-review-synthesizer.md",
+      "spawnable": true,
+      "default_execution_surface": "spawned_reviewer",
+      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team"],
+      "required_output_schema": "contracts/spawned-agent-output.schema.json",
+      "privacy_level": "public_or_local_private",
+      "recommended_modes": ["standard", "deep", "audit"],
+      "toml_template_path": "codex-agents/meta-review-synthesizer.toml"
     },
     {
       "agent_id": "immunology-mechanism-critic",

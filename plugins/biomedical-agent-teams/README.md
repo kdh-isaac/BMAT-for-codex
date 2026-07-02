@@ -8,17 +8,43 @@ spawned or tool-backed review.
 
 - `.agents/plugins/marketplace.json`: local marketplace metadata.
 - `skills/biomedical-agent-teams/`: Codex-native biomedical agent-team skill,
-  including 35 agent prompts, 6 workflow recipes, 13 contract schemas, 12
-  templates, 9 references, 4 loop recipes, 11 Codex reviewer-agent templates,
+  including 36 agent prompts, 6 workflow recipes, 14 contract schemas, 14
+  templates, 10 references, 4 loop recipes, 12 Codex reviewer-agent templates,
   an agent registry, a fixed-field claim ledger, biomedical passport,
   runtime capability preflight, source corpus lock, workflow-run state, stage
   evaluation, hypothesis tournament, independent-review policy, inline-first
   hybrid execution, selective spawned review, team-level spawned workflow DAGs,
-  integrity-gate resources, loop-state resources, connector binding, Codex
+  integrity-gate resources, loop-state resources, connector binding, tool
+  registry, results integration, research overview, Codex
   reviewer-agent templates, team output artifact tracking, and deterministic
   BMAT artifact and loop-state validators. `SKILL.md` is a lightweight router;
   command recipes, references, templates, and contracts are lazy-loaded from the
   selected alias and `source-manifest.json`.
+
+## v0.8.0 Updates
+
+- Adds a ledger-bound one-page research overview template for final synthesis
+  from claim ledger, source corpus, results integration, workflow-run state, and
+  meta-review only.
+- Aligns package metadata with compute-budget and team-level selective DAG
+  surfaces already present in runtime preflight, workflow-run, and hypothesis
+  tournament resources.
+- Carries forward loop-policy edge hardening for public/private boundary
+  mismatches, connector authorization, blocked-loop release artifacts, and
+  terminal-loop review requirements.
+- Updates package metadata to version 0.8.0.
+
+## v0.7.0 Updates
+
+- Adds `references/tool-registry.md` so connector, tool, validator, spawned
+  reviewer, and human-review claims must be backed by logged use and downgrade
+  reasons.
+- Adds `contracts/results-integration.schema.json` and
+  `templates/results-integration-template.md` for mapping support,
+  contradiction, null, ambiguous, and QC-failed findings into source corpus and
+  claim ledger actions.
+- Adds release-surface regression tests for v0.7/v0.8 resources and metadata
+  alignment.
 
 ## v0.4.9 Updates
 
@@ -184,7 +210,7 @@ spawned or tool-backed review.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.4.9 Workflow Structure
+    accTitle: BMAT v0.8.0 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]

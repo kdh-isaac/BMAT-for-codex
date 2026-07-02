@@ -17,7 +17,7 @@ from typing import Any
 
 TASK_ID_RE = re.compile(r"^GT-\d{3}$")
 MIN_DEFAULT_TASKS = 10
-MAX_DEFAULT_TASKS = 20
+MAX_DEFAULT_TASKS = 30
 GATE_TAGS = ("pmid_drift", "contradiction", "overclaim")
 CATEGORY_TERMS = {
     "unsupported": ("unsupported",),

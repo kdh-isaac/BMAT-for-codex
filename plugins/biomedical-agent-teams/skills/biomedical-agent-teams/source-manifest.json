@@ -1,18 +1,18 @@
 {
-  "version": "0.4.9",
+  "version": "0.8.0",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
-  "agent_count": 35,
+  "agent_count": 36,
   "command_count": 6,
-  "template_count": 12,
-  "contract_count": 13,
-  "reference_count": 9,
-  "script_count": 6,
+  "template_count": 14,
+  "contract_count": 14,
+  "reference_count": 10,
+  "script_count": 7,
   "test_fixture_count": 11,
   "eval_count": 2,
-  "golden_task_count": 20,
+  "golden_task_count": 23,
   "loop_count": 4,
-  "codex_agent_template_count": 11,
+  "codex_agent_template_count": 12,
   "agent_registry_count": 1,
   "workflow_spine": [
     "runtime-capability-preflight",
@@ -24,7 +24,10 @@
     "execution-strategy-lock",
     "team-level-selective-dag",
     "specialist-lanes",
+    "tool-registry",
     "central-claim-ledger-evidence-graph",
+    "results-integration",
+    "research-overview",
     "workflow-run-state",
     "loop-state",
     "biomedical-passport-state",
@@ -133,6 +136,7 @@
     "grant-ip-landscape-scout",
     "hypothesis-generator",
     "hypothesis-ranker",
+    "meta-review-synthesizer",
     "immunology-mechanism-critic",
     "life-science-lead-scientist",
     "life-science-literature-curator",
@@ -164,6 +168,8 @@
     "hypothesis-tournament-template",
     "stage-evaluation-template",
     "team-spawn-plan-template",
+    "results-integration-template",
+    "research-overview-template",
     "rollback-resume-template",
     "bmat-handoff-template",
     "bmat-pickup-template"
@@ -180,6 +186,7 @@
     "spawned-agent-output.schema",
     "workflow-run.schema",
     "source-corpus.schema",
+    "results-integration.schema",
     "hypothesis-tournament.schema",
     "stage-evaluation.schema"
   ],
@@ -192,7 +199,8 @@
     "omics-stage-validation-failure-modes",
     "hybrid-execution-policy",
     "data-safety-floor",
-    "connector-binding-matrix"
+    "connector-binding-matrix",
+    "tool-registry"
   ],
   "loops": [
     "weekly-literature-watch",
@@ -206,6 +214,7 @@
     "bmat_package_check",
     "bmat_docs_list",
     "bmat_init_bundle",
+    "bmat_elo",
     "bmat_selftest"
   ],
   "codex_agent_templates": [
@@ -213,6 +222,7 @@
     "citation-verifier",
     "causal-inference-confounder-analyst",
     "contradiction-red-team",
+    "meta-review-synthesizer",
     "biostats-repro-auditor",
     "omics-code-reviewer",
     "post-write-final-validator",
@@ -306,5 +316,17 @@
     "package-check-router-size-and-lazy-load-guard",
     "validator-runtime-unavailable-downgrade-guard",
     "package-metadata-version-bump-to-0-4-9"
+  ],
+  "new_in_v0_7_0": [
+    "tool-registry-and-honest-tool-use-log",
+    "results-integration-schema-for-support-contradiction-null-ambiguous-and-qc-failed-findings",
+    "results-integration-template-for-source-corpus-and-claim-ledger-handoff",
+    "release-surface-tests-for-tool-and-results-governance"
+  ],
+  "new_in_v0_8_0": [
+    "research-overview-one-page-synthesis-template",
+    "compute-budget-and-team-level-selective-dag-release-surface-alignment",
+    "loop-policy-edge-hardening-for-private-public-boundaries-and-blocked-release-artifacts",
+    "package-metadata-version-bump-to-0-8-0"
   ]
 }

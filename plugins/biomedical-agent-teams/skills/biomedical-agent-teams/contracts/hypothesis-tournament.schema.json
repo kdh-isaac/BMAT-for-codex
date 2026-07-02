@@ -11,8 +11,14 @@
     "final_ranking"
   ],
   "properties": {
+    "schema_version": { "type": "string" },
     "tournament_id": { "type": "string" },
     "context_lock": { "type": "string" },
+    "iteration_budget": { "type": "integer", "minimum": 1 },
+    "compute_budget_status": {
+      "type": "string",
+      "enum": ["within-budget", "budget-exhausted", "not-tracked"]
+    },
     "candidates": {
       "type": "array",
       "items": {
@@ -28,6 +34,22 @@
             "enum": ["active", "merged", "held", "discarded", "winner"]
           },
           "notes": { "type": "string" }
+        }
+      }
+    },
+    "iterations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["iteration_id", "input_guidance", "output_summary", "stop_decision"],
+        "properties": {
+          "iteration_id": { "type": "string" },
+          "input_guidance": { "type": "string" },
+          "output_summary": { "type": "string" },
+          "new_candidate_count": { "type": "integer", "minimum": 0 },
+          "active_candidate_count": { "type": "integer", "minimum": 0 },
+          "stop_decision": { "type": "string" }
         }
       }
     },
@@ -48,11 +70,115 @@
               "pairwise-debate",
               "evolution",
               "bayesian-ranking",
+              "elo-ranking",
+              "meta-review",
+              "stop-criterion",
               "red-team",
               "kill-test-design"
             ]
           },
           "output_summary": { "type": "string" }
+        }
+      }
+    },
+    "pairwise_matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["match_id", "candidate_a", "candidate_b", "outcome"],
+        "properties": {
+          "match_id": { "type": "string" },
+          "candidate_a": { "type": "string" },
+          "candidate_b": { "type": "string" },
+          "winner_id": { "type": "string" },
+          "loser_id": { "type": "string" },
+          "outcome": {
+            "type": "string",
+            "enum": ["a_wins", "b_wins", "tie", "no_decision"]
+          },
+          "rationale": { "type": "string" }
+        }
+      }
+    },
+    "ranking_model": {
+      "type": "string",
+      "enum": ["qualitative", "elo", "bradley-terry", "bayesian-qualitative", "not-applicable"]
+    },
+    "rating_table": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["hypothesis_id", "rating", "matches", "rating_interpretation"],
+        "properties": {
+          "hypothesis_id": { "type": "string" },
+          "rating": { "type": "number" },
+          "matches": { "type": "integer", "minimum": 0 },
+          "wins": { "type": "integer", "minimum": 0 },
+          "losses": { "type": "integer", "minimum": 0 },
+          "ties": { "type": "integer", "minimum": 0 },
+          "rating_interpretation": { "type": "string" }
+        }
+      }
+    },
+    "meta_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "iteration_id",
+          "recurring_weakness_patterns",
+          "generation_guidance_for_next_round",
+          "stop_or_continue_recommendation"
+        ],
+        "properties": {
+          "iteration_id": { "type": "string" },
+          "recurring_weakness_patterns": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "unsupported_claim_patterns": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "novelty_vs_feasibility_tension": { "type": "string" },
+          "contradiction_or_safety_patterns": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "generation_guidance_for_next_round": { "type": "string" },
+          "ranking_sensitivity_notes": { "type": "string" },
+          "research_overview": { "type": "string" },
+          "stop_or_continue_recommendation": { "type": "string" }
+        }
+      }
+    },
+    "stop_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["iteration_id", "criterion", "decision", "rationale"],
+        "properties": {
+          "iteration_id": { "type": "string" },
+          "criterion": {
+            "type": "string",
+            "enum": [
+              "rank_stability",
+              "novelty_exhaustion",
+              "unresolved_blockers",
+              "budget_exhausted",
+              "human_stop",
+              "not-applicable"
+            ]
+          },
+          "decision": {
+            "type": "string",
+            "enum": ["continue", "stop", "block", "not-applicable"]
+          },
+          "rationale": { "type": "string" }
         }
       }
     },
@@ -67,6 +193,8 @@
           "hypothesis_id": { "type": "string" },
           "verdict": { "type": "string" },
           "rationale": { "type": "string" },
+          "rating": { "type": "number" },
+          "rating_interpretation": { "type": "string" },
           "expected_information_gain": { "type": "string" }
         }
       }

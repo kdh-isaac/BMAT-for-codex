@@ -2,12 +2,37 @@
 
 Codex biomedical agent-team bundle with a protocol lock, central claim ledger,
 audit gates, writer restriction, post-write final validation, loop-state
-resources, connector binding, team output artifact tracking, and optional
-deterministic artifact validators.
+resources, connector binding, tool-use/result integration, research overview,
+team output artifact tracking, and optional deterministic artifact validators.
 
 Codex uses `SKILL.md` as a lightweight router and treats `agents/*.md` as role
 prompts. Long governance instructions live in command recipes, references,
 templates, contracts, and scripts that are lazy-loaded only when needed.
+
+## v0.8.0 Updates
+
+- Adds a ledger-bound one-page `research-overview-template.md` for final
+  synthesis from claim ledger, source corpus, results integration, workflow-run
+  state, and meta-review only.
+- Aligns package metadata with the compute-budget and team-level selective DAG
+  surfaces already present in runtime preflight, workflow-run, and hypothesis
+  tournament resources.
+- Carries forward loop-policy edge hardening for public/private boundary
+  mismatches, connector authorization, blocked-loop release artifacts, and
+  terminal-loop review requirements.
+- Updates metadata, templates, and Codex reviewer templates to 0.8.0.
+
+## v0.7.0 Updates
+
+- Adds `references/tool-registry.md` so connector, tool, validator, spawned
+  reviewer, and human-review claims must be backed by logged use and downgrade
+  reasons.
+- Adds `contracts/results-integration.schema.json` and
+  `templates/results-integration-template.md` for mapping support,
+  contradiction, null, ambiguous, and QC-failed findings into source corpus and
+  claim ledger actions.
+- Adds release-surface regression tests for v0.7/v0.8 resources and metadata
+  alignment.
 
 ## v0.4.9 Updates
 
@@ -134,7 +159,7 @@ templates, contracts, and scripts that are lazy-loaded only when needed.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.4.9 Workflow Structure
+    accTitle: BMAT v0.8.0 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]

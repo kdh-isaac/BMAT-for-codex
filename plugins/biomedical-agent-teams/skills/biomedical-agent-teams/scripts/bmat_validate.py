@@ -32,10 +32,15 @@ BUNDLE_FILES = {
     "final_text": "final.md",
 }
 
+OPTIONAL_BUNDLE_FILES = {
+    "results_integration": "results_integration.json",
+}
+
 SCHEMA_FILES = {
     "run_state": "workflow-run.schema.json",
     "preflight": "preflight-contract.schema.json",
     "source_corpus": "source-corpus.schema.json",
+    "results_integration": "results-integration.schema.json",
     "stage_evaluation": "stage-evaluation.schema.json",
     "post_write_validation": "post-write-validation.schema.json",
 }
@@ -149,6 +154,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--claim-ledger", type=Path)
     parser.add_argument("--stage-evaluation", type=Path)
     parser.add_argument("--post-write-validation", type=Path)
+    parser.add_argument("--results-integration", type=Path)
     parser.add_argument("--final-text", type=Path)
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON findings.")
     return parser.parse_args()
@@ -177,7 +183,11 @@ def input_paths(args: argparse.Namespace) -> dict[str, Path | None]:
     if args.bundle:
         for key, filename in BUNDLE_FILES.items():
             paths[key] = args.bundle / filename
-    for key in BUNDLE_FILES:
+        for key, filename in OPTIONAL_BUNDLE_FILES.items():
+            candidate = args.bundle / filename
+            if candidate.exists():
+                paths[key] = candidate
+    for key in tuple(BUNDLE_FILES) + tuple(OPTIONAL_BUNDLE_FILES):
         explicit = getattr(args, key, None)
         if explicit is not None:
             paths[key] = explicit
@@ -186,7 +196,7 @@ def input_paths(args: argparse.Namespace) -> dict[str, Path | None]:
 
 def load_artifacts(paths: dict[str, Path | None], findings: list[Finding]) -> dict[str, Any]:
     artifacts: dict[str, Any] = {}
-    for key in BUNDLE_FILES:
+    for key in tuple(BUNDLE_FILES) + tuple(OPTIONAL_BUNDLE_FILES):
         path = paths.get(key)
         if path is None:
             artifacts[key] = "" if key == "final_text" else None

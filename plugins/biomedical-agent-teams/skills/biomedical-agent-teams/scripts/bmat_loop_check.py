@@ -54,6 +54,20 @@ BOOLEAN_FIELDS = {
     "human_review_required",
 }
 INTEGER_FIELD_MINIMUMS = {"cycle_count": 0, "cycle_budget": 1}
+ARRAY_FIELDS = {
+    "connectors_allowed",
+    "open_items",
+    "reviewer_objections",
+    "stop_conditions",
+    "output_artifacts",
+}
+NONEMPTY_STRING_FIELDS = {
+    "loop_id",
+    "loop_name",
+    "plugin_version",
+    "state_path",
+    "privacy_boundary",
+}
 
 CONNECTOR_ALLOWLIST = {
     "weekly_literature_watch": {
@@ -212,6 +226,79 @@ def validate_required_fields(loop_state: Any, findings: list[Finding]) -> None:
         )
 
 
+def validate_portable_field_shapes(loop_state: Any, findings: list[Finding]) -> None:
+    """Enforce critical shapes even when jsonschema is unavailable."""
+    if not isinstance(loop_state, dict):
+        return
+    for field in sorted(ARRAY_FIELDS):
+        if field in loop_state and not isinstance(loop_state[field], list):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "INVALID_ARRAY_FIELD",
+                    f"{field} must be an array, got {type(loop_state[field]).__name__}",
+                    field,
+                )
+            )
+    connectors = loop_state.get("connectors_allowed")
+    if isinstance(connectors, list):
+        for index, connector in enumerate(connectors):
+            if not isinstance(connector, str) or not connector.strip():
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "INVALID_CONNECTOR_ENTRY",
+                        "connectors_allowed entries must be non-empty strings",
+                        f"connectors_allowed[{index}]",
+                    )
+                )
+    stop_conditions = loop_state.get("stop_conditions")
+    if isinstance(stop_conditions, list):
+        for index, condition in enumerate(stop_conditions):
+            if not isinstance(condition, str) or not condition.strip():
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "INVALID_STOP_CONDITION",
+                        "stop_conditions entries must be non-empty strings",
+                        f"stop_conditions[{index}]",
+                    )
+                )
+    output_artifacts = loop_state.get("output_artifacts")
+    if isinstance(output_artifacts, list):
+        for index, artifact in enumerate(output_artifacts):
+            if not isinstance(artifact, dict):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "INVALID_OUTPUT_ARTIFACT",
+                        "output_artifacts entries must be objects",
+                        f"output_artifacts[{index}]",
+                    )
+                )
+                continue
+            for field in ("artifact_id", "path", "artifact_type", "status"):
+                if not str(artifact.get(field, "")).strip():
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "INVALID_OUTPUT_ARTIFACT_FIELD",
+                            f"output_artifacts entries must include non-empty {field}",
+                            f"output_artifacts[{index}].{field}",
+                        )
+                    )
+    for field in sorted(NONEMPTY_STRING_FIELDS):
+        if field in loop_state and not str(loop_state[field]).strip():
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "EMPTY_REQUIRED_STRING_FIELD",
+                    f"{field} must be a non-empty string",
+                    field,
+                )
+            )
+
+
 def safe_bool_field(loop_state: dict[str, Any], field: str, default: bool, findings: list[Finding]) -> bool:
     value = loop_state.get(field, default)
     if isinstance(value, bool):
@@ -304,6 +391,24 @@ def validate_loop_policy(loop_state: Any, findings: list[Finding]) -> None:
     cycle_budget = safe_int_field(loop_state, "cycle_budget", 1, findings)
     blockers = []
 
+    if public_only and private_context_allowed:
+        blockers.append(
+            Finding(
+                "ERROR",
+                "PUBLIC_ONLY_CONFLICTS_WITH_PRIVATE_CONTEXT",
+                "public_only loops must not allow private context",
+            )
+        )
+
+    if not external_tools_allowed and connector_names(loop_state):
+        blockers.append(
+            Finding(
+                "ERROR",
+                "CONNECTORS_REQUIRE_EXTERNAL_TOOLS",
+                "connectors_allowed must be empty when external_tools_allowed is false",
+            )
+        )
+
     if external_tools_allowed and private_context_allowed and not public_only and human_gate_status != "approved":
         blockers.append(
             Finding(
@@ -348,6 +453,51 @@ def validate_loop_policy(loop_state: Any, findings: list[Finding]) -> None:
                 "ERROR",
                 "OPEN_ITEMS_BEFORE_COMPLETE",
                 "open, triaged, or deferred loop items remain before complete status",
+            )
+        )
+
+    if status == "complete" and stop_status != "stop":
+        blockers.append(
+            Finding(
+                "ERROR",
+                "COMPLETE_LOOP_REQUIRES_STOP_STATUS",
+                "status complete requires stop_status to be stop",
+            )
+        )
+
+    if stop_status == "stop" and status != "complete":
+        blockers.append(
+            Finding(
+                "ERROR",
+                "STOP_STATUS_REQUIRES_COMPLETE_STATUS",
+                "stop_status stop requires status complete",
+            )
+        )
+
+    if status == "blocked" and stop_status != "blocked":
+        blockers.append(
+            Finding(
+                "ERROR",
+                "BLOCKED_LOOP_REQUIRES_BLOCKED_STOP_STATUS",
+                "status blocked requires stop_status blocked",
+            )
+        )
+
+    if stop_status == "blocked" and status != "blocked":
+        blockers.append(
+            Finding(
+                "ERROR",
+                "BLOCKED_STOP_STATUS_REQUIRES_BLOCKED_LOOP",
+                "stop_status blocked requires status blocked",
+            )
+        )
+
+    if (status == "blocked" or stop_status == "blocked") and releasing_outputs(loop_state):
+        blockers.append(
+            Finding(
+                "ERROR",
+                "BLOCKED_LOOP_CANNOT_RELEASE_OUTPUTS",
+                "blocked loops must not have reviewed or released output artifacts",
             )
         )
 
@@ -397,12 +547,23 @@ def validate_release_artifact_policy(
     blockers: list[Finding],
 ) -> None:
     loop_type = str(loop_state.get("loop_type", ""))
+    releasing = releasing_outputs(loop_state)
+    releasing_types = {str(output.get("artifact_type", "")) for output in releasing}
+    is_release_state = loop_state.get("status") == "complete" or loop_state.get("stop_status") == "stop" or bool(releasing)
+    if is_release_state and not releasing:
+        blockers.append(
+            Finding(
+                "ERROR",
+                "LOOP_RELEASE_OUTPUT_REQUIRED",
+                "terminal or release loop state requires at least one reviewed or released output artifact",
+            )
+        )
+        return
+
     rules = LOOP_RELEASE_ARTIFACT_RULES.get(loop_type)
     if not rules:
         return
 
-    releasing = releasing_outputs(loop_state)
-    releasing_types = {str(output.get("artifact_type", "")) for output in releasing}
     for artifact_type in sorted(releasing_types - rules["allowed"]):
         blockers.append(
             Finding(
@@ -412,7 +573,6 @@ def validate_release_artifact_policy(
             )
         )
 
-    is_release_state = loop_state.get("status") == "complete" or loop_state.get("stop_status") == "stop" or bool(releasing)
     if is_release_state and releasing and not (releasing_types & rules["required_any"]):
         blockers.append(
             Finding(
@@ -439,6 +599,7 @@ def main() -> int:
     findings: list[Finding] = []
     loop_state = read_json(args.loop_state, findings)
     validate_required_fields(loop_state, findings)
+    validate_portable_field_shapes(loop_state, findings)
     validate_schema(loop_state, findings)
     validate_loop_policy(loop_state, findings)
     emit(findings, args.json)

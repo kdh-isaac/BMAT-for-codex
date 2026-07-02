@@ -2,7 +2,7 @@
   "loop_id": "BMAT-LOOP-20260612-005",
   "loop_name": "Public omics watch with disallowed connector",
   "loop_type": "public_omics_dataset_watch",
-  "plugin_version": "0.4.3",
+  "plugin_version": "0.8.0",
   "status": "running",
   "public_only": true,
   "private_context_allowed": false,

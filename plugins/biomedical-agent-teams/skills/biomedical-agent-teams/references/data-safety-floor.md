@@ -2,8 +2,9 @@
 
 These rules are the minimum data-safety floor for every BMAT analysis lane.
 They are bundled with the plugin so they apply even when the host workspace has
-no `AGENTS.md` or `CLAUDE.md`. If a project `AGENTS.md`/`CLAUDE.md` is present
-and stricter, follow the stricter rule.
+no `AGENTS.md` or Codex-compatible project instruction file. If a project
+`AGENTS.md` or explicit user instruction is present and stricter, follow the
+stricter rule.
 
 ## Raw Data And Output Paths
 

@@ -43,6 +43,41 @@ def run_validator_args(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def valid_results_integration_payload() -> dict[str, object]:
+    return {
+        "schema_version": "0.8",
+        "integration_id": "RI-TEST-001",
+        "plugin_version": "0.8.0",
+        "source_corpus_lock": "locked",
+        "tool_use_log": [
+            {
+                "tool_id": "pubmed-ncbi-entrez",
+                "status": "used",
+                "used": True,
+                "source_corpus_rows": ["SC-001"],
+                "result_rows": ["RI-ROW-001"],
+                "downgrade_reason": "",
+            }
+        ],
+        "rows": [
+            {
+                "result_id": "RI-ROW-001",
+                "result_type": "literature",
+                "source_ref": "SC-001",
+                "claim_ids": ["CL-001"],
+                "status": "support",
+                "evidence_direction": "supports",
+                "confidence": "moderate",
+                "interpretation": "Public literature supports a bounded claim.",
+                "limitations": "Synthetic regression fixture.",
+                "ledger_action": "update",
+            }
+        ],
+        "final_claim_policy": "ledger-only",
+        "human_review_status": "not-needed",
+    }
+
+
 def combined_output(result: subprocess.CompletedProcess[str]) -> str:
     return result.stdout + result.stderr
 
@@ -158,6 +193,23 @@ def test_valid_bundle_passes() -> None:
     result = run_validator("valid_full_protocol_bundle")
     assert result.returncode == 0, combined_output(result)
     assert "ERROR" not in result.stdout
+
+
+def test_results_integration_artifact_schema_is_validated_when_present(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    payload = valid_results_integration_payload()
+    payload["tool_use_log"][0]["used"] = False
+    (bundle / "results_integration.json").write_text(
+        json.dumps(payload, indent=2),
+        encoding="utf-8",
+    )
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "SCHEMA_VALIDATION_FAILED" in combined_output(result)
+    assert "results_integration" in combined_output(result)
 
 
 def test_full_protocol_without_independent_review_fails() -> None:

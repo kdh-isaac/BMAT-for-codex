@@ -18,7 +18,10 @@ compact preflight contract with:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`, and
-`checkpoint_plan`. For v0.4.3+, also record `execution_strategy`,
+`checkpoint_plan`. For Codex cross-platform use, also record `host_os`,
+`path_style`, `python_invocation`, `shell_family`,
+`codex_runtime_capability_surface`, and `compute_budget`. For v0.4.3+, also
+record `execution_strategy`,
 `spawned_review_plan`, `team_spawn_plan`,
 `all_role_spawn_avoidance_reason`, `nested_spawn_policy`, and
 `post_team_audit_plan`. If runtime capability preflight or this contract is absent,
@@ -55,6 +58,7 @@ claim ledger.
 - `causal-inference-confounder-analyst`
 - `hypothesis-generator`
 - `hypothesis-ranker`
+- `meta-review-synthesizer`
 - `bayesian-decision-modeler`
 - `central-claim-ledger-evidence-graph`
 - `contradiction-red-team`
@@ -97,18 +101,38 @@ For `standard` and `deep` idea discovery, use
 `contracts/hypothesis-tournament.schema.json`, or the same field order:
 
 1. R0 context/entity/source scope lock.
-2. R1 diverse hypothesis generation, usually n=8-20 when budget allows.
-3. R2 proximity clustering and duplicate collapse.
-4. R3 novelty/plausibility filter.
-5. R4 pairwise debate or tournament.
-6. R5 evolution or recombination of surviving candidates.
-7. R6 Bayesian expected information gain ranking.
-8. R7 contradiction red-team and claim ledger update.
-9. R8 final recommendation with kill-tests.
+2. Set `iteration_budget`, `max_candidates`, and `max_pairwise_matches` from
+   the selected mode unless the user explicitly overrides them.
+3. For each iteration, run R1-R7:
+   - R1 diverse hypothesis generation or regeneration from prior meta-review guidance, usually n=8-20 when budget allows.
+   - R2 proximity clustering and duplicate collapse.
+   - R3 novelty/plausibility filter.
+   - R4 pairwise debate or tournament.
+   - R5 evolution or recombination of surviving candidates.
+   - R6 deterministic Elo aggregation when `scripts/bmat_elo.py` and shell/code execution are available; otherwise record qualitative ranking only and downgrade deterministic aggregation claims.
+   - R7 contradiction red-team and claim ledger update.
+4. Run R7b `meta-review-synthesizer` after each iteration to summarize
+   recurring weakness patterns, unsupported-claim patterns, ranking
+   sensitivity, and generation guidance for the next iteration.
+5. Run R7c stop-criterion check. Continue only when the budget allows and rank
+   stability, novelty exhaustion, unresolved blockers, and human stop criteria
+   do not require stopping or blocking.
+6. R8 final recommendation with kill-tests.
 
 Rank by novelty, evidence strength, mechanistic specificity, assayability,
 feasibility, safety/privacy/translational risk, CAR cell therapy relevance, and
 expected information gain. Do not select winners by novelty alone.
+Elo or Bradley-Terry ratings are prioritization aids only; never describe them
+as evidence strength, biological proof, or validation.
+
+Default compute budgets:
+
+| Mode | iteration_budget | max_candidates | max_pairwise_matches |
+|---|---:|---:|---:|
+| `quick` | 1 | 4-6 | 0-4 |
+| `standard` | 2 | 8-12 | 12-24 |
+| `deep` | 3 | 12-20 | 24-60 |
+| `audit` | 1-2 | supplied list | targeted |
 
 ## Mode Routing
 

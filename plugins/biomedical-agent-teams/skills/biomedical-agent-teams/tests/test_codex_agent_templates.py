@@ -15,6 +15,7 @@ EXPECTED_SPAWNABLE_TEMPLATES = {
     "citation-verifier",
     "claim-level-evidence-verifier",
     "contradiction-red-team",
+    "meta-review-synthesizer",
     "omics-code-reviewer",
     "omics-provenance-validator",
     "post-write-final-validator",

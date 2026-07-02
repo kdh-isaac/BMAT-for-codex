@@ -8,8 +8,13 @@ workflow wording grants unavailable tools.
 |---|---|
 | runtime_id | RCP-YYYYMMDD-001 |
 | codex_client |  |
-| plugin_version | 0.4.9 |
+| plugin_version | 0.8.0 |
 | workspace_root |  |
+| host_os | macOS / Windows / Linux / unknown |
+| path_style | posix / windows / mixed / unknown / not-applicable |
+| python_invocation | `python3` / `py -3` / `python` / unknown |
+| shell_family | bash / zsh / powershell / cmd / none / unknown / not-applicable |
+| codex_runtime_capability_surface | file, shell, web, MCP, apps, spawned reviewer, unknown |
 | web_search_available | yes / no / unknown / not-applicable |
 | shell_available | yes / no / unknown / not-applicable |
 | file_read_available | yes / no / unknown / not-applicable |
@@ -17,12 +22,42 @@ workflow wording grants unavailable tools.
 | network_available | yes / no / unknown / not-applicable |
 | validator_cli_available | yes / no / unknown / not-applicable |
 | validator_unavailable_reason | none / validator_unavailable_due_to_runtime / missing_bundle / missing_jsonschema / not-applicable |
+| pairwise_ranking_script_available | yes / no / unknown / not-applicable |
+| tool_registry_available | yes / no / unknown / not-applicable |
+| results_integration_available | yes / no / unknown / not-applicable |
+| iteration_budget_available | yes / no / unknown / not-applicable |
 | spawned_subagents_supported | yes / no / unknown / not-applicable |
 | spawned_review_supported | yes / no / unknown / not-applicable |
 | team_level_spawn_supported | yes / no / unknown / not-applicable |
 | sandbox_profile | none / read-only / workspace-write / unrestricted / unknown |
 | label_ceiling_due_to_runtime | Full protocol followed / Contract-shaped artifact bundle / Compact standard workflow / Limited capability-downgraded workflow / Blocked |
 | downgrade_rule |  |
+
+## Cross-Platform Execution Note
+
+For Codex plugin maintenance, prefer Python entrypoints invoked through the
+active interpreter on both macOS/zsh and Windows/PowerShell. Inside package
+scripts, call child Python processes with `sys.executable` and list-style
+`subprocess.run(..., shell=False)`. Do not require Unix shebang execution or
+Bash-only shell features for release-critical validators.
+
+| field | value |
+|---|---|
+| path_portability_checked | yes / no / unknown / not-applicable |
+| unicode_or_space_path_checked | yes / no / unknown / not-applicable |
+| windows_powershell_command_available | yes / no / unknown / not-applicable |
+| macos_zsh_command_available | yes / no / unknown / not-applicable |
+
+## Compute Budget
+
+| field | value |
+|---|---|
+| mode | quick / standard / deep / audit |
+| iteration_budget |  |
+| max_candidates |  |
+| max_pairwise_matches |  |
+| max_spawned_reviewers |  |
+| max_external_queries |  |
 
 ## Execution Strategy Capability
 

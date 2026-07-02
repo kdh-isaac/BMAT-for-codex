@@ -68,7 +68,7 @@ def test_readme_sample_outputs_exist_and_strict_gate_passes() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(result.stdout)
     assert payload["schema_valid"] is True
-    assert payload["task_count"] == 20
+    assert payload["task_count"] == 23
     assert payload["output_integrity_ok"] is True
     assert payload["gate"]["passed"] is True
     assert payload["missing_output_task_ids"] == []

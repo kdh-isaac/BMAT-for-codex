@@ -18,3 +18,6 @@
 {"task_id":"GT-018","detected_failure_modes":["final_wording_drift","overclaim"],"blocked":true,"downgraded":true,"output_text":"Synthetic sample flags final prose stronger than ledger wording."}
 {"task_id":"GT-019","detected_failure_modes":[],"blocked":false,"downgraded":false,"output_text":"Synthetic negative control preserves mouse-only scope and no clinical actionability."}
 {"task_id":"GT-020","detected_failure_modes":[],"blocked":false,"downgraded":false,"output_text":"Synthetic negative control preserves conservative bulk association wording."}
+{"task_id":"GT-021","detected_failure_modes":["iteration_budget_violation","missing_meta_review_feedback"],"blocked":true,"downgraded":true,"output_text":"Synthetic sample flags a tournament that ignores iteration budget and meta-review feedback."}
+{"task_id":"GT-022","detected_failure_modes":["ranking_interpretation_overclaim","elo_as_evidence_strength"],"blocked":true,"downgraded":true,"output_text":"Synthetic sample blocks wording that treats Elo as biological evidence strength."}
+{"task_id":"GT-023","detected_failure_modes":["codex_runtime_mismatch","claude_only_runtime_assumption"],"blocked":true,"downgraded":true,"output_text":"Synthetic sample flags Codex plugin docs that depend on Claude-only execution assumptions."}

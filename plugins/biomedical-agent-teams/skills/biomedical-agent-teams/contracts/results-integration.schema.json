@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Results Integration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "integration_id",
+    "plugin_version",
+    "source_corpus_lock",
+    "rows",
+    "final_claim_policy",
+    "human_review_status"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "integration_id": { "type": "string" },
+    "plugin_version": { "type": "string" },
+    "workflow_run_id": { "type": "string" },
+    "source_corpus_lock": { "type": "string" },
+    "input_artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tool_use_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tool_id",
+          "status",
+          "used",
+          "source_corpus_rows",
+          "result_rows",
+          "downgrade_reason"
+        ],
+        "properties": {
+          "tool_id": { "type": "string" },
+          "invocation_surface": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["used", "unavailable", "skipped", "blocked", "failed"]
+          },
+          "used": { "type": "boolean" },
+          "retrieval_date": { "type": "string" },
+          "source_corpus_rows": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "result_rows": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "downgrade_reason": { "type": "string" }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "used": { "const": true } },
+              "required": ["used"]
+            },
+            "then": {
+              "properties": {
+                "status": { "const": "used" },
+                "result_rows": { "minItems": 1 }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "status": { "const": "used" } },
+              "required": ["status"]
+            },
+            "then": {
+              "properties": {
+                "used": { "const": true },
+                "result_rows": { "minItems": 1 }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": ["unavailable", "skipped", "blocked", "failed"]
+                }
+              },
+              "required": ["status"]
+            },
+            "then": {
+              "properties": {
+                "used": { "const": false },
+                "downgrade_reason": { "minLength": 1 }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "result_id",
+          "result_type",
+          "source_ref",
+          "claim_ids",
+          "status",
+          "evidence_direction",
+          "confidence",
+          "interpretation",
+          "limitations",
+          "ledger_action"
+        ],
+        "properties": {
+          "result_id": { "type": "string" },
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "literature",
+              "omics",
+              "clinical",
+              "experiment-design",
+              "translational",
+              "tool-output",
+              "reviewer-output",
+              "statistic",
+              "figure",
+              "other"
+            ]
+          },
+          "source_ref": { "type": "string" },
+          "claim_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "support",
+              "contradiction",
+              "null",
+              "ambiguous",
+              "qc-failed",
+              "excluded",
+              "not-reviewed"
+            ]
+          },
+          "evidence_direction": {
+            "type": "string",
+            "enum": ["supports", "weakens", "mixed", "neutral", "not-applicable"]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "moderate", "low", "insufficient", "not-assessed"]
+          },
+          "effect_or_observation": { "type": "string" },
+          "sample_or_model_scope": { "type": "string" },
+          "statistical_support": { "type": "string" },
+          "interpretation": { "type": "string" },
+          "limitations": { "type": "string" },
+          "ledger_action": {
+            "type": "string",
+            "enum": ["add", "update", "downgrade", "exclude", "no-change", "block"]
+          },
+          "reviewer_or_human_gate": { "type": "string" }
+        }
+      }
+    },
+    "final_claim_policy": {
+      "type": "string",
+      "enum": ["ledger-only", "downgrade-unmapped-results", "blocked"]
+    },
+    "human_review_status": {
+      "type": "string",
+      "enum": ["not-needed", "pending", "completed", "blocked"]
+    },
+    "release_notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

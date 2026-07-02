@@ -1,8 +1,8 @@
-name = "bmat-contradiction-red-team"
-agent_id = "contradiction-red-team"
+name = "bmat-meta-review-synthesizer"
+agent_id = "meta-review-synthesizer"
 version = "0.8.0"
-description = "Template for a Codex reviewer that searches for negative evidence, scope drift, and overclaim risks."
-role_prompt = "../agents/contradiction-red-team.md"
+description = "Template for a Codex reviewer that synthesizes cross-iteration tournament weaknesses and next-round generation guidance."
+role_prompt = "../agents/meta-review-synthesizer.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"
 execution_surface = "spawned_reviewer_template"
 default_mode = "review"
@@ -10,7 +10,7 @@ independent_review_surface = "spawned_subagent_or_tool_backed_validator"
 requires_claim_ledger = true
 requires_source_corpus = false
 may_write_files = false
-allowed_external_scope = "public contradiction search only after preflight approval"
+allowed_external_scope = "no external lookup by default; review provided tournament artifacts only"
 blocked_inputs = [
   "PHI/PII",
   "controlled-access data",
@@ -23,9 +23,15 @@ required_output_fields = [
   "inputs_checked",
   "tools_skills_commands_or_databases_used",
   "key_findings",
-  "contradictions",
+  "recurring_weakness_patterns",
+  "unsupported_claim_patterns",
+  "novelty_vs_feasibility_tension",
+  "contradiction_or_safety_patterns",
   "contradictions_or_risks",
-  "downgrade_recommendations",
+  "generation_guidance_for_next_round",
+  "ranking_sensitivity_notes",
+  "research_overview",
+  "stop_or_continue_recommendation",
   "confidence",
   "files_changed_or_none",
   "checks_run_or_skipped",

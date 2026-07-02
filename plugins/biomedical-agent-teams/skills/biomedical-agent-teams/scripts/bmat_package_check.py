@@ -56,6 +56,14 @@ LAZY_LOAD_GUARD_PHRASES = {
     "VALIDATOR_RUNTIME_DOWNGRADE_GUARD_MISSING": "validator_unavailable_due_to_runtime",
     "VALIDATOR_FULL_PROTOCOL_CEILING_MISSING": "Do not claim `Full protocol followed`",
 }
+CODEX_ONLY_BLOCKED_TERMS = {
+    "CLAUDE_MD_REFERENCE": "CLAUDE.md",
+    "CLAUDE_HOST_DELEGATE_REFERENCE": "host.delegate",
+    "CLAUDE_SUBAGENT_REFERENCE": "Claude subagent",
+    "CLAUDE_HOOK_REFERENCE": "Claude hook",
+    "CLAUDE_MARKETPLACE_REFERENCE": "Claude marketplace",
+    "CLAUDE_ONLY_COMMAND_REFERENCE": "Claude-only slash command",
+}
 
 
 def count_golden_tasks(skill_root: Path, findings: list[Finding]) -> int:
@@ -128,8 +136,17 @@ def resolve_skill_root(root: Path, findings: list[Finding]) -> Path:
 
 def plugin_root_for(skill_root: Path) -> Path:
     if skill_root.parent.name == "skills":
-        return skill_root.parents[1]
+        candidate = skill_root.parents[1]
+        if (candidate / ".codex-plugin" / "plugin.json").exists():
+            return candidate
     return skill_root
+
+
+def plugin_json_path_for(skill_root: Path) -> Path | None:
+    plugin_json = plugin_root_for(skill_root) / ".codex-plugin" / "plugin.json"
+    if plugin_json.exists():
+        return plugin_json
+    return None
 
 
 def frontmatter_value(frontmatter: str, key: str) -> str | None:
@@ -188,8 +205,8 @@ def expect_equal(
 
 def validate_versions(skill_root: Path, findings: list[Finding]) -> str:
     version = read_text(skill_root / "VERSION", findings).strip()
-    plugin_root = plugin_root_for(skill_root)
-    plugin = read_json(plugin_root / ".codex-plugin" / "plugin.json", findings)
+    plugin_json_path = plugin_json_path_for(skill_root)
+    plugin = read_json(plugin_json_path, findings) if plugin_json_path is not None else None
     manifest = read_json(skill_root / "manifest.json", findings)
     source_manifest = read_json(skill_root / "source-manifest.json", findings)
     registry = read_json(skill_root / "agent-registry.json", findings)
@@ -197,7 +214,7 @@ def validate_versions(skill_root: Path, findings: list[Finding]) -> str:
     frontmatter = extract_frontmatter(skill_text, skill_root / "SKILL.md", findings)
 
     if isinstance(plugin, dict):
-        expect_equal(plugin.get("version"), version, "VERSION_MISMATCH", "plugin.json version mismatch", plugin_root / ".codex-plugin" / "plugin.json", findings)
+        expect_equal(plugin.get("version"), version, "VERSION_MISMATCH", "plugin.json version mismatch", plugin_json_path or "", findings)
     if isinstance(manifest, dict):
         expect_equal(manifest.get("version"), version, "VERSION_MISMATCH", "manifest version mismatch", skill_root / "manifest.json", findings)
         expect_equal(manifest.get("adapter_version"), version, "VERSION_MISMATCH", "manifest adapter_version mismatch", skill_root / "manifest.json", findings)
@@ -220,8 +237,10 @@ def validate_versions(skill_root: Path, findings: list[Finding]) -> str:
 
 
 def validate_plugin_interface(skill_root: Path, findings: list[Finding]) -> None:
-    plugin_root = plugin_root_for(skill_root)
-    plugin = read_json(plugin_root / ".codex-plugin" / "plugin.json", findings)
+    plugin_json_path = plugin_json_path_for(skill_root)
+    if plugin_json_path is None:
+        return
+    plugin = read_json(plugin_json_path, findings)
     if not isinstance(plugin, dict):
         return
     interface = plugin.get("interface")
@@ -231,7 +250,7 @@ def validate_plugin_interface(skill_root: Path, findings: list[Finding]) -> None
                 "ERROR",
                 "PLUGIN_INTERFACE_MISSING",
                 "plugin.json interface object missing",
-                str(plugin_root / ".codex-plugin" / "plugin.json"),
+                str(plugin_json_path),
             )
         )
         return
@@ -242,7 +261,7 @@ def validate_plugin_interface(skill_root: Path, findings: list[Finding]) -> None
                 "ERROR",
                 "DEFAULT_PROMPT_INVALID",
                 "interface.defaultPrompt must be a list",
-                str(plugin_root / ".codex-plugin" / "plugin.json"),
+                str(plugin_json_path),
             )
         )
         return
@@ -255,7 +274,7 @@ def validate_plugin_interface(skill_root: Path, findings: list[Finding]) -> None
                     "interface.defaultPrompt exceeds Codex loader limit: "
                     f"maximum {CODEX_DEFAULT_PROMPT_LIMIT}, found {len(default_prompts)}"
                 ),
-                str(plugin_root / ".codex-plugin" / "plugin.json"),
+                str(plugin_json_path),
             )
         )
 
@@ -345,6 +364,24 @@ def validate_registry(skill_root: Path, findings: list[Finding]) -> None:
             findings.append(Finding("ERROR", "TOML_TEMPLATE_MISSING", f"{agent_id} spawnable template missing", str(skill_root / "agent-registry.json")))
 
 
+def validate_fixture_versions(skill_root: Path, version: str, findings: list[Finding]) -> None:
+    fixtures_root = skill_root / "tests" / "fixtures"
+    if not fixtures_root.exists():
+        return
+    for path in sorted(fixtures_root.glob("*/*.json")):
+        payload = read_json(path, findings)
+        if not isinstance(payload, dict) or "plugin_version" not in payload:
+            continue
+        expect_equal(
+            payload.get("plugin_version"),
+            version,
+            "FIXTURE_VERSION_MISMATCH",
+            "bundled fixture plugin_version mismatch",
+            path,
+            findings,
+        )
+
+
 def validate_router_mentions(skill_root: Path, findings: list[Finding]) -> None:
     skill_path = skill_root / "SKILL.md"
     skill_text = read_text(skill_path, findings)
@@ -411,17 +448,67 @@ def validate_docs_inventory(skill_root: Path, findings: list[Finding]) -> None:
                 )
 
 
+def validate_codex_runtime_portability(skill_root: Path, findings: list[Finding]) -> None:
+    runtime_schema_text = read_text(skill_root / "contracts" / "runtime-capability-preflight.schema.json", findings)
+    runtime_template_text = read_text(skill_root / "templates" / "runtime-capability-preflight-template.md", findings)
+    required_schema_tokens = (
+        "host_os",
+        "path_style",
+        "python_invocation",
+        "shell_family",
+        "codex_runtime_capability_surface",
+        "compute_budget",
+    )
+    for token in required_schema_tokens:
+        if token not in runtime_schema_text:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "RUNTIME_PREFLIGHT_PORTABILITY_FIELD_MISSING",
+                    f"runtime capability preflight schema missing {token}",
+                    str(skill_root / "contracts" / "runtime-capability-preflight.schema.json"),
+                )
+            )
+    required_template_tokens = ("Windows", "macOS", "PowerShell", "zsh", "sys.executable")
+    for token in required_template_tokens:
+        if token not in runtime_template_text:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "RUNTIME_PREFLIGHT_PORTABILITY_TEMPLATE_MISSING",
+                    f"runtime capability preflight template missing {token}",
+                    str(skill_root / "templates" / "runtime-capability-preflight-template.md"),
+                )
+            )
+
+    for folder in ("commands", "references", "loops", "templates", "agents"):
+        for path in sorted((skill_root / folder).glob("*.md")):
+            text = read_text(path, findings)
+            for code, term in CODEX_ONLY_BLOCKED_TERMS.items():
+                if term in text:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            code,
+                            f"Codex-facing docs must not depend on Claude-only runtime term {term!r}",
+                            str(path),
+                        )
+                    )
+
+
 def main() -> int:
     args = parse_args()
     findings: list[Finding] = []
     skill_root = resolve_skill_root(args.root, findings)
     if skill_root.exists():
-        validate_versions(skill_root, findings)
+        version = validate_versions(skill_root, findings)
         validate_plugin_interface(skill_root, findings)
         validate_counts(skill_root, findings)
         validate_registry(skill_root, findings)
+        validate_fixture_versions(skill_root, version, findings)
         validate_router_mentions(skill_root, findings)
         validate_docs_inventory(skill_root, findings)
+        validate_codex_runtime_portability(skill_root, findings)
 
     if args.json:
         print(json.dumps([finding.__dict__ for finding in findings], indent=2, sort_keys=True))

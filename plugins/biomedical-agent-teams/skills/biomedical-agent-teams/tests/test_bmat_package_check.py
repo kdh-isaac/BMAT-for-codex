@@ -22,11 +22,37 @@ ROUTER_INVENTORY_DISCOVERY_GUARD_PHRASE = (
 )
 VALIDATOR_RUNTIME_DOWNGRADE_TOKEN = "validator_unavailable_due_to_runtime"
 SKILL_ROUTER_MAX_BYTES = 16_000
+CROSS_PLATFORM_PREFLIGHT_TOKENS = (
+    "host_os",
+    "path_style",
+    "python_invocation",
+    "shell_family",
+    "codex_runtime_capability_surface",
+    "compute_budget",
+)
+
+
+def package_check_for(root: Path) -> Path:
+    candidates = [
+        root / "scripts" / "bmat_package_check.py",
+        root / "skills" / "biomedical-agent-teams" / "scripts" / "bmat_package_check.py",
+        root
+        / "plugins"
+        / "biomedical-agent-teams"
+        / "skills"
+        / "biomedical-agent-teams"
+        / "scripts"
+        / "bmat_package_check.py",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return PACKAGE_CHECK
 
 
 def run_package_check(root: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, str(PACKAGE_CHECK), "--root", str(root)],
+        [sys.executable, str(package_check_for(root)), "--root", str(root)],
         text=True,
         capture_output=True,
         check=False,
@@ -52,6 +78,44 @@ def test_current_package_check_passes() -> None:
     result = run_package_check(PLUGIN_ROOT)
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_run_package_check_executes_checker_from_candidate_root(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    local_checker = plugin_root / "skills" / "biomedical-agent-teams" / "scripts" / "bmat_package_check.py"
+    local_checker.write_text(
+        "import sys\nprint('LOCAL_PACKAGE_CHECK_SENTINEL')\nsys.exit(7)\n",
+        encoding="utf-8",
+    )
+
+    result = run_package_check(plugin_root)
+
+    assert result.returncode == 7
+    assert "LOCAL_PACKAGE_CHECK_SENTINEL" in result.stdout
+
+
+def test_package_check_accepts_standalone_installed_skill_root(tmp_path: Path) -> None:
+    skill_root = tmp_path / ".agents" / "skills" / "biomedical-agent-teams"
+    ignore = shutil.ignore_patterns("__pycache__", ".pytest_cache")
+    shutil.copytree(SKILL_ROOT, skill_root, ignore=ignore)
+
+    result = run_package_check(skill_root)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_runtime_preflight_schema_has_codex_cross_platform_fields() -> None:
+    schema_text = (SKILL_ROOT / "contracts" / "runtime-capability-preflight.schema.json").read_text(
+        encoding="utf-8"
+    )
+    template_text = (SKILL_ROOT / "templates" / "runtime-capability-preflight-template.md").read_text(
+        encoding="utf-8"
+    )
+
+    for token in CROSS_PLATFORM_PREFLIGHT_TOKENS:
+        assert token in schema_text
+    for token in ("Windows", "macOS", "PowerShell", "zsh", "sys.executable"):
+        assert token in template_text
 
 
 def test_current_skill_router_stays_under_loader_budget() -> None:
@@ -146,6 +210,49 @@ def test_package_check_flags_missing_validator_runtime_downgrade_guard(tmp_path:
     assert "VALIDATOR_RUNTIME_DOWNGRADE_GUARD_MISSING" in result.stdout
 
 
+def test_package_check_flags_claude_only_runtime_assumption(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    command_path = plugin_root / "skills" / "biomedical-agent-teams" / "commands" / "idea-discovery-team.md"
+    command_path.write_text(
+        command_path.read_text(encoding="utf-8")
+        + "\n\nRelease-critical execution requires host.delegate fanout.\n",
+        encoding="utf-8",
+    )
+
+    result = run_package_check(plugin_root)
+
+    assert result.returncode == 1
+    assert "CLAUDE_HOST_DELEGATE_REFERENCE" in result.stdout
+
+
+def test_package_check_flags_claude_md_instruction_dependency(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    agent_path = plugin_root / "skills" / "biomedical-agent-teams" / "agents" / "omics-reporter.md"
+    agent_path.write_text(
+        agent_path.read_text(encoding="utf-8") + "\n\nAlso inherit CLAUDE.md when present.\n",
+        encoding="utf-8",
+    )
+
+    result = run_package_check(plugin_root)
+
+    assert result.returncode == 1
+    assert "CLAUDE_MD_REFERENCE" in result.stdout
+
+
+def test_package_check_flags_missing_cross_platform_preflight_field(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    schema_path = plugin_root / "skills" / "biomedical-agent-teams" / "contracts" / "runtime-capability-preflight.schema.json"
+    schema_path.write_text(
+        schema_path.read_text(encoding="utf-8").replace('"host_os": { "type": "string" },', ""),
+        encoding="utf-8",
+    )
+
+    result = run_package_check(plugin_root)
+
+    assert result.returncode == 1
+    assert "RUNTIME_PREFLIGHT_PORTABILITY_FIELD_MISSING" in result.stdout
+
+
 def test_package_check_flags_source_manifest_missing_actual_command(tmp_path: Path) -> None:
     plugin_root = copy_plugin(tmp_path)
     source_manifest_path = plugin_root / "skills" / "biomedical-agent-teams" / "source-manifest.json"
@@ -159,3 +266,16 @@ def test_package_check_flags_source_manifest_missing_actual_command(tmp_path: Pa
 
     assert result.returncode == 1
     assert "SOURCE_MANIFEST_SET_MISMATCH" in result.stdout
+
+
+def test_package_check_flags_stale_fixture_plugin_version(tmp_path: Path) -> None:
+    plugin_root = copy_plugin(tmp_path)
+    fixture_path = plugin_root / "skills" / "biomedical-agent-teams" / "tests" / "fixtures" / "valid_full_protocol_bundle" / "run_state.json"
+    payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+    payload["plugin_version"] = "0.4.3"
+    fixture_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    result = run_package_check(plugin_root)
+
+    assert result.returncode == 1
+    assert "FIXTURE_VERSION_MISMATCH" in result.stdout
