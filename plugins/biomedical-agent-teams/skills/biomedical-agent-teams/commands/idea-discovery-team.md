@@ -70,7 +70,7 @@ claim ledger.
 - `scientific-writer-citation-agent`
 - `post-write-final-validator`
 
-## Operating Rules
+## Workflow
 
 1. Start with `protocol-context-locker`: question schema, deliverable, evidence scope, risk/safety/privacy class, depth, stop criteria, and human approval gate.
 2. Record runtime capabilities before claiming source-backed, tool-backed, or independent multi-agent work.
