@@ -1,6 +1,6 @@
 name = "bmat-contradiction-red-team"
 agent_id = "contradiction-red-team"
-version = "0.8.8"
+version = "0.8.11"
 description = "Template for a Codex reviewer that searches for negative evidence, scope drift, and overclaim risks."
 role_prompt = "../agents/contradiction-red-team.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

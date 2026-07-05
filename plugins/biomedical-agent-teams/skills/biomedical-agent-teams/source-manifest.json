@@ -1,5 +1,5 @@
 {
-  "version": "0.8.8",
+  "version": "0.8.11",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 36,
@@ -49,76 +49,6 @@
     "evidence-audit-team",
     "experiment-design-team",
     "translational-scout-team"
-  ],
-  "new_in_v0_2": [
-    "protocol-context-locker",
-    "central-claim-ledger-evidence-graph",
-    "risk-of-bias-study-quality-auditor",
-    "safety-ethics-privacy-dual-use-auditor",
-    "post-write-final-validator"
-  ],
-  "new_in_v0_2_1": [
-    "mode-routing-matrix",
-    "fixed-field-claim-ledger-template",
-    "excluded-or-not-verified-claim-tracking",
-    "track-specific-omics-checklists",
-    "active-workspace-output-path-resolution",
-    "compact-vs-audit-bundle-final-output"
-  ],
-  "new_in_v0_2_2": [
-    "mandatory-preflight-compliance-contract",
-    "agent-use-terminology-for-codex-inline-vs-subagent-execution",
-    "mode-specific-minimum-artifacts",
-    "safe-mode-note-for-low-risk-public-only-triggered-workflows",
-    "final-workflow-label-and-skipped-gate-reporting",
-    "biomedical-research-council-post-write-self-check"
-  ],
-  "new_in_v0_2_3": [
-    "contract-gated-role-output-schemas",
-    "biomedical-passport-template-and-schema",
-    "omics-run-manifest-schema",
-    "integrity-gate-template",
-    "biomedical-failure-mode-taxonomy",
-    "formal-return-contracts-for-lead-writer-and-omics-workers",
-    "workflow-recipe-passport-and-integrity-gate-requirements"
-  ],
-  "new_in_v0_2_4": [
-    "command-level-preflight-contracts-for-all-aliases",
-    "evidence-audit-biomedical-passport-requirement",
-    "workflow-spine-manifest-includes-passport-and-integrity-gate",
-    "removed-zero-byte-rhistory-packaging-artifact",
-    "smoke-test-reference-and-gate-consistency-cleanup"
-  ],
-  "new_in_v0_3_0": [
-    "runtime-capability-preflight-schema-and-template",
-    "workflow-run-stage-dag-schema-and-template",
-    "source-corpus-lock-schema-and-template",
-    "hypothesis-tournament-schema-template-and-reference",
-    "omics-s1-s5-stage-evaluation-schema-template-and-failure-modes",
-    "independent-review-policy-for-same-model-vs-independent-validation",
-    "codex-runtime-capability-matrix",
-    "rollback-resume-durable-artifact-template",
-    "command-recipes-updated-for-runtime-source-stage-and-review-gates"
-  ],
-  "new_in_v0_3_1": [
-    "command-recipes-final-output-label-and-skipped-gate-consistency",
-    "stronger-smoke-tests-for-router-resource-references",
-    "source-manifest-command-and-agent-roster-existence-tests",
-    "jsonschema-sample-payload-validation-for-v0-3-contracts"
-  ],
-  "new_in_v0_3_2": [
-    "benchmark-hygiene-guard-for-hidden-truth-results-dockerfiles-and-scoring-scripts",
-    "bioagentbench-static-readiness-benchmark-harness-cleanup",
-    "source-vs-cache-package-location-reporting-fix"
-  ],
-  "new_in_v0_3_4": [
-    "inline-first-hybrid-execution-policy",
-    "selective-spawned-review-lane-policy",
-    "team-level-selective-dag-policy",
-    "nested-spawn-disabled-by-default",
-    "execution-strategy-preflight-fields",
-    "team-spawn-plan-template",
-    "spawned-output-ledger-handoff-requirement"
   ],
   "agent_roster": [
     "bayesian-decision-modeler",
@@ -231,145 +161,13 @@
     "safety-ethics-privacy-dual-use-auditor",
     "omics-provenance-validator"
   ],
-  "new_in_v0_3_5": [
-    "concrete-mcp-tool-binding-for-citation-literature-and-clinical-agents",
-    "tool-backed-external-corroboration-as-independence-source",
-    "bundled-data-safety-floor-reference-decoupled-from-external-agents-md",
-    "minimum-viable-governance-tier-and-by-reference-state",
-    "filled-examples-in-claim-ledger-and-source-corpus-templates"
-  ],
-  "new_in_v0_4_3": [
-    "omics-run-reviewer-spawn-floor",
-    "core-omics-reviewer-default-selection",
-    "validator-policy-for-zero-reviewer-budget-in-omics-run",
-    "explicit-downgrade-required-when-omics-reviewer-spawn-is-unavailable"
-  ],
-  "new_in_v0_3_6": [
-    "label-honesty-patch-for-contract-described-vs-validator-enforced-workflows",
-    "bmat_validate_cli_for_schema_and_policy_validation",
-    "full-protocol-independent-review-policy-enforcement",
-    "s3-validation-block-rule-enforcement",
-    "source-backed-claim-source-corpus-checks",
-    "final-wording-drift-fixtures",
-    "offline-golden-task-eval-scaffold"
-  ],
-  "new_in_v0_4_0": [
-    "loop-engineering-recipes-for-literature-omics-claim-and-hypothesis-workflows",
-    "loop-state-schema-for-recurring-workflow-state-and-stop-conditions",
-    "bmat_loop_check_cli_for_privacy-source-delta-reviewer-objection-and-budget_policy",
-    "loop-check-tests-and-fixtures",
-    "connector-binding-matrix-for-workflows-and-loops",
-    "loop-check-connector-allowlist-and-release-artifact-enforcement",
-    "spawned-reviewer-template-output-contract-expansion",
-    "agent-registry-for-35-role-spawnability-and-template-binding",
-    "workflow-run-spawned-agent-instance-tracking",
-    "validator-cross-check-for-complete-spawned-lanes-and-actual-instances",
-    "expanded-spawnable-reviewer-toml-template-set",
-    "codex-reviewer-agent-toml-templates",
-    "package-metadata-version-bump-to-0-4-0"
-  ],
-  "new_in_v0_4_1": [
-    "workflow-run-team-output-artifact-tracking",
-    "team-level-selective-dag-output-artifact-contract",
-    "validator-enforcement-for-complete-team-lanes",
-    "team-phase-dependency-resolution-checks",
-    "nested-spawn-policy-enforcement-for-team-dag",
-    "workflow-template-and-hybrid-policy-team-dag-verification-docs",
-    "package-metadata-version-bump-to-0-4-1"
-  ],
-  "new_in_v0_4_4": [
-    "package-wide-bmat-package-check-cli",
-    "docs-resource-inventory-helper",
-    "handoff-pickup-resume-templates",
-    "source-cache-version-and-resource-parity-checks",
-    "package-metadata-version-bump-to-0-4-4"
-  ],
-  "new_in_v0_4_5": [
-    "omics-analysis-team-default-axis-for-substantive-omics-analysis",
-    "parallel-core-reviewer-floor-for-omics-runs-after-s1-s3-locks",
-    "omics-code-reviewer-default-required-for-code-bearing-omics-runs",
-    "package-metadata-version-bump-to-0-4-5"
-  ],
-  "new_in_v0_4_6": [
-    "skill-root-relative-command-recipe-resolution-guard",
-    "codex-default-prompt-limit-check",
-    "package-check-regression-tests-for-workflow-structure-smoke-safety",
-    "package-metadata-version-bump-to-0-4-6"
-  ],
-  "new_in_v0_4_7": [
-    "source-manifest-exact-resource-set-validation",
-    "package-check-regression-test-for-missing-omics-command-manifest-entry",
-    "package-metadata-version-bump-to-0-4-7"
-  ],
-  "new_in_v0_4_8": [
-    "docs-inventory-fallback-summaries-for-frontmatter-light-resources",
-    "bmat-init-bundle-scaffold-generator-for-validator-named-artifacts",
-    "dependency-free-bmat-selftest-smoke-runner",
-    "quickstart-guide-for-workflow-selection-and-bundle-setup",
-    "package-metadata-version-bump-to-0-4-8"
-  ],
-  "new_in_v0_4_9": [
-    "golden-eval-schema-validation-wrapper",
-    "golden-eval-release-gate-for-pmid-drift-contradiction-and-overclaim",
-    "twenty-case-public-synthetic-golden-eval-set-with-negative-controls",
-    "lightweight-skill-router-with-lazy-loaded-command-recipes",
-    "package-check-router-size-and-lazy-load-guard",
-    "validator-runtime-unavailable-downgrade-guard",
-    "package-metadata-version-bump-to-0-4-9"
-  ],
-  "new_in_v0_7_0": [
-    "tool-registry-and-honest-tool-use-log",
-    "results-integration-schema-for-support-contradiction-null-ambiguous-and-qc-failed-findings",
-    "results-integration-template-for-source-corpus-and-claim-ledger-handoff",
-    "release-surface-tests-for-tool-and-results-governance"
-  ],
-  "new_in_v0_8_0": [
-    "research-overview-one-page-synthesis-template",
-    "compute-budget-and-team-level-selective-dag-release-surface-alignment",
-    "loop-policy-edge-hardening-for-private-public-boundaries-and-blocked-release-artifacts",
-    "package-metadata-version-bump-to-0-8-0"
-  ],
-  "new_in_v0_8_1": [
-    "utf8-bom-tolerant-command-and-agent-markdown-loading",
-    "docs-inventory-bom-regression-tests",
-    "package-metadata-version-bump-to-0-8-1"
-  ],
-  "new_in_v0_8_2": [
-    "utf8-bom-tolerant-validator-loop-golden-eval-elo-and-init-bundle-loading",
-    "json-jsonl-version-bom-regression-tests",
-    "package-metadata-version-bump-to-0-8-2"
-  ],
-  "new_in_v0_8_3": [
-    "elo-cli-zero-override-preservation",
-    "elo-numeric-setting-validation-without-tracebacks",
-    "package-metadata-version-bump-to-0-8-3"
-  ],
-  "new_in_v0_8_4": [
-    "utf8-bom-tolerant-codex-agent-toml-template-test-loader",
-    "toml-agent-template-bom-regression-test",
-    "package-metadata-version-bump-to-0-8-4"
-  ],
-  "new_in_v0_8_5": [
-    "spawned-agent-instance-complete-evidence-policy",
-    "spawned-review-lane-ledger-handoff-and-duplicate-role-policy",
-    "codex-agent-template-registry-schema-contract-regression-tests",
-    "package-metadata-version-bump-to-0-8-5"
-  ],
-  "new_in_v0_8_6": [
-    "posix-stable-docs-inventory-path-output",
-    "docs-list-cross-platform-path-regression-test",
-    "package-metadata-version-bump-to-0-8-6"
-  ],
-  "new_in_v0_8_7": [
-    "omics-run-init-bundle-scaffold-downgrade-policy",
-    "unicode-and-space-path-omics-scaffold-validation-regression-test",
-    "bom-free-release-surface-package-gate",
-    "package-metadata-version-bump-to-0-8-7"
-  ],
-  "new_in_v0_8_8": [
-    "bundle-readme-validator-plugin-script-path",
-    "repo-root-maintenance-gate-command-alignment",
-    "bundle-readme-validator-command-regression-test",
-    "package-metadata-version-bump-to-0-8-8"
+  "new_in_v0_8_11": [
+    "full-protocol-complete-artifact-bundle-validator-gate",
+    "full-protocol-missing-core-artifacts-regression-test",
+    "loop-connector-doc-alias-allowlist-alignment",
+    "loop-check-regression-tests-for-crossref-doi-and-geo-sra-ncbi-datasets-aliases",
+    "runtime-readme-current-release-surface-cleanup",
+    "legacy-changelog-block-removal-from-runtime-manifest",
+    "package-metadata-version-bump-to-0-8-11"
   ]
 }

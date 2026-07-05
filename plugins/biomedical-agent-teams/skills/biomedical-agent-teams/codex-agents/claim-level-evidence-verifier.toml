@@ -1,6 +1,6 @@
 name = "bmat-claim-level-evidence-verifier"
 agent_id = "claim-level-evidence-verifier"
-version = "0.8.8"
+version = "0.8.11"
 description = "Template for a Codex reviewer that checks atomic claim support, source fit, and ledger-ready wording."
 role_prompt = "../agents/claim-level-evidence-verifier.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

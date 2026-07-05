@@ -1,6 +1,6 @@
 name = "bmat-citation-verifier"
 agent_id = "citation-verifier"
-version = "0.8.8"
+version = "0.8.11"
 description = "Template for a Codex reviewer that checks citation identifiers, retrieval metadata, and claim-source fit."
 role_prompt = "../agents/citation-verifier.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

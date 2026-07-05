@@ -2,7 +2,7 @@
 
 Codex Desktop marketplace package for the Biomedical Agent Teams (BMAT) plugin.
 
-Current plugin version: `0.8.8`.
+Current plugin version: `0.8.11`.
 
 ## Install
 
@@ -27,7 +27,7 @@ PMID drift, contradiction, overclaim, runtime mismatch, and ranking honesty.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.8.8 Workflow Structure
+    accTitle: BMAT v0.8.11 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]
@@ -95,18 +95,34 @@ and `bmat_validate.py` to pass against the complete artifact bundle.
 
 ## Release Surface
 
-Version `0.8.8` is the only supported release surface in this repository. Old
+Version `0.8.11` is the only supported release surface in this repository. Old
 version changelog blocks and workspace-specific install paths have been removed
 from the runtime docs; historical behavior is covered by tests and git history.
 
+### Current Patch Notes
+
+- Full-protocol labels now require the complete core artifact bundle:
+  `run_state.json`, `runtime_capability_preflight.json`,
+  `source_corpus.json`, `claim_ledger.json`, `stage_evaluation.json`,
+  `post_write_validation.json`, and non-empty `final.md`.
+- Loop connector aliases used by the loop recipes are accepted by
+  `bmat_loop_check.py`, including `Crossref/DOI` and
+  `GEO/SRA/NCBI Datasets`.
+- Runtime docs and `source-manifest.json` keep only the current `0.8.11`
+  release surface. Older release notes belong in git history, not the installed
+  plugin bundle.
+- The installed cache and marketplace source are expected to be byte-for-byte
+  identical after reinstall; test caches such as `.pytest_cache` and
+  `__pycache__` are not part of the package.
+
 ## Validation
 
-The 0.8.8 package is validated with:
+The 0.8.11 package is validated with:
 
 ```bash
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams
-uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
+uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
 ```

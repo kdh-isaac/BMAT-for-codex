@@ -8,11 +8,13 @@ bundles.
 
 ## Supported Release
 
-- Current plugin version: `0.8.8`.
+- Current plugin version: `0.8.11`.
 - Target runtime: Codex Desktop on macOS and Windows.
 - Active router: `skills/biomedical-agent-teams/SKILL.md`.
 - Legacy changelog blocks and hard-coded workspace install paths are not part of
   the runtime docs; use git history for older release archaeology.
+- Installed cache contents should match this plugin source exactly after
+  reinstall; transient test artifacts are intentionally excluded.
 
 ## Contents
 
@@ -41,12 +43,17 @@ bundles.
   validators.
 - Keeps final synthesis ledger-bound through claim ledger, source corpus,
   results integration, workflow-run state, and meta-review surfaces.
+- Enforces full-protocol label honesty by requiring source corpus, claim ledger,
+  stage evaluation, post-write validation, and final text artifacts before
+  `Full protocol followed` can pass validation.
+- Accepts loop connector aliases documented in `loops/*.md`, including
+  `Crossref/DOI` and `GEO/SRA/NCBI Datasets`.
 
 ## Workflow Structure
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.8.8 Workflow Structure
+    accTitle: BMAT v0.8.11 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]
@@ -136,5 +143,5 @@ python skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks skills/bio
 When test tooling is available, also run:
 
 ```bash
-python -m pytest skills/biomedical-agent-teams/tests -q
+uvx --with jsonschema pytest skills/biomedical-agent-teams/tests -q
 ```

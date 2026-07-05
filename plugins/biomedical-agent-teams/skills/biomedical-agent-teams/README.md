@@ -12,13 +12,25 @@ contracts, and scripts that are lazy-loaded only when needed.
 
 ## Supported Release
 
-- Current version: `0.8.8`.
+- Current version: `0.8.11`.
 - Runtime target: Codex Desktop on macOS and Windows.
 - Legacy version history is intentionally excluded from this runtime README.
   Use git history for old release notes.
 - The package is contract-described by default. Strong workflow labels require
   the matching artifacts, source locks, reviewer/tool evidence, and validator
   results.
+
+## Current Patch Notes
+
+- `Full protocol followed` is blocked unless the complete validator bundle is
+  present, including source corpus, claim ledger, stage evaluation, post-write
+  validation, and final text artifacts.
+- Loop states now accept the connector aliases used in bundled loop recipes,
+  including `Crossref/DOI` and `GEO/SRA/NCBI Datasets`.
+- Runtime package metadata keeps only the current release note key,
+  `new_in_v0_8_11`; older version archaeology belongs in git history.
+- Source and installed cache should hash-match after reinstall. Test caches are
+  disposable and should not be treated as plugin resources.
 
 ## Current Resource Surface
 
@@ -53,7 +65,7 @@ contracts, and scripts that are lazy-loaded only when needed.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.8.8 Workflow Structure
+    accTitle: BMAT v0.8.11 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]
@@ -173,7 +185,7 @@ python scripts/bmat_package_check.py --root ../..
 python scripts/bmat_selftest.py --root ../..
 python evals/validate_golden_eval_schema.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl
 python evals/run_golden_eval.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl --strict --gate
-python -m pytest tests -q
+uvx --with jsonschema pytest tests -q
 ```
 
 ## Safety Boundaries

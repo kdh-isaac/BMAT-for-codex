@@ -1,6 +1,6 @@
 name = "bmat-post-write-final-validator"
 agent_id = "post-write-final-validator"
-version = "0.8.8"
+version = "0.8.11"
 description = "Template for a Codex reviewer that checks final prose against the claim ledger, citations, uncertainty, and safety boundaries."
 role_prompt = "../agents/post-write-final-validator.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

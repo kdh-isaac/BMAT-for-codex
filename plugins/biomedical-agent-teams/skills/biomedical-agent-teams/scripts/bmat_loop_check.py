@@ -80,6 +80,7 @@ CONNECTOR_ALLOWLIST = {
         "doi",
         "crossref",
         "doi crossref",
+        "crossref doi",
         "europe pmc",
     },
     "public_omics_dataset_watch": {
@@ -87,6 +88,7 @@ CONNECTOR_ALLOWLIST = {
         "sra",
         "geo sra",
         "ncbi datasets",
+        "geo sra ncbi datasets",
         "arrayexpress",
         "biostudies",
         "arrayexpress biostudies",

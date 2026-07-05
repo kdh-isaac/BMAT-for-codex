@@ -50,7 +50,7 @@ def valid_results_integration_payload() -> dict[str, object]:
     return {
         "schema_version": "0.8",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "0.8.8",
+        "plugin_version": "0.8.11",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {
@@ -316,6 +316,22 @@ def test_full_protocol_label_in_final_text_requires_run_state(tmp_path: Path) ->
     assert "FULL_PROTOCOL_REQUIRES_RUN_STATE" in output
     assert "FULL_PROTOCOL_REQUIRES_PREFLIGHT" in output
     assert "FULL_PROTOCOL_REQUIRES_POST_WRITE" in output
+
+
+def test_full_protocol_requires_complete_bundle_artifacts(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    for filename in ("source_corpus.json", "claim_ledger.json", "stage_evaluation.json", "final.md"):
+        (bundle / filename).unlink()
+
+    result = run_validator_path(bundle)
+
+    output = combined_output(result)
+    assert result.returncode == 1
+    assert "FULL_PROTOCOL_REQUIRES_SOURCE_CORPUS" in output
+    assert "FULL_PROTOCOL_REQUIRES_CLAIM_LEDGER" in output
+    assert "FULL_PROTOCOL_REQUIRES_STAGE_EVALUATION" in output
+    assert "FULL_PROTOCOL_REQUIRES_FINAL_TEXT" in output
 
 
 def test_negated_full_protocol_label_does_not_trigger_full_policy(tmp_path: Path) -> None:

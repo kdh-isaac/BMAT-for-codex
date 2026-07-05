@@ -30,11 +30,11 @@ def test_plugin_version_accepts_utf8_bom_prefixed_version_file(tmp_path: Path) -
     scripts.mkdir(parents=True)
     script_copy = scripts / "bmat_init_bundle.py"
     shutil.copy2(INIT_BUNDLE, script_copy)
-    (skill_root / "VERSION").write_bytes(UTF8_BOM_BYTES + b"0.8.8\n")
+    (skill_root / "VERSION").write_bytes(UTF8_BOM_BYTES + b"0.8.11\n")
 
     module = load_init_bundle_module(script_copy)
 
-    assert module.plugin_version() == "0.8.8"
+    assert module.plugin_version() == "0.8.11"
 
 
 def test_omics_run_scaffold_validates_with_explicit_reviewer_downgrade(tmp_path: Path) -> None:

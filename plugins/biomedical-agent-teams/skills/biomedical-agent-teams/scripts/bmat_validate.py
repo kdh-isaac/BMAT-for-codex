@@ -913,13 +913,28 @@ def validate_full_protocol(artifacts: dict[str, Any], findings: list[Finding]) -
     if FULL_LABEL not in declared_workflow_labels(artifacts):
         return
 
-    if run_state is None:
-        findings.append(Finding("ERROR", "FULL_PROTOCOL_REQUIRES_RUN_STATE", "Full protocol requires run_state.json"))
-    if preflight is None:
-        findings.append(Finding("ERROR", "FULL_PROTOCOL_REQUIRES_PREFLIGHT", "Full protocol requires preflight.json"))
-    if post_write is None:
+    required_artifacts = {
+        "run_state": ("FULL_PROTOCOL_REQUIRES_RUN_STATE", "Full protocol requires run_state.json"),
+        "preflight": ("FULL_PROTOCOL_REQUIRES_PREFLIGHT", "Full protocol requires preflight.json"),
+        "source_corpus": ("FULL_PROTOCOL_REQUIRES_SOURCE_CORPUS", "Full protocol requires source_corpus.json"),
+        "claim_ledger": ("FULL_PROTOCOL_REQUIRES_CLAIM_LEDGER", "Full protocol requires claim_ledger.json"),
+        "stage_evaluation": ("FULL_PROTOCOL_REQUIRES_STAGE_EVALUATION", "Full protocol requires stage_evaluation.json"),
+        "post_write_validation": (
+            "FULL_PROTOCOL_REQUIRES_POST_WRITE",
+            "Full protocol requires post_write_validation.json",
+        ),
+    }
+    for artifact_key, (code, message) in required_artifacts.items():
+        if artifacts.get(artifact_key) is None:
+            findings.append(Finding("ERROR", code, message, BUNDLE_FILES[artifact_key]))
+    if not str(artifacts.get("final_text") or "").strip():
         findings.append(
-            Finding("ERROR", "FULL_PROTOCOL_REQUIRES_POST_WRITE", "Full protocol requires post_write_validation.json")
+            Finding(
+                "ERROR",
+                "FULL_PROTOCOL_REQUIRES_FINAL_TEXT",
+                "Full protocol requires non-empty final.md",
+                BUNDLE_FILES["final_text"],
+            )
         )
 
     if isinstance(post_write, dict):
