@@ -30,6 +30,22 @@ be run because shell/code execution is unavailable, record
 reasons, and final skipped gates. Do not claim `Full protocol followed` in that
 state.
 
+## 1.0 Release-Gate Artifacts
+
+For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
+outputs, keep the 1.0.0 hard-gate artifacts aligned with the narrative:
+
+- Use `workflow_dag.json` when `execution_strategy=team_level_selective_dag`,
+  when `scripts/bmat_run.py` scaffolds the run, or when the final answer claims
+  a planned command-to-agent DAG.
+- Use `results_integration.json` when literature, omics, reviewer, validator,
+  tool, or human-review output changes a claim, ranking, label, or final wording.
+- Use `tool_call_ledger.json` before saying a database, external service, local
+  validator, spawned reviewer, or other tool was used; skipped, unavailable,
+  blocked, or failed tools need an explicit downgrade reason.
+- For included source-corpus rows, record `evidence_spans[]`; when possible,
+  claim-ledger `evidence_edges[]` should point back to those spans.
+
 ## Spawned Team Bundle Policy
 
 This recipe may run as a selected team-level spawned subagent after the main

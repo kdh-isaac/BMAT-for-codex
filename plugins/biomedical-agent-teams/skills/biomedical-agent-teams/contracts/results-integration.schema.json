@@ -135,6 +135,7 @@
           "source_ref": { "type": "string" },
           "claim_ids": {
             "type": "array",
+            "minItems": 1,
             "items": { "type": "string" }
           },
           "status": {

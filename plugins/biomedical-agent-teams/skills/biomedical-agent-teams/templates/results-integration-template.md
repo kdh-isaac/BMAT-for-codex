@@ -13,8 +13,8 @@ the source corpus and central claim ledger.
 | field | value |
 |---|---|
 | integration_id | RI-YYYYMMDD-001 |
-| schema_version | 0.8 |
-| plugin_version | 0.8.11 |
+| schema_version | 1.0 |
+| plugin_version | 1.0.0 |
 | workflow_run_id |  |
 | source_corpus_lock | locked / partial / missing |
 | input_artifacts |  |

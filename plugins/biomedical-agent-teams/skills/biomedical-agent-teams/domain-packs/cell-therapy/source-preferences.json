@@ -1,0 +1,10 @@
+{
+  "domain_pack": "cell-therapy",
+  "version": "0.1.0",
+  "preferred_sources": ["primary CAR-T trials", "GEO", "SRA", "ClinicalTrials.gov", "FDA labels", "peer-reviewed mechanism papers"],
+  "source_quality_notes": [
+    "Separate public omics associations from perturbation evidence.",
+    "Prefer donor- or patient-level aggregation for inference.",
+    "Use product and disease context as explicit covariates or limitations."
+  ]
+}

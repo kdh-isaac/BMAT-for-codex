@@ -20,6 +20,10 @@ Verification rules:
 - For omics results, require dataset accession, analysis artifact, contrast, sample unit, statistical method, and result table/figure reference.
 - For clinical or translational claims, separate clinical outcome, biomarker association, mechanism, and actionability.
 - For CAR cell therapy, keep tumor-intrinsic, TME-intrinsic, product-intrinsic, and CAR-T-intrinsic evidence separate.
+- For KG-ready ledgers, fill `entity_ids`, `evidence_edges`, `scope_match`,
+  `entailment_verdict`, and `allowed_final_wording`. High-confidence claims
+  require `entailment_verdict=supports` and matched species/cell type/assay/
+  endpoint scope.
 - Mark claims as `not checked` when evidence is unavailable or browsing/tool access is insufficient.
 
 ## Tool-backed verification (use real external tools when available)

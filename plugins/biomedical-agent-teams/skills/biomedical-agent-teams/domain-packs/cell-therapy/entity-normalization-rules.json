@@ -1,0 +1,10 @@
+{
+  "domain_pack": "cell-therapy",
+  "version": "0.1.0",
+  "entity_namespaces": ["HGNC", "UniProt", "Cellosaurus", "MeSH", "NCT", "PMID", "DOI"],
+  "normalization_rules": [
+    "Keep CAR construct, target antigen, product, dose, disease, and model context separate.",
+    "Separate CAR-T-intrinsic evidence from tumor-context, product-level, and bulk proxy evidence.",
+    "Record donor, patient, product, or sample as the biological unit before statistical claims."
+  ]
+}

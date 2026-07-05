@@ -1,0 +1,50 @@
+{
+  "workflow_id": "idea-discovery-team.standard",
+  "runtime": "codex",
+  "alias": "idea-discovery-team",
+  "mode": "standard",
+  "track": "hypothesis-tournament",
+  "nodes": [
+    {
+      "id": "S0_context_lock",
+      "agent": "protocol-context-locker",
+      "outputs": ["runtime_capability_preflight", "workflow_run"],
+      "blocking": true
+    },
+    {
+      "id": "S1_generate",
+      "agent": "hypothesis-generator",
+      "requires": ["S0_context_lock"],
+      "outputs": ["hypothesis_candidates"],
+      "blocking": true
+    },
+    {
+      "id": "S2_rank",
+      "agent": "hypothesis-ranker",
+      "requires": ["S1_generate"],
+      "outputs": ["hypothesis_tournament", "results_integration"],
+      "blocking": true
+    },
+    {
+      "id": "S3_confounds",
+      "agent": "causal-inference-confounder-analyst",
+      "requires": ["S2_rank"],
+      "outputs": ["stage_evaluation"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/causal-inference-confounder-analyst.toml",
+      "independence_required": true
+    },
+    {
+      "id": "S4_post_write",
+      "agent": "post-write-final-validator",
+      "requires": ["S3_confounds"],
+      "outputs": ["post_write_validation", "final_text"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/post-write-final-validator.toml",
+      "independence_required": true
+    }
+  ],
+  "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
+}

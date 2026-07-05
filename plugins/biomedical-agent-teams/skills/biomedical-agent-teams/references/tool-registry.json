@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "registry_id": "bmat-default-tool-registry",
+  "tools": [
+    {
+      "tool_id": "pubmed-ncbi-entrez",
+      "tool_family": "literature",
+      "workflow_aliases": ["evidence-audit-team", "biomedical-research-council", "translational-scout-team"],
+      "results_integration_required": true,
+      "default_downgrade_reason": "pubmed-lookup-unavailable"
+    },
+    {
+      "tool_id": "geo-ncbi",
+      "tool_family": "omics",
+      "workflow_aliases": ["omics-analysis-team", "biomedical-research-council"],
+      "results_integration_required": true,
+      "default_downgrade_reason": "geo-lookup-unavailable"
+    },
+    {
+      "tool_id": "clinicaltrials-gov",
+      "tool_family": "clinical",
+      "workflow_aliases": ["translational-scout-team", "evidence-audit-team"],
+      "results_integration_required": true,
+      "default_downgrade_reason": "clinicaltrials-lookup-unavailable"
+    },
+    {
+      "tool_id": "local-bmat-validators",
+      "tool_family": "local-validator",
+      "workflow_aliases": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "results_integration_required": true,
+      "default_downgrade_reason": "local-validator-unavailable"
+    },
+    {
+      "tool_id": "spawned-reviewer-lane",
+      "tool_family": "reviewer",
+      "workflow_aliases": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "results_integration_required": true,
+      "default_downgrade_reason": "reviewer-unavailable"
+    },
+    {
+      "tool_id": "human-review",
+      "tool_family": "human-review",
+      "workflow_aliases": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "results_integration_required": true,
+      "default_downgrade_reason": "human-review-pending"
+    }
+  ]
+}

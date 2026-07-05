@@ -1,0 +1,1 @@
+{"task_id":"CDP-001","failure_mode":"bulk proxy written as CAR-T intrinsic mechanism","prompt":"A TCGA bulk tumor association is described as proof that DUSP5 directly controls CAR-T persistence.","expected_detection":["bulk_to_cell_intrinsic_overclaim","mechanistic_overclaim"],"expected_block":true,"tags":["semantic_scope","overclaim"]}

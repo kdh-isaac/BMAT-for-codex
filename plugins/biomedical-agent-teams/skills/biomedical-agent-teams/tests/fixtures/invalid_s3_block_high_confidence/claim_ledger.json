@@ -13,7 +13,14 @@
       "audit_status": "pass",
       "allowed_final_wording": "Synthetic public fixture supports a conservative audit claim.",
       "claim_strength": "high-confidence",
-      "source_backed": true
+      "source_backed": true,
+      "entailment_verdict": "supports",
+      "scope_match": {
+        "species": "match",
+        "cell_type": "match",
+        "assay": "match",
+        "endpoint": "match"
+      }
     }
   ]
 }

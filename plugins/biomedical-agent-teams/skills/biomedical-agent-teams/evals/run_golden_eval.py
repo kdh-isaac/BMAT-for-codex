@@ -18,7 +18,15 @@ from typing import Any
 TASK_ID_RE = re.compile(r"^GT-\d{3}$")
 MIN_DEFAULT_TASKS = 10
 MAX_DEFAULT_TASKS = 30
-GATE_TAGS = ("pmid_drift", "contradiction", "overclaim")
+GATE_TAGS = (
+    "pmid_drift",
+    "contradiction",
+    "overclaim",
+    "tournament_loop",
+    "tournament_ranking",
+    "codex_runtime",
+    "semantic_scope",
+)
 CATEGORY_TERMS = {
     "unsupported": ("unsupported",),
     "citation": ("citation", "pmid", "doi", "fabricated_identifier"),
@@ -35,6 +43,10 @@ CATEGORY_TERMS = {
     ),
     "pmid_drift": ("pmid", "citation_drift", "fabricated_identifier"),
     "contradiction": ("contradiction", "negative_evidence"),
+    "tournament_loop": ("iteration_budget_violation", "missing_meta_review_feedback", "tournament_loop"),
+    "tournament_ranking": ("ranking_interpretation_overclaim", "elo_as_evidence_strength", "tournament_ranking"),
+    "codex_runtime": ("codex_runtime_mismatch", "non_codex_runtime_assumption", "codex_runtime"),
+    "semantic_scope": ("semantic_scope_mismatch", "species_scope_overclaim", "assay_scope_overclaim", "cell_type_scope_overclaim"),
 }
 UTF8_BOM = "\ufeff"
 
@@ -233,6 +245,8 @@ def score(tasks: list[dict[str, Any]], outputs: list[dict[str, Any]]) -> dict[st
         "overclaim_den": 0,
         "false_block_num": 0,
         "false_block_den": 0,
+        "expected_block_num": 0,
+        "expected_block_den": 0,
     }
     tag_counts = {tag: {"num": 0, "den": 0} for tag in GATE_TAGS}
     total_words = 0
@@ -248,7 +262,9 @@ def score(tasks: list[dict[str, Any]], outputs: list[dict[str, Any]]) -> dict[st
         detected = as_set(output.get("detected_failure_modes"))
         blocked = bool(output.get("blocked", False))
         downgraded = bool(output.get("downgraded", False))
+        expected_block = bool(task.get("expected_block", False))
         found = task_passed(expected, detected, downgraded) if expected else not blocked
+        expected_block_satisfied = not expected_block or (found and (blocked or downgraded))
         rows.append(
             {
                 "task_id": task_id,
@@ -257,7 +273,8 @@ def score(tasks: list[dict[str, Any]], outputs: list[dict[str, Any]]) -> dict[st
                 "expected_detection": sorted(expected),
                 "detected_failure_modes": sorted(detected),
                 "detected_expected": found,
-                "expected_block": bool(task.get("expected_block", False)),
+                "expected_block": expected_block,
+                "expected_block_satisfied": expected_block_satisfied,
                 "blocked": blocked,
                 "downgraded": downgraded,
             }
@@ -279,7 +296,10 @@ def score(tasks: list[dict[str, Any]], outputs: list[dict[str, Any]]) -> dict[st
             if tag in tags:
                 tag_counts[tag]["den"] += 1
                 tag_counts[tag]["num"] += int(category_passed(tag, expected, detected, downgraded))
-        if not bool(task.get("expected_block", False)):
+        if expected_block:
+            counts["expected_block_den"] += 1
+            counts["expected_block_num"] += int(expected_block_satisfied)
+        else:
             counts["false_block_den"] += 1
             counts["false_block_num"] += int(blocked)
         if output:
@@ -305,6 +325,11 @@ def score(tasks: list[dict[str, Any]], outputs: list[dict[str, Any]]) -> dict[st
         "overclaim_downgrade_rate": rate(counts["overclaim_num"], counts["overclaim_den"]),
         "pmid_drift_detection_rate": tag_rates["pmid_drift"],
         "contradiction_detection_rate": tag_rates["contradiction"],
+        "tournament_loop_detection_rate": tag_rates["tournament_loop"],
+        "tournament_ranking_detection_rate": tag_rates["tournament_ranking"],
+        "codex_runtime_detection_rate": tag_rates["codex_runtime"],
+        "semantic_scope_detection_rate": tag_rates["semantic_scope"],
+        "expected_block_action_rate": rate(counts["expected_block_num"], counts["expected_block_den"]),
         "tag_detection_rates": tag_rates,
         "false_positive_block_rate": rate(counts["false_block_num"], counts["false_block_den"]),
         "token_or_word_overhead": {
@@ -327,6 +352,11 @@ def evaluate_gate(
     min_pmid_drift_rate: float,
     min_contradiction_rate: float,
     min_overclaim_rate: float,
+    min_tournament_loop_rate: float,
+    min_tournament_ranking_rate: float,
+    min_codex_runtime_rate: float,
+    min_semantic_scope_rate: float,
+    min_expected_block_action_rate: float,
     max_false_positive_block_rate: float,
 ) -> dict[str, Any]:
     failures: list[str] = []
@@ -343,6 +373,16 @@ def evaluate_gate(
         failures.append("contradiction_detection_rate below threshold")
     if _rate_below(result.get("overclaim_downgrade_rate"), min_overclaim_rate):
         failures.append("overclaim_downgrade_rate below threshold")
+    if _rate_below(result.get("tournament_loop_detection_rate"), min_tournament_loop_rate):
+        failures.append("tournament_loop_detection_rate below threshold")
+    if _rate_below(result.get("tournament_ranking_detection_rate"), min_tournament_ranking_rate):
+        failures.append("tournament_ranking_detection_rate below threshold")
+    if _rate_below(result.get("codex_runtime_detection_rate"), min_codex_runtime_rate):
+        failures.append("codex_runtime_detection_rate below threshold")
+    if _rate_below(result.get("semantic_scope_detection_rate"), min_semantic_scope_rate):
+        failures.append("semantic_scope_detection_rate below threshold")
+    if _rate_below(result.get("expected_block_action_rate"), min_expected_block_action_rate):
+        failures.append("expected_block_action_rate below threshold")
 
     false_positive_rate = result.get("false_positive_block_rate")
     if false_positive_rate is None:
@@ -359,6 +399,11 @@ def evaluate_gate(
             "min_pmid_drift_detection_rate": min_pmid_drift_rate,
             "min_contradiction_detection_rate": min_contradiction_rate,
             "min_overclaim_downgrade_rate": min_overclaim_rate,
+            "min_tournament_loop_detection_rate": min_tournament_loop_rate,
+            "min_tournament_ranking_detection_rate": min_tournament_ranking_rate,
+            "min_codex_runtime_detection_rate": min_codex_runtime_rate,
+            "min_semantic_scope_detection_rate": min_semantic_scope_rate,
+            "min_expected_block_action_rate": min_expected_block_action_rate,
             "max_false_positive_block_rate": max_false_positive_block_rate,
         },
     }
@@ -383,6 +428,11 @@ def main() -> int:
     parser.add_argument("--min-pmid-drift-rate", type=float, default=1.0)
     parser.add_argument("--min-contradiction-rate", type=float, default=1.0)
     parser.add_argument("--min-overclaim-rate", type=float, default=1.0)
+    parser.add_argument("--min-tournament-loop-rate", type=float, default=1.0)
+    parser.add_argument("--min-tournament-ranking-rate", type=float, default=1.0)
+    parser.add_argument("--min-codex-runtime-rate", type=float, default=1.0)
+    parser.add_argument("--min-semantic-scope-rate", type=float, default=1.0)
+    parser.add_argument("--min-expected-block-action-rate", type=float, default=1.0)
     parser.add_argument("--max-false-positive-block-rate", type=float, default=0.0)
     args = parser.parse_args()
 
@@ -401,6 +451,11 @@ def main() -> int:
             min_pmid_drift_rate=args.min_pmid_drift_rate,
             min_contradiction_rate=args.min_contradiction_rate,
             min_overclaim_rate=args.min_overclaim_rate,
+            min_tournament_loop_rate=args.min_tournament_loop_rate,
+            min_tournament_ranking_rate=args.min_tournament_ranking_rate,
+            min_codex_runtime_rate=args.min_codex_runtime_rate,
+            min_semantic_scope_rate=args.min_semantic_scope_rate,
+            min_expected_block_action_rate=args.min_expected_block_action_rate,
             max_false_positive_block_rate=args.max_false_positive_block_rate,
         )
 

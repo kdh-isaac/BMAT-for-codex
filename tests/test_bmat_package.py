@@ -375,8 +375,100 @@ class BmatPackageTest(unittest.TestCase):
                         "claim_use": "background",
                         "checked_by": "citation-verifier",
                         "limitations": "none material",
+                        "evidence_spans": [
+                            {
+                                "span_id": "span1",
+                                "location": "schema smoke excerpt",
+                                "evidence_span_ref": "S-001:span1",
+                                "scope_note": "schema smoke sample",
+                            }
+                        ],
                     }
                 ],
+            },
+            "claim-ledger.schema.json": {
+                "claims": [
+                    {
+                        "claim_id": "CL-001",
+                        "atomic_claim": "Schema smoke claim.",
+                        "claim_type": "source-backed",
+                        "source_backed": True,
+                        "source_ids": ["S-001"],
+                        "audit_status": "pass",
+                        "claim_strength": "exploratory",
+                        "tool_backed": True,
+                        "tool_ids": ["local-bmat-validators"],
+                        "result_ids": ["RI-ROW-001"],
+                        "entity_ids": {
+                            "gene": ["HGNC:0000"],
+                            "publication": ["PMID:123456"]
+                        },
+                        "evidence_edges": [
+                            {
+                                "subject": "schema subject",
+                                "predicate": "supports",
+                                "object": "schema object",
+                                "source_id": "S-001",
+                                "evidence_span_ref": "S-001:span1"
+                            }
+                        ],
+                        "scope_match": {
+                            "species": "match",
+                            "cell_type": "not-applicable",
+                            "assay": "not-applicable",
+                            "endpoint": "match"
+                        },
+                        "entailment_verdict": "supports",
+                        "allowed_final_wording": "Schema smoke claim."
+                    }
+                ]
+            },
+            "tool-call-ledger.schema.json": {
+                "schema_version": "1.0",
+                "ledger_id": "TCL-20260610-001",
+                "plugin_version": version,
+                "workflow_run_id": "BMAT-RUN-20260610-001",
+                "calls": [
+                    {
+                        "call_id": "TC-001",
+                        "tool_id": "local-bmat-validators",
+                        "status": "success",
+                        "inputs_digest": "schema smoke",
+                        "output_ref": "results_integration:RI-ROW-001",
+                        "retrieval_date": "not-applicable",
+                        "affected_claim_ids": ["CL-001"],
+                        "provenance": {
+                            "source_id": "S-001",
+                            "url_or_accession": "local-fixture"
+                        }
+                    }
+                ]
+            },
+            "workflow-dag.schema.json": {
+                "workflow_id": "evidence-audit-team.audit",
+                "runtime": "codex",
+                "alias": "evidence-audit-team",
+                "mode": "audit",
+                "track": "claim-evidence-audit",
+                "nodes": [
+                    {
+                        "id": "S0_context_lock",
+                        "agent": "protocol-context-locker",
+                        "outputs": ["runtime_capability_preflight"],
+                        "blocking": True
+                    },
+                    {
+                        "id": "S1_review",
+                        "agent": "claim-level-evidence-verifier",
+                        "requires": ["S0_context_lock"],
+                        "outputs": ["results_integration"],
+                        "blocking": True,
+                        "spawnable": True,
+                        "toml_template_path": "codex-agents/claim-level-evidence-verifier.toml",
+                        "independence_required": True
+                    }
+                ],
+                "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
             },
             "hypothesis-tournament.schema.json": {
                 "tournament_id": "HT-20260609-001",

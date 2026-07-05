@@ -1,0 +1,50 @@
+{
+  "workflow_id": "experiment-design-team.standard",
+  "runtime": "codex",
+  "alias": "experiment-design-team",
+  "mode": "standard",
+  "track": "experimental-design",
+  "nodes": [
+    {
+      "id": "S0_context_lock",
+      "agent": "protocol-context-locker",
+      "outputs": ["runtime_capability_preflight", "workflow_run"],
+      "blocking": true
+    },
+    {
+      "id": "S1_design",
+      "agent": "experimental-design-planner",
+      "requires": ["S0_context_lock"],
+      "outputs": ["stage_evaluation"],
+      "blocking": true
+    },
+    {
+      "id": "S2_stats",
+      "agent": "biostats-repro-auditor",
+      "requires": ["S1_design"],
+      "outputs": ["results_integration"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/biostats-repro-auditor.toml",
+      "independence_required": true
+    },
+    {
+      "id": "S3_claim_lock",
+      "agent": "central-claim-ledger-evidence-graph",
+      "requires": ["S2_stats"],
+      "outputs": ["claim_ledger"],
+      "blocking": true
+    },
+    {
+      "id": "S4_post_write",
+      "agent": "post-write-final-validator",
+      "requires": ["S3_claim_lock"],
+      "outputs": ["post_write_validation", "final_text"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/post-write-final-validator.toml",
+      "independence_required": true
+    }
+  ],
+  "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
+}

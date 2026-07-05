@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Claim Ledger",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "claim_ledger": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "excluded_or_not_verified_claims": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "$defs": {
+    "scopeVerdict": {
+      "type": "string",
+      "enum": ["match", "partial", "mismatch", "not-applicable"]
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["claim_id", "atomic_claim"],
+      "properties": {
+        "claim_id": { "type": "string" },
+        "atomic_claim": { "type": "string" },
+        "claim_type": { "type": "string" },
+        "context": { "type": "string" },
+        "source_backed": { "type": ["boolean", "string"] },
+        "source_id": { "type": "string" },
+        "source_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidence_items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "object" }
+            ]
+          }
+        },
+        "evidence_relation": { "type": "string" },
+        "uncertainty": { "type": "string" },
+        "audit_status": { "type": "string" },
+        "allowed_final_wording": { "type": "string" },
+        "claim_strength": { "type": "string" },
+        "tool_backed": { "type": "boolean" },
+        "tool_id": { "type": "string" },
+        "tool_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "result_id": { "type": "string" },
+        "result_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "entity_ids": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "evidence_edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["subject", "predicate", "object", "source_id"],
+            "properties": {
+              "subject": { "type": "string" },
+              "predicate": { "type": "string" },
+              "object": { "type": "string" },
+              "source_id": { "type": "string" },
+              "evidence_span_ref": { "type": "string" }
+            }
+          }
+        },
+        "scope_match": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "species": { "$ref": "#/$defs/scopeVerdict" },
+            "cell_type": { "$ref": "#/$defs/scopeVerdict" },
+            "assay": { "$ref": "#/$defs/scopeVerdict" },
+            "endpoint": { "$ref": "#/$defs/scopeVerdict" }
+          }
+        },
+        "entailment_verdict": {
+          "type": "string",
+          "enum": ["supports", "weakly_supports", "contradicts", "irrelevant", "not_checked"]
+        }
+      }
+    }
+  }
+}

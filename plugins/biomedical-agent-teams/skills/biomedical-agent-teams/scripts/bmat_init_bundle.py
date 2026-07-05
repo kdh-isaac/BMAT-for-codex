@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import platform
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -25,7 +28,7 @@ WORKFLOWS = (
 )
 MODES = ("quick", "standard", "deep", "audit", "plan", "run")
 BUNDLE_FILES = (
-    "preflight.json",
+    "runtime_capability_preflight.json",
     "run_state.json",
     "source_corpus.json",
     "claim_ledger.json",
@@ -63,6 +66,28 @@ def plugin_version() -> str:
         return read_text_file(version_path).strip()
     except FileNotFoundError:
         return "unknown"
+
+
+def shell_family() -> str:
+    for value in (os.environ.get("SHELL"), os.environ.get("COMSPEC")):
+        if not value:
+            continue
+        shell = value.replace("\\", "/").rstrip("/").split("/")[-1].lower()
+        if shell in {"bash", "zsh", "sh", "fish", "dash"}:
+            return "bash" if shell in {"sh", "dash"} else shell
+        if shell in {"powershell", "powershell.exe", "pwsh", "pwsh.exe"}:
+            return "powershell"
+        if shell in {"cmd", "cmd.exe"}:
+            return "cmd"
+    return "unknown"
+
+
+def availability(value: bool | None) -> str:
+    if value is True:
+        return "yes"
+    if value is False:
+        return "no"
+    return "unknown"
 
 
 def is_omics_run_scaffold(workflow: str, mode: str) -> bool:
@@ -111,11 +136,56 @@ def build_payloads(
     corpus_id = f"corpus-{run_id}"
     review_skip_reason = scaffold_review_skip_reason(workflow, mode)
     validator_path = Path(__file__).resolve().parent / "bmat_validate.py"
+    skill_root = Path(__file__).resolve().parents[1]
     bundle_path = output_path.resolve() if output_path is not None else Path("<this-directory>")
     validator_command = f"python {quoted_path(validator_path)} --bundle {quoted_path(bundle_path)}"
+    runtime_id = f"rt-{run_id}"
 
     preflight = {
-        "runtime_capability_preflight_id": f"rt-{run_id}",
+        "runtime_capability_preflight_id": runtime_id,
+        "runtime_id": runtime_id,
+        "codex_client": "codex",
+        "plugin_version": version,
+        "workspace_root": str(bundle_path),
+        "host_os": platform.system() or "unknown",
+        "path_style": "windows" if os.name == "nt" else "posix",
+        "python_invocation": sys.executable,
+        "shell_family": shell_family(),
+        "codex_runtime_capability_surface": [
+            "local_file_read",
+            "local_file_write",
+            "local_shell",
+            "validator_cli",
+        ],
+        "capabilities": {
+            "web_search_available": "unknown",
+            "shell_available": availability(True),
+            "file_read_available": availability(True),
+            "file_write_available": availability(True),
+            "network_available": "unknown",
+        },
+        "external_bio_tools_available": {},
+        "validator_cli_available": availability(validator_path.exists()),
+        "pairwise_ranking_script_available": availability((skill_root / "scripts" / "bmat_elo.py").exists()),
+        "tool_registry_available": availability((skill_root / "references" / "tool-registry.json").exists()),
+        "results_integration_available": availability(True),
+        "iteration_budget_available": availability(True),
+        "compute_budget": {
+            "mode": mode,
+            "iteration_budget": 1,
+            "max_candidates": 1,
+            "max_pairwise_matches": 0,
+            "max_spawned_reviewers": 0,
+            "max_external_queries": 0,
+        },
+        "validator_unavailable_reason": "none" if validator_path.exists() else "validator_unavailable_due_to_runtime",
+        "spawned_subagents_supported": "unknown",
+        "sandbox_profile": "unknown",
+        "label_ceiling_due_to_runtime": "Contract-shaped artifact bundle",
+        "downgrade_rule": (
+            "Do not claim `Full protocol followed` until independent review, "
+            "tool/result integration, and post-write validation gates pass."
+        ),
         "requested_alias": workflow,
         "selected_mode": mode,
         "deliverable_type": "TODO: compact final, audit bundle, report, notebook, or generated file",
@@ -274,7 +344,7 @@ def build_payloads(
         f"- Created: `{timestamp}`\n"
         f"- Topic: {topic}\n\n"
         "## Next Steps\n\n"
-        "1. Complete `preflight.json` before external tools, file writes, code execution, or final wording.\n"
+        "1. Complete `runtime_capability_preflight.json` before external tools, file writes, code execution, or final wording.\n"
         "2. Fill `source_corpus.json` with stable PMID/DOI/accession/NCT/local artifact IDs.\n"
         "3. Add atomic claims to `claim_ledger.json`; final prose should use only allowed wording.\n"
         "4. Update `stage_evaluation.json` and `run_state.json` as gates pass or block.\n"
@@ -284,7 +354,7 @@ def build_payloads(
     )
 
     return {
-        "preflight.json": preflight,
+        "runtime_capability_preflight.json": preflight,
         "run_state.json": run_state,
         "source_corpus.json": source_corpus,
         "claim_ledger.json": claim_ledger,

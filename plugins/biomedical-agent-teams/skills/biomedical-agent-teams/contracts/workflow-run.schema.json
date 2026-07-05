@@ -24,6 +24,43 @@
       "enum": ["quick", "standard", "deep", "audit", "plan", "run"]
     },
     "plugin_version": { "type": "string" },
+    "workflow_dag_id": { "type": "string" },
+    "domain_pack": { "type": "string" },
+    "domain_pack_version": { "type": "string" },
+    "results_integration_required": { "type": "boolean" },
+    "tool_calls_used": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "external_tools_used": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tool_backed_claim_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "result_backed_claim_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tool_use_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["tool_id", "status"],
+        "properties": {
+          "tool_id": { "type": "string" },
+          "status": { "type": "string" },
+          "call_id": { "type": "string" },
+          "affected_claim_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
     "execution_strategy": {
       "type": "string",
       "enum": [

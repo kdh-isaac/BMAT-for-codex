@@ -23,6 +23,22 @@
           "checked_by",
           "limitations"
         ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "inclusion_status": { "const": "included" }
+              },
+              "required": ["inclusion_status"]
+            },
+            "then": {
+              "required": ["evidence_spans"],
+              "properties": {
+                "evidence_spans": { "minItems": 1 }
+              }
+            }
+          }
+        ],
         "properties": {
           "source_id": { "type": "string" },
           "source_type": {
@@ -42,6 +58,8 @@
           "identifier": { "type": "string" },
           "title_or_name": { "type": "string" },
           "version_or_retrieval_date": { "type": "string" },
+          "retrieved_at": { "type": "string" },
+          "database_version": { "type": "string" },
           "query_or_origin": { "type": "string" },
           "inclusion_status": {
             "type": "string",
@@ -49,7 +67,22 @@
           },
           "claim_use": { "type": "string" },
           "checked_by": { "type": "string" },
-          "limitations": { "type": "string" }
+          "limitations": { "type": "string" },
+          "evidence_spans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["span_id", "location", "scope_note"],
+              "properties": {
+                "span_id": { "type": "string" },
+                "location": { "type": "string" },
+                "evidence_span_ref": { "type": "string" },
+                "text_quote": { "type": "string" },
+                "scope_note": { "type": "string" }
+              }
+            }
+          }
         }
       }
     }

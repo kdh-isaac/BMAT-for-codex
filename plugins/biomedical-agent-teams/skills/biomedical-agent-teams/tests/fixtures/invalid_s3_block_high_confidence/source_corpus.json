@@ -13,7 +13,15 @@
       "inclusion_status": "included",
       "claim_use": "supports CL-001 at conservative wording scope",
       "checked_by": "tool_backed_validator",
-      "limitations": "synthetic fixture for validator behavior only"
+      "limitations": "synthetic fixture for validator behavior only",
+      "evidence_spans": [
+        {
+          "span_id": "S-001-span-001",
+          "location": "fixture:claim-support",
+          "evidence_span_ref": "fixture:claim-support",
+          "scope_note": "Synthetic fixture span supports only conservative wording for CL-001."
+        }
+      ]
     }
   ]
 }

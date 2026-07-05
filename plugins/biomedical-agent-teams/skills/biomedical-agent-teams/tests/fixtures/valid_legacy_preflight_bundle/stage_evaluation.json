@@ -1,0 +1,16 @@
+{
+  "evaluation_id": "stage-valid-001",
+  "workflow_alias": "evidence-audit-team",
+  "stages": [
+    {
+      "stage_id": "S3",
+      "stage_name": "Validate",
+      "status": "pass",
+      "score": 1.0,
+      "evidence": "synthetic source and claim ledger align",
+      "blocking_issues": []
+    }
+  ],
+  "overall_verdict": "pass",
+  "downgrade_rule_applied": "none"
+}

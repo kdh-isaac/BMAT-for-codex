@@ -4,10 +4,10 @@ Use before source-backed claims, evidence audits, omics reports, translational
 scans, manuscript support, or high-confidence recommendations. Lock source
 identity and retrieval context before the final claim ledger is written.
 
-| source_id | source_type | identifier | title_or_name | version_or_retrieval_date | query_or_origin | inclusion_status | claim_use | checked_by | limitations |
-|---|---|---|---|---|---|---|---|---|---|
-| S-001 | _(example)_ PMID | 34567890 | IL-21 reprograms CAR-T metabolism | retr. 2026-06-10 | PubMed MCP get_article_metadata | included | supports CL-001 | citation-verifier (tool-corroborated) | single cohort, in vitro only |
-| S-002 | PMID / DOI / accession / NCT / database-record / local-file / analysis-artifact / software / other |  |  |  |  | included / excluded / not-checked / blocked |  |  |  |
+| source_id | source_type | identifier | title_or_name | version_or_retrieval_date | query_or_origin | inclusion_status | claim_use | checked_by | evidence_span_ref | limitations |
+|---|---|---|---|---|---|---|---|---|---|---|
+| S-001 | _(example)_ PMID | 34567890 | IL-21 reprograms CAR-T metabolism | retr. 2026-06-10 | PubMed MCP get_article_metadata | included | supports CL-001 | citation-verifier (tool-corroborated) | abstract:sent2 | single cohort, in vitro only |
+| S-002 | PMID / DOI / accession / NCT / database-record / local-file / analysis-artifact / software / other |  |  |  |  | included / excluded / not-checked / blocked |  |  |  |  |
 
 ## Source Lock Rules
 
@@ -19,3 +19,6 @@ identity and retrieval context before the final claim ledger is written.
   or database access was unavailable.
 - Excluded sources may inform uncertainty but must not support
   `allowed_final_wording` unless rechecked and included.
+- Every `included` source must carry at least one `evidence_spans[]` entry with
+  `span_id`, `location`, and a scope note; use `evidence_span_ref` from claim
+  ledger evidence edges to point back to the source row.

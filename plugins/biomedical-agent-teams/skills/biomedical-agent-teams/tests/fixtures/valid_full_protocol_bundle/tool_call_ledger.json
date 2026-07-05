@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "ledger_id": "TCL-FIXTURE-001",
+  "plugin_version": "1.0.0",
+  "workflow_run_id": "run-valid-001",
+  "calls": [
+    {
+      "call_id": "TC-001",
+      "tool_id": "spawned-reviewer-lane",
+      "status": "success",
+      "inputs_digest": "synthetic spawned reviewer fixture for CL-001",
+      "output_ref": "results_integration:RI-ROW-001",
+      "retrieval_date": "not-applicable",
+      "affected_claim_ids": [
+        "CL-001"
+      ],
+      "provenance": {
+        "source_id": "S-001",
+        "url_or_accession": "synthetic-fixture"
+      }
+    }
+  ]
+}

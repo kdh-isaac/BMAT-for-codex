@@ -1,0 +1,60 @@
+{
+  "workflow_id": "omics-analysis-team.run",
+  "runtime": "codex",
+  "alias": "omics-analysis-team",
+  "mode": "run",
+  "track": "omics",
+  "nodes": [
+    {
+      "id": "S0_context_lock",
+      "agent": "protocol-context-locker",
+      "outputs": ["runtime_capability_preflight", "workflow_run"],
+      "blocking": true
+    },
+    {
+      "id": "S1_plan",
+      "agent": "omics-data-curator",
+      "requires": ["S0_context_lock"],
+      "outputs": ["source_corpus", "omics_run_manifest"],
+      "blocking": true
+    },
+    {
+      "id": "S2_execute",
+      "agent": "public-omics-analyst",
+      "requires": ["S1_plan"],
+      "outputs": ["analysis_artifacts", "results_integration"],
+      "blocking": true
+    },
+    {
+      "id": "S3_validate",
+      "agent": "biostats-repro-auditor",
+      "requires": ["S2_execute"],
+      "outputs": ["stage_evaluation"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/biostats-repro-auditor.toml",
+      "independence_required": true
+    },
+    {
+      "id": "S4_code_review",
+      "agent": "omics-code-reviewer",
+      "requires": ["S3_validate"],
+      "outputs": ["reviewer_output"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/omics-code-reviewer.toml",
+      "independence_required": true
+    },
+    {
+      "id": "S5_post_write",
+      "agent": "post-write-final-validator",
+      "requires": ["S4_code_review"],
+      "outputs": ["post_write_validation", "final_text"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/post-write-final-validator.toml",
+      "independence_required": true
+    }
+  ],
+  "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
+}

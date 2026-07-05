@@ -1,10 +1,10 @@
 ---
 name: biomedical-agent-teams
 description: >
-  BMAT for Codex v0.8.11 router for biomedical evidence audit, public-omics
+  BMAT for Codex v1.0.0 router for biomedical evidence audit, public-omics
   analysis, hypothesis tournaments, experiment design, translational scouting,
   loop workflows, tool-use/result integration, and validator-backed artifacts.
-version: "0.8.11"
+version: "1.0.0"
 ---
 
 # Biomedical Agent Teams Router
@@ -176,16 +176,29 @@ Use these inventory surfaces instead of expanding this router:
 - `manifest.json`: marketplace/runtime metadata counts.
 - `agent-registry.json`: spawnable role metadata and TOML template bindings.
 - `references/tool-registry.md`: honest tool-use and downgrade registry.
+- `references/tool-registry.json`: deterministic tool IDs for ledger checks.
 - `contracts/results-integration.schema.json`: source/result/claim mapping
   contract for tool, reviewer, omics, and literature outputs.
+- `contracts/tool-call-ledger.schema.json`: successful, skipped, blocked, or
+  unavailable tool-call evidence contract.
+- `contracts/workflow-dag.schema.json` and `workflows/*.json`: command-to-agent
+  DAG contracts for planned execution and release gates.
+- `domain-packs/`: domain-specific normalization, source preference, failure
+  mode, and golden-task overlays.
 - `templates/research-overview-template.md`: ledger-bound one-page synthesis
   template for final overview outputs.
+- `templates/research-workbench-index-template.md`: Markdown workbench export
+  entrypoint for reviewer-facing artifacts.
 - `scripts/bmat_docs_list.py`: dependency-free docs inventory helper.
 - `scripts/bmat_package_check.py`: package structure, version, count, router,
   and lazy-load guard checks.
 - `scripts/bmat_selftest.py`: dependency-free local package smoke check.
 - `scripts/bmat_validate.py`: complete artifact bundle schema and policy gate.
+- `scripts/bmat_tool_ledger_check.py`: deterministic tool-use honesty gate.
+- `scripts/bmat_run.py`: local dry-run runner, DAG selector, validator wrapper,
+  and Markdown workbench exporter.
 - `evals/run_golden_eval.py`: golden-case eval gate.
+- `evals/run_model_golden_eval.py`: sample-mode model-in-loop harness boundary.
 - `evals/validate_golden_eval_schema.py`: thin schema-validation wrapper.
 
 Use `scripts/bmat_init_bundle.py` when a task needs a new artifact bundle with
@@ -201,6 +214,7 @@ python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_model_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out bmat_eval_outputs/model-sample.jsonl --sample-mode --then-score --gate
 ```
 
 When test tooling is available, also run the package tests:

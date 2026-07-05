@@ -4,6 +4,10 @@ Use this registry when a BMAT workflow needs external lookup, local validators,
 MCP-backed tools, spawned reviewers, or human review. The registry is a
 governance surface, not proof that a tool ran.
 
+The machine-readable registry is `references/tool-registry.json`. Release
+checks use that JSON file for allowed `tool_id` values; keep this Markdown table
+and the JSON registry synchronized.
+
 ## Release Rule
 
 Do not report a tool as used unless the workflow has a logged tool-use row, a

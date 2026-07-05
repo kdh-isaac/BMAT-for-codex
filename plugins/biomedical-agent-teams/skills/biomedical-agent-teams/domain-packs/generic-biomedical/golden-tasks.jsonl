@@ -1,0 +1,1 @@
+{"task_id":"GDP-001","failure_mode":"generic scope mismatch","prompt":"A mouse-only assay is summarized as validated human clinical efficacy.","expected_detection":["species_scope_overclaim","clinical_overreach"],"expected_block":true,"tags":["semantic_scope","overclaim"]}

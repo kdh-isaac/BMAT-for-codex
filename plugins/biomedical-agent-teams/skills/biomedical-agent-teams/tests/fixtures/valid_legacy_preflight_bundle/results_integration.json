@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "integration_id": "RI-FIXTURE-001",
+  "plugin_version": "1.0.0",
+  "workflow_run_id": "run-valid-001",
+  "source_corpus_lock": "locked",
+  "input_artifacts": [
+    "source_corpus.json",
+    "claim_ledger.json",
+    "spawned_agent_instances"
+  ],
+  "tool_use_log": [
+    {
+      "tool_id": "spawned-reviewer-lane",
+      "invocation_surface": "synthetic fixture",
+      "status": "used",
+      "used": true,
+      "retrieval_date": "not-applicable",
+      "source_corpus_rows": [
+        "S-001"
+      ],
+      "result_rows": [
+        "RI-ROW-001"
+      ],
+      "downgrade_reason": ""
+    }
+  ],
+  "rows": [
+    {
+      "result_id": "RI-ROW-001",
+      "result_type": "reviewer-output",
+      "source_ref": "S-001",
+      "claim_ids": [
+        "CL-001"
+      ],
+      "status": "support",
+      "evidence_direction": "supports",
+      "confidence": "moderate",
+      "effect_or_observation": "synthetic spawned reviewer accepted the bounded claim",
+      "sample_or_model_scope": "not-applicable",
+      "statistical_support": "not-applicable",
+      "interpretation": "Fixture row maps reviewer output to CL-001.",
+      "limitations": "Synthetic validator fixture, not a real biomedical audit.",
+      "ledger_action": "update",
+      "reviewer_or_human_gate": "spawned-reviewer-lane"
+    }
+  ],
+  "final_claim_policy": "ledger-only",
+  "human_review_status": "not-needed",
+  "release_notes": [
+    "synthetic fixture"
+  ]
+}

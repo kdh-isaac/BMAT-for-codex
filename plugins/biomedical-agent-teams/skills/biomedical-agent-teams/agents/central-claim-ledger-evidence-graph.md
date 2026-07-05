@@ -20,6 +20,10 @@ Ledger fields:
 - `context`: species, cell type, disease/model, assay, endpoint, cohort/dataset, perturbation, and biological unit.
 - `evidence_items`: PMID/DOI/accession/registry ID/file path/analysis artifact/retrieval date.
 - `evidence_relation`: direct, indirect, proxy, contradictory, missing, or not checked.
+- `entity_ids`: normalized gene/protein/disease/publication/database IDs when verified.
+- `evidence_edges`: subject-predicate-object edges with `source_id` and optional evidence span reference.
+- `scope_match`: species, cell type, assay, and endpoint match/partial/mismatch/not-applicable.
+- `entailment_verdict`: supports, weakly_supports, contradicts, irrelevant, or not_checked.
 - `uncertainty`: low / moderate / high and reason.
 - `audit_status`: unchecked, needs audit, pass, pass-with-caveats, block.
 - `allowed_final_wording`: final-safe wording or empty if blocked.

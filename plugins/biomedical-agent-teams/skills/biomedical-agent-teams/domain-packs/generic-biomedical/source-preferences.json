@@ -1,0 +1,10 @@
+{
+  "domain_pack": "generic-biomedical",
+  "version": "0.1.0",
+  "preferred_sources": ["PubMed", "PMC", "GEO", "ClinicalTrials.gov", "UniProt", "Reactome"],
+  "source_quality_notes": [
+    "Primary literature and official database records outrank narrative summaries.",
+    "Preprints, abstracts, and secondary databases require explicit evidence-quality labels.",
+    "Current database records require retrieval date or release version."
+  ]
+}

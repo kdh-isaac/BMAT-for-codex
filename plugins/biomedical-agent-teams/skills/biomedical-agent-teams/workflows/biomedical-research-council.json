@@ -1,0 +1,50 @@
+{
+  "workflow_id": "biomedical-research-council.standard",
+  "runtime": "codex",
+  "alias": "biomedical-research-council",
+  "mode": "standard",
+  "track": "general-biomedical",
+  "nodes": [
+    {
+      "id": "S0_context_lock",
+      "agent": "protocol-context-locker",
+      "outputs": ["runtime_capability_preflight", "workflow_run"],
+      "blocking": true
+    },
+    {
+      "id": "S1_source_lock",
+      "agent": "life-science-literature-curator",
+      "requires": ["S0_context_lock"],
+      "outputs": ["source_corpus"],
+      "blocking": true
+    },
+    {
+      "id": "S2_claim_graph",
+      "agent": "central-claim-ledger-evidence-graph",
+      "requires": ["S1_source_lock"],
+      "outputs": ["claim_ledger"],
+      "blocking": true
+    },
+    {
+      "id": "S3_review",
+      "agent": "claim-level-evidence-verifier",
+      "requires": ["S2_claim_graph"],
+      "outputs": ["results_integration"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/claim-level-evidence-verifier.toml",
+      "independence_required": true
+    },
+    {
+      "id": "S4_write_validate",
+      "agent": "post-write-final-validator",
+      "requires": ["S3_review"],
+      "outputs": ["post_write_validation", "final_text"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/post-write-final-validator.toml",
+      "independence_required": true
+    }
+  ],
+  "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
+}

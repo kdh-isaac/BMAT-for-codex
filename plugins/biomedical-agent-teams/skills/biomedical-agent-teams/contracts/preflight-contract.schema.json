@@ -26,6 +26,104 @@
     "runtime_capability_preflight_id": {
       "type": "string"
     },
+    "runtime_id": {
+      "type": "string"
+    },
+    "codex_client": {
+      "type": "string"
+    },
+    "plugin_version": {
+      "type": "string"
+    },
+    "workspace_root": {
+      "type": "string"
+    },
+    "host_os": {
+      "type": "string"
+    },
+    "path_style": {
+      "type": "string",
+      "enum": ["posix", "windows", "mixed", "unknown", "not-applicable"]
+    },
+    "python_invocation": {
+      "type": "string"
+    },
+    "shell_family": {
+      "type": "string",
+      "enum": ["bash", "zsh", "powershell", "cmd", "none", "unknown", "not-applicable"]
+    },
+    "codex_runtime_capability_surface": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "web_search_available",
+        "shell_available",
+        "file_read_available",
+        "file_write_available",
+        "network_available"
+      ],
+      "properties": {
+        "web_search_available": { "$ref": "#/$defs/availability" },
+        "shell_available": { "$ref": "#/$defs/availability" },
+        "file_read_available": { "$ref": "#/$defs/availability" },
+        "file_write_available": { "$ref": "#/$defs/availability" },
+        "network_available": { "$ref": "#/$defs/availability" }
+      }
+    },
+    "external_bio_tools_available": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/availability" }
+    },
+    "validator_cli_available": { "$ref": "#/$defs/availability" },
+    "pairwise_ranking_script_available": { "$ref": "#/$defs/availability" },
+    "tool_registry_available": { "$ref": "#/$defs/availability" },
+    "results_integration_available": { "$ref": "#/$defs/availability" },
+    "iteration_budget_available": { "$ref": "#/$defs/availability" },
+    "compute_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string" },
+        "iteration_budget": { "type": "integer", "minimum": 1 },
+        "max_candidates": { "type": "integer", "minimum": 1 },
+        "max_pairwise_matches": { "type": "integer", "minimum": 0 },
+        "max_spawned_reviewers": { "type": "integer", "minimum": 0 },
+        "max_external_queries": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "validator_unavailable_reason": {
+      "type": "string",
+      "enum": [
+        "none",
+        "validator_unavailable_due_to_runtime",
+        "missing_bundle",
+        "missing_jsonschema",
+        "not-applicable"
+      ]
+    },
+    "spawned_subagents_supported": { "$ref": "#/$defs/availability" },
+    "sandbox_profile": { "type": "string" },
+    "label_ceiling_due_to_runtime": {
+      "type": "string",
+      "enum": [
+        "Full protocol followed",
+        "Contract-shaped artifact bundle",
+        "Compact standard workflow",
+        "Limited capability-downgraded workflow",
+        "Blocked"
+      ]
+    },
+    "downgrade_rule": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "requested_alias": {
       "type": "string"
     },
@@ -35,6 +133,28 @@
     },
     "deliverable_type": {
       "type": "string"
+    },
+    "domain_pack": {
+      "type": "string"
+    },
+    "domain_pack_version": {
+      "type": "string"
+    },
+    "domain_specific_failure_modes_loaded": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "$ref": "#/$defs/availability" }
+      ]
+    },
+    "domain_assumptions_skipped": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "workflow_dag_id": {
+      "type": "string"
+    },
+    "results_integration_required": {
+      "type": "boolean"
     },
     "evidence_scope": {
       "type": "object",
@@ -204,6 +324,12 @@
     },
     "workflow_run_id": {
       "type": "string"
+    }
+  },
+  "$defs": {
+    "availability": {
+      "type": "string",
+      "enum": ["yes", "no", "unknown", "not-applicable"]
     }
   }
 }

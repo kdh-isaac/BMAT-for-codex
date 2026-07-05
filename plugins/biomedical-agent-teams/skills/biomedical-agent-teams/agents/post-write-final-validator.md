@@ -22,6 +22,10 @@ Rules:
 - If the ledger provides `allowed_final_wording`, compare final text against it
   and flag any stronger causal, predictive, clinical, translational, or
   therapeutic wording.
+- Check semantic scope fields when present: `scope_match` mismatch blocks
+  high-confidence wording, `entailment_verdict=weakly_supports` allows only
+  exploratory wording, and `entailment_verdict=not_checked` cannot support
+  final allowed wording.
 - For high-confidence source-backed output, omics reports, manuscript support,
   translational/IP scans, or audit verdicts, check the failure modes in
   `references/biomedical-failure-modes.md`. A `suspected` failure mode blocks

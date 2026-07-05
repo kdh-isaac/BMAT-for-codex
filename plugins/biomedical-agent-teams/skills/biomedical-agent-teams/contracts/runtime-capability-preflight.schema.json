@@ -19,6 +19,14 @@
     "codex_client": { "type": "string" },
     "plugin_version": { "type": "string" },
     "workspace_root": { "type": "string" },
+    "domain_pack": { "type": "string" },
+    "domain_pack_version": { "type": "string" },
+    "domain_specific_failure_modes_loaded": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "$ref": "#/$defs/availability" }
+      ]
+    },
     "host_os": { "type": "string" },
     "path_style": {
       "type": "string",

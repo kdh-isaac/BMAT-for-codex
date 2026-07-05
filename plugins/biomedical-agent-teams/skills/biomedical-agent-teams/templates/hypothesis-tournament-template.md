@@ -9,7 +9,7 @@ experimentable hypotheses.
 | field | value |
 |---|---|
 | tournament_id | HT-YYYYMMDD-001 |
-| schema_version | 0.8 |
+| schema_version | 1.0 |
 | context_lock |  |
 | source_scope | source-checked / partially source-checked / not source-checked |
 | candidate_budget |  |

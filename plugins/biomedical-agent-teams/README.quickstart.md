@@ -42,16 +42,22 @@ experiment-design-team FOXO1 dependency of TET2 KO plus IL-21 armored CAR-T pers
 ## Scaffold A Bundle
 
 ```bash
-python skills/biomedical-agent-teams/scripts/bmat_init_bundle.py \
-  --workflow evidence-audit-team \
-  --mode audit \
-  --topic "audit FOXO1 dependency claim" \
-  --out ./bmat_runs/foxo1_audit
+python skills/biomedical-agent-teams/scripts/bmat_init_bundle.py --workflow evidence-audit-team --mode audit --topic "audit FOXO1 dependency claim" --out ./bmat_runs/foxo1_audit
 ```
 
-Then fill the generated `preflight.json`, `source_corpus.json`,
+Then fill the generated `runtime_capability_preflight.json`, `source_corpus.json`,
 `claim_ledger.json`, `stage_evaluation.json`, and `post_write_validation.json`
 before claiming `Compact standard workflow` or `Full protocol followed`.
+
+## Run A Local Scaffold With Validators
+
+```bash
+python skills/biomedical-agent-teams/scripts/bmat_run.py --alias evidence-audit-team --mode audit --question "audit FOXO1 dependency claim" --out ./bmat_runs/foxo1_audit --force --validate --export markdown
+```
+
+`bmat_run.py` writes `workflow_dag.json`, `results_integration.json`, and
+`tool_call_ledger.json` alongside the core bundle. In 1.0.0 the generated
+workflow DAG is normalized to the requested alias and mode before validation.
 
 ## Smoke Test
 

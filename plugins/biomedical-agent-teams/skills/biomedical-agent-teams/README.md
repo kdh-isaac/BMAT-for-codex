@@ -1,71 +1,60 @@
 # Biomedical Agent Teams
 
-Codex biomedical agent-team bundle with a lightweight router, protocol lock,
-central claim ledger, source corpus, runtime capability preflight, audit gates,
-writer restriction, post-write final validation, loop-state resources,
-tool-use/result integration, research overview synthesis, team output artifact
-tracking, and optional deterministic artifact validators.
+Current version: `1.0.0`.
+
+Codex biomedical agent-team bundle with a lightweight router, protocol and
+runtime lock, source corpus, central claim ledger, results integration,
+tool-ledger honesty checks, workflow DAGs, loop-state resources, post-write
+validation, and deterministic release gates.
 
 Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
 Long governance instructions live in command recipes, references, templates,
 contracts, and scripts that are lazy-loaded only when needed.
 
-## Supported Release
+## 1.0.0 Resource Surface
 
-- Current version: `0.8.11`.
-- Runtime target: Codex Desktop on macOS and Windows.
-- Legacy version history is intentionally excluded from this runtime README.
-  Use git history for old release notes.
-- The package is contract-described by default. Strong workflow labels require
-  the matching artifacts, source locks, reviewer/tool evidence, and validator
-  results.
+| Resource | Count |
+| --- | ---: |
+| Agent role prompts in `agents/` | 36 |
+| Workflow recipes in `commands/` | 6 |
+| Contract schemas in `contracts/` | 17 |
+| Templates in `templates/` | 15 |
+| Markdown references in `references/` | 10 |
+| JSON references in `references/` | 1 |
+| Loop recipes in `loops/` | 4 |
+| Codex reviewer TOML templates in `codex-agents/` | 12 |
+| Workflow DAGs in `workflows/` | 6 |
+| Domain packs in `domain-packs/` | 2 |
+| Package scripts in `scripts/` | 9 |
+| Eval scripts in `evals/` | 3 |
 
-## Current Patch Notes
+## 1.0.0 Highlights
 
-- `Full protocol followed` is blocked unless the complete validator bundle is
-  present, including source corpus, claim ledger, stage evaluation, post-write
-  validation, and final text artifacts.
-- Loop states now accept the connector aliases used in bundled loop recipes,
-  including `Crossref/DOI` and `GEO/SRA/NCBI Datasets`.
-- Runtime package metadata keeps only the current release note key,
-  `new_in_v0_8_11`; older version archaeology belongs in git history.
-- Source and installed cache should hash-match after reinstall. Test caches are
-  disposable and should not be treated as plugin resources.
-
-## Current Resource Surface
-
-- 36 agent prompts in `agents/`.
-- 6 workflow recipes in `commands/`.
-- 14 contract schemas in `contracts/`.
-- 14 templates in `templates/`.
-- 10 references in `references/`.
-- 4 recurring-loop recipes in `loops/`.
-- 12 Codex reviewer templates in `codex-agents/`.
-- 7 scripts for docs inventory, package checks, artifact scaffolding, loop
-  checks, validation, Elo aggregation, self-tests, and golden eval scoring.
-
-## Current Capabilities
-
-- Lazy-loads the selected workflow recipe instead of loading every role.
-- Records runtime capability, source lock, external-tool authorization,
-  validator availability, reviewer strategy, and final label ceiling before
-  strong claims are made.
-- Supports `inline_first_selective_review` and `team_level_selective_dag` with
-  explicit handoff contracts and dependency checks.
-- Routes substantive public-omics work through `omics-analysis-team` and applies
-  code, provenance, and statistics reviewer floors when runtime support exists.
-- Tracks tool use and results through `references/tool-registry.md` and
-  `contracts/results-integration.schema.json`.
-- Supports hypothesis tournaments with iteration budget, meta-review,
-  prioritization-only Elo/ranking semantics, and stop-criterion checks.
-- Validates loop state, artifact labels, source-backed claims, final wording,
-  PMID drift, contradiction, overclaim, runtime mismatch, and ranking honesty.
+- `runtime_capability_preflight.json` is the canonical runtime capability
+  preflight artifact.
+- `results_integration.json` maps sources, tools, reviewer outputs, omics
+  outputs, and literature outputs back to claim rows.
+- `tool_call_ledger.json` records successful, skipped, blocked, failed, or
+  unavailable tool calls.
+- `workflow_dag.json` records alias-specific execution structure; the runner
+  normalizes DAG `mode` and `workflow_id` to the requested run mode.
+- `bmat_validate.py` enforces bundle shape, source-backed claim references,
+  final wording, post-write verdict, independent review evidence, S3/high
+  confidence gates, team DAG contracts, tool-ledger policy, and workflow DAG
+  alias/mode/id consistency.
+- `bmat_run.py` creates local dry-run bundles, writes workflow DAGs, runs
+  validator/tool-ledger checks, and can export a Markdown workbench.
+- Golden eval gates cover PMID drift, contradiction, overclaim,
+  tournament-loop, tournament-ranking, Codex-runtime, semantic-scope, and
+  expected-block behavior.
+- Runtime documentation keeps only the current release surface; older release
+  archaeology belongs in git history.
 
 ## Workflow Structure
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.8.11 Workflow Structure
+    accTitle: BMAT v1.0.0 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]
@@ -121,6 +110,37 @@ feed evidence back into the ledger: team DAG outputs are proven by
 `team_output_artifacts`, reviewer execution is proven by
 `spawned_agent_instances`, and recurring loops are checked by
 `bmat_loop_check.py`.
+
+## Full Protocol Structure
+
+```mermaid
+flowchart TD
+  A["Declared label: Full protocol followed"] --> B["Required bundle artifacts exist"]
+  B --> C["Required stages pass"]
+  C --> D["Source-backed claims resolve to included source_corpus rows"]
+  D --> E["Results and tool-backed claims are reconciled"]
+  E --> F["Independent review surface exists"]
+  F --> G["Complete spawned_agent_instances record exists when required"]
+  G --> H["post_write_validation verdict passes"]
+  H --> I["final.md uses ledger-allowed wording"]
+  I --> J["bmat_validate.py passes"]
+```
+
+Required full-protocol artifacts:
+
+- `run_state.json`
+- `runtime_capability_preflight.json`
+- `source_corpus.json`
+- `claim_ledger.json`
+- `stage_evaluation.json`
+- `post_write_validation.json`
+- `final.md`
+
+Optional but policy-checked artifacts:
+
+- `workflow_dag.json`
+- `results_integration.json`
+- `tool_call_ledger.json`
 
 ## Included Commands
 
@@ -185,6 +205,7 @@ python scripts/bmat_package_check.py --root ../..
 python scripts/bmat_selftest.py --root ../..
 python evals/validate_golden_eval_schema.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl
 python evals/run_golden_eval.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl --strict --gate
+python evals/run_model_golden_eval.py --tasks evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out bmat_eval_outputs/model-sample.jsonl --sample-mode --then-score --gate
 uvx --with jsonschema pytest tests -q
 ```
 

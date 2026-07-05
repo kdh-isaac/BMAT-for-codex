@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Tool Call Ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ledger_id", "plugin_version", "calls"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "ledger_id": { "type": "string" },
+    "plugin_version": { "type": "string" },
+    "workflow_run_id": { "type": "string" },
+    "calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["call_id", "tool_id", "status", "inputs_digest", "affected_claim_ids"],
+        "properties": {
+          "call_id": { "type": "string" },
+          "tool_id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["success", "skipped", "unavailable", "blocked", "failed"]
+          },
+          "inputs_digest": { "type": "string" },
+          "output_ref": { "type": "string" },
+          "retrieval_date": { "type": "string" },
+          "affected_claim_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "downgrade_reason": { "type": "string" },
+          "provenance": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "source_id": { "type": "string" },
+              "url_or_accession": { "type": "string" }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "status": { "const": "success" } },
+              "required": ["status"]
+            },
+            "then": { "required": ["output_ref"] }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": ["skipped", "unavailable", "blocked", "failed"]
+                }
+              },
+              "required": ["status"]
+            },
+            "then": { "required": ["downgrade_reason"] }
+          }
+        ]
+      }
+    }
+  }
+}

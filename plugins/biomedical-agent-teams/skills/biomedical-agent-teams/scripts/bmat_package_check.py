@@ -34,6 +34,7 @@ COUNT_KEYS = {
     "loop_count": ("loops", "*.md"),
     "codex_agent_template_count": ("codex-agents", "*.toml"),
     "script_count": ("scripts", "*.py"),
+    "workflow_dag_count": ("workflows", "*.json"),
 }
 SOURCE_MANIFEST_COLLECTIONS = {
     "commands": ("commands", ".md"),
@@ -44,6 +45,7 @@ SOURCE_MANIFEST_COLLECTIONS = {
     "loops": ("loops", ".md"),
     "scripts": ("scripts", ".py"),
     "codex_agent_templates": ("codex-agents", ".toml"),
+    "workflow_dags": ("workflows", ".json"),
 }
 CODEX_DEFAULT_PROMPT_LIMIT = 3
 SKILL_ROUTER_MAX_BYTES = 16_000
@@ -99,6 +101,9 @@ def special_counts(skill_root: Path, findings: list[Finding]) -> dict[str, int]:
         "eval_count": len(list((skill_root / "evals").glob("*.py"))),
         "golden_task_count": count_golden_tasks(skill_root, findings),
         "agent_registry_count": 1 if (skill_root / "agent-registry.json").exists() else 0,
+        "domain_pack_count": len([path for path in (skill_root / "domain-packs").iterdir() if path.is_dir()])
+        if (skill_root / "domain-packs").exists()
+        else 0,
     }
 
 
@@ -159,7 +164,8 @@ def bom_check_paths(skill_root: Path) -> list[Path]:
 def validate_no_bom_bytes(skill_root: Path, findings: list[Finding]) -> None:
     for path in bom_check_paths(skill_root):
         try:
-            prefix = path.read_bytes()[:4]
+            with path.open("rb") as handle:
+                prefix = handle.read(4)
         except OSError as exc:
             findings.append(Finding("ERROR", "FILE_READ_ERROR", f"could not read file bytes: {exc}", str(path)))
             continue
@@ -428,6 +434,104 @@ def validate_registry(skill_root: Path, findings: list[Finding]) -> None:
             findings.append(Finding("ERROR", "TOML_TEMPLATE_MISSING", f"{agent_id} spawnable template missing", str(skill_root / "agent-registry.json")))
 
 
+def agent_registry_map(skill_root: Path, findings: list[Finding]) -> dict[str, dict[str, Any]]:
+    registry = read_json(skill_root / "agent-registry.json", findings)
+    if not isinstance(registry, dict):
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for agent in registry.get("agents", []):
+        if isinstance(agent, dict) and str(agent.get("agent_id", "")).strip():
+            out[str(agent["agent_id"])] = agent
+    return out
+
+
+def validate_workflow_dags(skill_root: Path, findings: list[Finding]) -> None:
+    workflows_root = skill_root / "workflows"
+    agents = agent_registry_map(skill_root, findings)
+    expected_aliases = {
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team",
+    }
+    seen_aliases: set[str] = set()
+    if not workflows_root.exists():
+        findings.append(Finding("ERROR", "WORKFLOW_DAG_DIR_MISSING", "workflows directory missing", str(workflows_root)))
+        return
+    for path in sorted(workflows_root.glob("*.json")):
+        dag = read_json(path, findings)
+        if not isinstance(dag, dict):
+            continue
+        alias = str(dag.get("alias", "")).strip()
+        if alias:
+            seen_aliases.add(alias)
+        if alias and path.stem != alias:
+            findings.append(
+                Finding("ERROR", "WORKFLOW_DAG_FILENAME_ALIAS_MISMATCH", f"{path.name} alias mismatch", str(path))
+            )
+        nodes = dag.get("nodes", [])
+        if not isinstance(nodes, list) or not nodes:
+            findings.append(Finding("ERROR", "WORKFLOW_DAG_NODES_MISSING", "workflow DAG must contain nodes", str(path)))
+            continue
+        node_ids: set[str] = set()
+        for node in nodes:
+            if not isinstance(node, dict):
+                findings.append(Finding("ERROR", "WORKFLOW_DAG_NODE_INVALID", "workflow DAG node must be an object", str(path)))
+                continue
+            node_id = str(node.get("id", "")).strip()
+            agent_id = str(node.get("agent", "")).strip()
+            if node_id in node_ids:
+                findings.append(Finding("ERROR", "WORKFLOW_DAG_DUPLICATE_NODE", f"duplicate node id {node_id}", str(path)))
+            node_ids.add(node_id)
+            if agent_id not in agents:
+                findings.append(Finding("ERROR", "WORKFLOW_DAG_UNKNOWN_AGENT", f"{node_id} references unknown agent {agent_id}", str(path)))
+                continue
+            if node.get("spawnable") is True:
+                template_path = str(node.get("toml_template_path", "")).strip()
+                if not template_path or not (skill_root / template_path).exists():
+                    findings.append(
+                        Finding("ERROR", "WORKFLOW_DAG_SPAWNABLE_TEMPLATE_MISSING", f"{node_id} missing TOML template", str(path))
+                    )
+                if agents[agent_id].get("spawnable") is not True:
+                    findings.append(
+                        Finding("ERROR", "WORKFLOW_DAG_AGENT_NOT_SPAWNABLE", f"{node_id} marks non-spawnable agent {agent_id}", str(path))
+                    )
+            requires = node.get("requires", [])
+            if isinstance(requires, list):
+                for dependency in requires:
+                    if str(dependency) not in node_ids:
+                        findings.append(
+                            Finding("ERROR", "WORKFLOW_DAG_DEPENDENCY_ORDER_INVALID", f"{node_id} depends on unknown or later node {dependency}", str(path))
+                        )
+    missing = sorted(expected_aliases - seen_aliases)
+    if missing:
+        findings.append(
+            Finding("ERROR", "WORKFLOW_DAG_ALIAS_COVERAGE_MISSING", f"missing workflow DAGs for {missing}", str(workflows_root))
+        )
+
+
+def validate_domain_packs(skill_root: Path, findings: list[Finding]) -> None:
+    packs_root = skill_root / "domain-packs"
+    if not packs_root.exists():
+        findings.append(Finding("ERROR", "DOMAIN_PACK_DIR_MISSING", "domain-packs directory missing", str(packs_root)))
+        return
+    required = {
+        "entity-normalization-rules.json",
+        "failure-modes.md",
+        "source-preferences.json",
+        "golden-tasks.jsonl",
+    }
+    packs = [path for path in sorted(packs_root.iterdir()) if path.is_dir()]
+    if not packs:
+        findings.append(Finding("ERROR", "DOMAIN_PACKS_MISSING", "at least one domain pack is required", str(packs_root)))
+    for pack in packs:
+        for filename in sorted(required):
+            if not (pack / filename).exists():
+                findings.append(Finding("ERROR", "DOMAIN_PACK_FILE_MISSING", f"{pack.name} missing {filename}", str(pack)))
+
+
 def validate_fixture_versions(skill_root: Path, version: str, findings: list[Finding]) -> None:
     fixtures_root = skill_root / "tests" / "fixtures"
     if not fixtures_root.exists():
@@ -494,7 +598,7 @@ def validate_router_mentions(skill_root: Path, findings: list[Finding]) -> None:
 
 
 def validate_docs_inventory(skill_root: Path, findings: list[Finding]) -> None:
-    for folder in ("commands", "references", "loops", "templates"):
+    for folder in ("commands", "references", "loops", "templates", "agents"):
         for path in sorted((skill_root / folder).glob("*.md")):
             text = read_text(path, findings)
             match = re.match(r"\A---\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", text, re.S)
@@ -570,6 +674,8 @@ def main() -> int:
         validate_plugin_interface(skill_root, findings)
         validate_counts(skill_root, findings)
         validate_registry(skill_root, findings)
+        validate_workflow_dags(skill_root, findings)
+        validate_domain_packs(skill_root, findings)
         validate_fixture_versions(skill_root, version, findings)
         validate_router_mentions(skill_root, findings)
         validate_docs_inventory(skill_root, findings)

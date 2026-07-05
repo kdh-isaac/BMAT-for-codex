@@ -1,0 +1,10 @@
+{
+  "domain_pack": "generic-biomedical",
+  "version": "0.1.0",
+  "entity_namespaces": ["HGNC", "UniProt", "MONDO", "MeSH", "PMID", "DOI", "NCT"],
+  "normalization_rules": [
+    "Preserve original user wording next to normalized IDs.",
+    "Do not invent identifiers; record unresolved entities as unresolved.",
+    "Prefer primary biomedical repositories over secondary summaries."
+  ]
+}

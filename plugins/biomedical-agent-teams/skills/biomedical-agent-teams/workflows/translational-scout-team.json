@@ -1,0 +1,50 @@
+{
+  "workflow_id": "translational-scout-team.standard",
+  "runtime": "codex",
+  "alias": "translational-scout-team",
+  "mode": "standard",
+  "track": "translation",
+  "nodes": [
+    {
+      "id": "S0_context_lock",
+      "agent": "protocol-context-locker",
+      "outputs": ["runtime_capability_preflight", "workflow_run"],
+      "blocking": true
+    },
+    {
+      "id": "S1_sources",
+      "agent": "clinical-trial-operations-scout",
+      "requires": ["S0_context_lock"],
+      "outputs": ["source_corpus", "results_integration"],
+      "blocking": true
+    },
+    {
+      "id": "S2_ip_regulatory",
+      "agent": "grant-ip-landscape-scout",
+      "requires": ["S1_sources"],
+      "outputs": ["stage_evaluation"],
+      "blocking": true
+    },
+    {
+      "id": "S3_safety",
+      "agent": "safety-ethics-privacy-dual-use-auditor",
+      "requires": ["S2_ip_regulatory"],
+      "outputs": ["post_write_validation"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/safety-ethics-privacy-dual-use-auditor.toml",
+      "independence_required": true
+    },
+    {
+      "id": "S4_post_write",
+      "agent": "post-write-final-validator",
+      "requires": ["S3_safety"],
+      "outputs": ["final_text"],
+      "blocking": true,
+      "spawnable": true,
+      "toml_template_path": "codex-agents/post-write-final-validator.toml",
+      "independence_required": true
+    }
+  ],
+  "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
+}

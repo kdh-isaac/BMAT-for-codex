@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Workflow DAG",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["workflow_id", "runtime", "alias", "mode", "nodes", "release_gates"],
+  "properties": {
+    "workflow_id": { "type": "string" },
+    "runtime": {
+      "type": "string",
+      "enum": ["codex"]
+    },
+    "alias": { "type": "string" },
+    "mode": { "type": "string" },
+    "track": { "type": "string" },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "agent", "outputs", "blocking"],
+        "properties": {
+          "id": { "type": "string" },
+          "agent": { "type": "string" },
+          "requires": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "outputs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "blocking": { "type": "boolean" },
+          "spawnable": { "type": "boolean" },
+          "toml_template_path": { "type": "string" },
+          "independence_required": { "type": "boolean" }
+        }
+      }
+    },
+    "release_gates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "bmat_validate",
+          "bmat_tool_ledger_check",
+          "run_golden_eval",
+          "run_model_golden_eval_sample"
+        ]
+      }
+    }
+  }
+}

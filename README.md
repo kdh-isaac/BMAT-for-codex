@@ -1,13 +1,50 @@
 # BMAT for Codex
 
-Codex Desktop marketplace package for the Biomedical Agent Teams (BMAT) plugin.
+Codex Desktop marketplace package for the Biomedical Agent Teams (BMAT)
+plugin.
 
-Current plugin version: `0.8.11`.
+Current plugin version: `1.0.0`.
+
+## What This Package Is
+
+BMAT is a Codex-native biomedical workflow router. It is not a collection of
+always-running agents. Codex loads `SKILL.md` as a lightweight router, then the
+selected command recipe loads only the required references, templates,
+contracts, scripts, and role prompts.
+
+The package supports biomedical evidence audits, public-omics planning and
+execution, hypothesis tournaments, experiment design, translational scouting,
+recurring loop checks, tool/result ledgers, workflow DAGs, and validator-backed
+artifact bundles.
+
+## Current 1.0.0 Surface
+
+- Plugin metadata: `plugins/biomedical-agent-teams/.codex-plugin/plugin.json`
+- Skill router: `plugins/biomedical-agent-teams/skills/biomedical-agent-teams/SKILL.md`
+- Version file: `plugins/biomedical-agent-teams/skills/biomedical-agent-teams/VERSION`
+- Resource manifest: `plugins/biomedical-agent-teams/skills/biomedical-agent-teams/source-manifest.json`
+
+Current resource counts:
+
+| Resource | Count |
+| --- | ---: |
+| Agent role prompts | 36 |
+| Command recipes | 6 |
+| Contract schemas | 17 |
+| Templates | 15 |
+| Markdown references | 10 |
+| JSON references | 1 |
+| Loop recipes | 4 |
+| Codex reviewer TOML templates | 12 |
+| Workflow DAGs | 6 |
+| Domain packs | 2 |
+| Package scripts | 9 |
+| Eval scripts | 3 |
+| Test modules | 9 |
 
 ## Install
 
-Clone this repository, then register the local marketplace path from Windows
-PowerShell, macOS, or Linux:
+Clone this repository, then register the local marketplace path:
 
 ```bash
 git clone https://github.com/kdh-isaac/BMAT-for-codex.git
@@ -15,19 +52,41 @@ codex plugin marketplace add "<path-to-clone>"
 codex plugin add biomedical-agent-teams@biomedical-agent-teams-marketplace
 ```
 
-The plugin body is in `plugins/biomedical-agent-teams/` and exposes the
-`biomedical-agent-teams` skill with 36 agent prompts, 6 command recipes, 14
-contract schemas, 14 templates, 10 references, 4 loop recipes, 12 Codex reviewer
-templates, a lightweight lazy-loaded router, source/result/claim integration,
-tool-use honesty checks, compute-budget and team-DAG surfaces, loop-state
-validation, deterministic artifact validators, and golden-case eval gates for
-PMID drift, contradiction, overclaim, runtime mismatch, and ranking honesty.
+Check the live install surface:
+
+```bash
+codex plugin list
+codex debug prompt-input
+```
+
+After install, the prompt surface should expose:
+
+```text
+biomedical-agent-teams:biomedical-agent-teams
+```
+
+and the installed cache should resolve under:
+
+```text
+~/.codex/plugins/cache/biomedical-agent-teams-marketplace/biomedical-agent-teams/1.0.0
+```
+
+## Primary Aliases
+
+| Alias | Use for |
+| --- | --- |
+| `biomedical-research-council` | Broad research coordination, mechanism review, writing support, or multi-lane audit |
+| `idea-discovery-team` | Hypothesis generation, ranking, tournament design, and idea triage |
+| `omics-analysis-team` | Public omics discovery, QC, reproducible analysis, provenance, and analysis planning |
+| `evidence-audit-team` | Citation, PMID, source-corpus, contradiction, overclaim, and final-claim audit |
+| `experiment-design-team` | Wet-lab or in vivo experiment design, controls, confounders, reagent/logistics planning, and statistics |
+| `translational-scout-team` | Clinical trial, regulatory, IP, commercial, and translational scouting |
 
 ## Workflow Structure
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v0.8.11 Workflow Structure
+    accTitle: BMAT v1.0.0 Workflow Structure
     accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
 
     request["User request or BMAT alias"]
@@ -76,53 +135,72 @@ flowchart TD
     loop_check --> release
 ```
 
-The main workflow progresses vertically from request lock to final label. The
-lead owns the lock, selected inline work, claim ledger, workflow-run state, and
-final synthesis. Optional lanes run only when the strategy calls for them, then
-feed evidence back into the ledger: team DAG outputs are proven by
-`team_output_artifacts`, reviewer execution is proven by
-`spawned_agent_instances`, and recurring loops are checked by
-`bmat_loop_check.py`. Full-protocol release requires the post-write validator
-and `bmat_validate.py` to pass against the complete artifact bundle.
+The lead owns the runtime lock, selected inline work, central claim ledger,
+workflow-run state, and final synthesis. Optional team, reviewer, and loop lanes
+run only when selected by the execution strategy, then hand evidence back to the
+ledger. Full-protocol release requires a complete artifact bundle plus a passing
+validator gate.
 
-## Contents
+## Full Protocol Contract
 
-- `.agents/plugins/marketplace.json`: local marketplace metadata.
-- `plugins/biomedical-agent-teams/`: Codex plugin body.
-- `plugins/biomedical-agent-teams/skills/biomedical-agent-teams/`: skill
-  router, agents, commands, contracts, templates, references, loops, tests, and
-  validators.
+`Full protocol followed` is a validator-backed bundle label, not a prose quality
+claim. A full-protocol run must include:
 
-## Release Surface
+- `run_state.json`
+- `runtime_capability_preflight.json`
+- `source_corpus.json`
+- `claim_ledger.json`
+- `stage_evaluation.json`
+- `post_write_validation.json`
+- non-empty `final.md`
 
-Version `0.8.11` is the only supported release surface in this repository. Old
-version changelog blocks and workspace-specific install paths have been removed
-from the runtime docs; historical behavior is covered by tests and git history.
+When applicable, the bundle also includes:
 
-### Current Patch Notes
+- `workflow_dag.json`
+- `results_integration.json`
+- `tool_call_ledger.json`
 
-- Full-protocol labels now require the complete core artifact bundle:
-  `run_state.json`, `runtime_capability_preflight.json`,
-  `source_corpus.json`, `claim_ledger.json`, `stage_evaluation.json`,
-  `post_write_validation.json`, and non-empty `final.md`.
-- Loop connector aliases used by the loop recipes are accepted by
-  `bmat_loop_check.py`, including `Crossref/DOI` and
-  `GEO/SRA/NCBI Datasets`.
-- Runtime docs and `source-manifest.json` keep only the current `0.8.11`
-  release surface. Older release notes belong in git history, not the installed
-  plugin bundle.
-- The installed cache and marketplace source are expected to be byte-for-byte
-  identical after reinstall; test caches such as `.pytest_cache` and
-  `__pycache__` are not part of the package.
+The validator checks required artifact presence, passing required stages,
+post-write verdict, independent review evidence, source-backed claim references,
+final wording drift, high-confidence S3 gates, results integration, tool-ledger
+honesty, and workflow DAG alias/mode/id consistency.
+
+## 1.0.0 Highlights
+
+- Canonical runtime artifact bundle centered on
+  `runtime_capability_preflight.json`.
+- Tool-use honesty through `tool_call_ledger.json` and
+  `bmat_tool_ledger_check.py`.
+- Results-to-source-to-claim reconciliation through
+  `results_integration.json`.
+- Six alias-specific workflow DAGs under `workflows/*.json`.
+- `bmat_run.py` local runner with DAG mode/id normalization, validator wrapping,
+  and Markdown workbench export.
+- Full-protocol gate enforcement for independent review and complete
+  `spawned_agent_instances` records.
+- Golden eval gates for PMID drift, contradiction, overclaim,
+  tournament-loop, tournament-ranking, Codex-runtime, and semantic-scope cases.
+- BOM-free release surface and source/cache parity checks.
 
 ## Validation
 
-The 0.8.11 package is validated with:
+The 1.0.0 package is validated from the repository or marketplace root with:
 
 ```bash
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_model_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out /tmp/bmat-model-sample.jsonl --sample-mode --then-score --gate
 uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
 ```
+
+For real model-in-the-loop evaluation, replace `--sample-mode` with an explicit
+`--adapter-command` that reads one golden task JSON object from stdin and writes
+one scorer-compatible JSON object to stdout. CI should keep using sample mode.
+
+## Maintenance Rule
+
+Treat the source tree, installed cache, prompt surface, package metadata,
+manifest counts, README text, generated bundle commands, and validator tests as
+one release surface. Do not rely on README text alone to establish plugin truth.
