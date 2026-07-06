@@ -64,59 +64,110 @@ Important files:
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v1.0.0 Workflow Structure
-    accDescr: Vertical BMAT workflow spine with optional loop, team DAG, and reviewer lanes feeding back into the central ledger.
+    accTitle: BMAT v1.0.0 End-to-End Workflow Structure
+    accDescr: Full package workflow from Codex routing through command DAGs, optional team, reviewer, tool, and loop lanes, artifact bundle creation, validation gates, and final label selection.
 
-    request["User request or BMAT alias"]
-    lock["1. Runtime, scope, source, and strategy lock"]
-    route{"2. Execution strategy"}
-    spine["3. Selected inline specialist work"]
-    ledger["4. Central claim ledger<br/>source corpus<br/>workflow-run state"]
-    synth["5. Ledger-only synthesis"]
-    release{"6. Release gates<br/>post-write + bmat_validate.py"}
-    label["7. Final workflow label<br/>Full / Contract / Compact / Limited / Partial / Blocked"]
+    request["1. User request<br/>or explicit BMAT alias"]
+    router["2. SKILL.md lightweight router<br/>selects one command recipe"]
+    recipe["3. Command recipe<br/>loads only required agents,<br/>references, templates, contracts, scripts"]
+    preflight["4. Runtime capability preflight<br/>mode, scope, source needs,<br/>tools, file/write, web, spawn support"]
+    strategy{"5. Execution strategy"}
 
-    request --> lock --> route --> spine --> ledger --> synth --> release --> label
+    request --> router --> recipe --> preflight --> strategy
 
-    subgraph team_dag["Optional lane: team_level_selective_dag"]
+    strategy --> inline["inline_first_selective_review<br/>default lead-controlled workflow"]
+    strategy -. "only for broad independent axes" .-> team_lane
+    strategy -. "only for watch / inbox / recurrence" .-> loop_lane
+
+    inline --> dag_select{"6. Alias-specific workflow DAG"}
+
+    subgraph dag_catalog["Canonical command DAGs in workflows/*.json"]
         direction TB
-        t1["Phase 1 teams<br/>idea / omics / translational"]
-        t2["Phase 2 teams<br/>experiment design / evidence audit"]
-        tout["team_output_artifacts<br/>artifact path + checks + dependencies"]
-        tgate{"team_spawn_outputs<br/>stage pass?"}
-        t1 --> t2 --> tout --> tgate
+        brc["biomedical-research-council<br/>S0 context lock<br/>S1 source lock<br/>S2 claim graph<br/>S3 evidence review<br/>S4 write + validate"]
+        idea["idea-discovery-team<br/>S0 context lock<br/>S1 generate hypotheses<br/>S2 rank hypotheses<br/>S3 confounder critique<br/>S4 post-write validate"]
+        omics["omics-analysis-team<br/>S0 context lock<br/>S1 plan / curate data<br/>S2 execute analysis<br/>S3 stats validation<br/>S4 code review<br/>S5 post-write validate"]
+        audit["evidence-audit-team<br/>S0 context lock<br/>S1 source corpus<br/>S2 claim ledger<br/>S3 citation check<br/>S4 contradiction check<br/>S5 post-write validate"]
+        design["experiment-design-team<br/>S0 context lock<br/>S1 design plan<br/>S2 statistics plan<br/>S3 claim lock<br/>S4 post-write validate"]
+        scout["translational-scout-team<br/>S0 context lock<br/>S1 clinical / trial sources<br/>S2 IP + regulatory<br/>S3 safety review<br/>S4 post-write validate"]
     end
 
-    subgraph review_lane["Optional lane: selective spawned review"]
+    dag_select --> brc
+    dag_select --> idea
+    dag_select --> omics
+    dag_select --> audit
+    dag_select --> design
+    dag_select --> scout
+
+    subgraph team_lane["Optional team-level DAG lane"]
+        direction TB
+        team_plan["team_spawn_plan<br/>dependency-aware lane selection"]
+        team_outputs["team_output_artifacts<br/>artifact path, checks, dependencies"]
+        team_record["run_state team_spawn_lanes<br/>and stage handoff"]
+        team_plan --> team_outputs --> team_record
+    end
+
+    subgraph reviewer_lane["Optional spawned reviewer lane"]
         direction TB
         registry["agent-registry.json<br/>codex-agents/*.toml"]
-        instances["spawned_agent_instances"]
-        rcontract["spawned-agent-output contract"]
-        rhandoff["accepted findings<br/>ledger handoff"]
-        registry --> instances --> rcontract --> rhandoff
+        spawned["spawned_agent_instances<br/>role, task, status, output_artifact"]
+        review_contract["spawned-agent-output contract<br/>findings, confidence, checks"]
+        review_handoff["accepted findings<br/>merged back into claim ledger"]
+        registry --> spawned --> review_contract --> review_handoff
     end
 
-    subgraph loop_layer["Optional lane: recurring loop layer"]
+    subgraph tool_lane["Tool and result honesty lane"]
+        direction TB
+        tool_calls["tool_call_ledger.json<br/>success / skipped / unavailable / blocked / failed"]
+        result_map["results_integration.json<br/>source -> result -> claim mapping"]
+        tool_check["bmat_tool_ledger_check.py<br/>registered tools and downgrade reasons"]
+        tool_calls --> result_map --> tool_check
+    end
+
+    subgraph loop_lane["Optional recurring loop lane"]
         direction TB
         loop_recipe["loops/*.md recipe"]
         loop_state["loop_state.json"]
-        loop_check["bmat_loop_check.py"]
+        loop_check["bmat_loop_check.py<br/>freshness, connector, objection,<br/>release-artifact policy"]
         loop_recipe --> loop_state --> loop_check
     end
 
-    route -. "broad independent axes" .-> t1
-    tgate --> ledger
-    ledger -. "independent audit needed" .-> registry
-    rhandoff --> ledger
-    route -. "watch / inbox / triage" .-> loop_recipe
-    loop_check --> ledger
-    loop_check --> release
+    brc --> bundle
+    idea --> bundle
+    omics --> bundle
+    audit --> bundle
+    design --> bundle
+    scout --> bundle
+    team_record --> bundle
+    review_handoff --> bundle
+    tool_check --> bundle
+    loop_check --> bundle
+    bundle -. "independent review required by recipe or label" .-> registry
+
+    bundle["7. Canonical artifact bundle<br/>run_state.json<br/>runtime_capability_preflight.json<br/>source_corpus.json<br/>claim_ledger.json<br/>stage_evaluation.json<br/>post_write_validation.json<br/>final.md"]
+    extras["Policy-checked extras<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json"]
+    gates{"8. Release gates"}
+    postwrite["post-write-final-validator<br/>final wording and limitation check"]
+    validate["bmat_validate.py<br/>bundle schema + policy gate<br/>source-backed claims, DAG consistency,<br/>independent review, final wording"]
+    label{"9. Strongest allowed final label"}
+
+    bundle --> extras --> gates
+    gates --> postwrite --> validate --> label
+
+    label --> full["Full protocol followed"]
+    label --> contract["Contract-shaped artifact bundle"]
+    label --> compact["Compact standard workflow"]
+    label --> narrative["BMAT-informed narrative review"]
+    label --> limited["Limited capability-downgraded workflow"]
+    label --> partial["Partial workflow; formal gates skipped"]
+    label --> blocked["Blocked"]
 ```
 
-The lead owns the lock, selected inline work, claim ledger, workflow-run state,
-and final synthesis. Optional lanes run only when the execution strategy calls
-for them, then hand accepted evidence back to the ledger. Full-protocol release
-requires a complete artifact bundle plus passing release gates.
+The lead owns the router decision, runtime preflight, selected command DAG,
+central claim ledger, artifact bundle, and final synthesis. Team, reviewer,
+tool/result, and recurring-loop lanes run only when the selected recipe,
+execution strategy, risk class, or requested label requires them. Full-protocol
+release is allowed only after the complete bundle and policy-checked optional
+artifacts satisfy the post-write and validator gates.
 
 ## Full Protocol Bundle
 
