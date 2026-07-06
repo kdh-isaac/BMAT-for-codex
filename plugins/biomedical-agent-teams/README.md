@@ -145,14 +145,36 @@ the ledger, or workflow DAG alias/mode/id fields disagree with the run state.
 
 ## Install
 
-From Windows PowerShell, macOS, or Linux:
+Recommended: register the GitHub-hosted marketplace, then install from the
+Codex plugin browser:
 
 ```bash
-codex plugin marketplace add "<path-to-repo>"
-codex plugin add biomedical-agent-teams@biomedical-agent-teams-marketplace
+codex plugin marketplace add kdh-isaac/BMAT-for-codex --ref main
+codex
 ```
 
-Restart Codex Desktop if the plugin list does not refresh immediately.
+In Codex, open the plugin browser:
+
+```text
+/plugins
+```
+
+Find **Biomedical Agent Teams** under the
+`biomedical-agent-teams-marketplace` marketplace and choose **Install plugin**.
+
+Developer fallback: clone the repository and register the local marketplace
+path when testing unpublished changes:
+
+```bash
+git clone https://github.com/kdh-isaac/BMAT-for-codex.git
+cd BMAT-for-codex
+codex plugin marketplace add .
+codex
+```
+
+Then open `/plugins` and install **Biomedical Agent Teams** from the local
+marketplace entry. Restart Codex Desktop if the plugin list does not refresh
+immediately.
 
 ## Primary Aliases
 

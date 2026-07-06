@@ -44,22 +44,37 @@ Current resource counts:
 
 ## Install
 
-Clone this repository, then register the local marketplace path:
+Recommended: register the GitHub-hosted marketplace, then install from the
+Codex plugin browser:
+
+```bash
+codex plugin marketplace add kdh-isaac/BMAT-for-codex --ref main
+codex
+```
+
+In Codex, open the plugin browser:
+
+```text
+/plugins
+```
+
+Find **Biomedical Agent Teams** under the
+`biomedical-agent-teams-marketplace` marketplace and choose **Install plugin**.
+
+Developer fallback: clone the repository and register the local marketplace
+path when testing unpublished changes:
 
 ```bash
 git clone https://github.com/kdh-isaac/BMAT-for-codex.git
-codex plugin marketplace add "<path-to-clone>"
-codex plugin add biomedical-agent-teams@biomedical-agent-teams-marketplace
+cd BMAT-for-codex
+codex plugin marketplace add .
+codex
 ```
 
-Check the live install surface:
+Then open `/plugins` and install **Biomedical Agent Teams** from the local
+marketplace entry.
 
-```bash
-codex plugin list
-codex debug prompt-input
-```
-
-After install, the prompt surface should expose:
+After installation, the prompt surface should expose:
 
 ```text
 biomedical-agent-teams:biomedical-agent-teams
