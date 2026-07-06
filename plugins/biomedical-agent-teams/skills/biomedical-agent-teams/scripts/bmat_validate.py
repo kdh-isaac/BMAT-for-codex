@@ -1704,6 +1704,8 @@ def validate_semantic_scope_policy(artifacts: dict[str, Any], findings: list[Fin
 
 def validate_workflow_dag_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
     run_state = artifacts.get("run_state")
+    preflight = artifacts.get("preflight")
+    omics_manifest = artifacts.get("omics_run_manifest")
     workflow_dag = artifacts.get("workflow_dag")
     if not isinstance(run_state, dict):
         return
@@ -1754,6 +1756,38 @@ def validate_workflow_dag_policy(artifacts: dict[str, Any], findings: list[Findi
                 OPTIONAL_BUNDLE_FILES["workflow_dag"],
             )
         )
+    dag_track = str(workflow_dag.get("track", "")).strip()
+    declared_omics_tracks = [
+        str(value).strip()
+        for value in (
+            run_state.get("omics_track"),
+            preflight.get("requested_omics_track") if isinstance(preflight, dict) else None,
+            omics_manifest.get("track") if isinstance(omics_manifest, dict) else None,
+        )
+        if str(value or "").strip() and str(value).strip() != "not-applicable"
+    ]
+    if declared_omics_tracks:
+        expected_track = declared_omics_tracks[0]
+        if any(track != expected_track for track in declared_omics_tracks[1:]):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "OMICS_TRACK_DECLARATION_MISMATCH",
+                    f"omics track declarations disagree: {declared_omics_tracks}",
+                    OPTIONAL_BUNDLE_FILES["workflow_dag"],
+                    "Keep run_state.omics_track, preflight.requested_omics_track, omics_run_manifest.track, and workflow_dag.track aligned.",
+                )
+            )
+        if dag_track and dag_track != expected_track:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "WORKFLOW_DAG_TRACK_MISMATCH",
+                    f"workflow_dag track {dag_track!r} does not match requested omics track {expected_track!r}",
+                    OPTIONAL_BUNDLE_FILES["workflow_dag"],
+                    "When bmat_run.py is called with --track, write the selected omics track into workflow_dag.json.",
+                )
+            )
     stage_ids = {
         str(stage.get("id", "")).strip()
         for stage in run_state.get("stages", [])

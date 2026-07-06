@@ -67,9 +67,11 @@ Important files:
 - Tracks source/result/claim relationships through `results_integration.json`.
 - Tracks honest tool use through `tool_call_ledger.json` and
   `bmat_tool_ledger_check.py`.
-- Validates artifact labels, source-backed claims, final wording, PMID drift,
-  contradiction, overclaim, runtime mismatch, loop state, ranking semantics,
-  workflow DAG alias/mode/id consistency, and independent-review evidence.
+- Validates artifact labels, source-backed claims, lead-decision hard gates,
+  omics manifest v2 requirements, final wording, PMID drift, contradiction,
+  overclaim, runtime mismatch, loop state, ranking semantics, workflow DAG
+  alias/mode/id/track consistency, privacy-aware tool-ledger policy, and
+  independent-review evidence.
 
 ## Workflow Structure
 
@@ -205,7 +207,24 @@ The validator fails full-protocol claims when required artifacts are missing,
 required stages are blocked, post-write validation does not pass, independent
 review is not represented by a complete execution record, source-backed claims
 do not resolve to included sources, high-confidence final wording drifts from
-the ledger, or workflow DAG alias/mode/id fields disagree with the run state.
+the ledger, lead routing is missing where required, 10x/bulk omics provenance is
+under-specified, privacy-sensitive tool calls cross an unauthorized boundary, or
+workflow DAG alias/mode/id/track fields disagree with the run state.
+
+## Latest Local Verification
+
+Verified locally on 2026-07-07 KST:
+
+| Check | Result |
+| --- | --- |
+| Source vs installed cache `diff -qr` | clean |
+| Installed plugin | `biomedical-agent-teams` `1.1.0`, enabled |
+| Prompt surface | `biomedical-agent-teams/1.1.0/.../SKILL.md` visible |
+| Targeted tests | `114 passed` |
+| Full tests | `199 passed` |
+| Package check / self-test / strict golden gate | passed |
+| Public omics benchmark smoke | 9/9 metadata-only bundles passed |
+| Adapter dry-run smoke | validator exit 0 |
 
 ## Install
 

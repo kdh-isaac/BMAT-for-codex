@@ -391,12 +391,14 @@ def test_bmat_run_extended_tier_and_omics_fields_validate(tmp_path: Path) -> Non
     run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
     preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
     lead_decision = json.loads((bundle / "lead_decision.json").read_text(encoding="utf-8"))
+    workflow_dag = json.loads((bundle / "workflow_dag.json").read_text(encoding="utf-8"))
     omics_manifest = json.loads((bundle / "omics_run_manifest.json").read_text(encoding="utf-8"))
     assert run_state["workflow_tier"] == "full"
     assert run_state["omics_track"] == "tenx-gex"
     assert preflight["workflow_tier"] == "full"
     assert preflight["requested_omics_track"] == "tenx-gex"
     assert lead_decision["omics_subtrack"] == "tenx-gex"
+    assert workflow_dag["track"] == "tenx-gex"
     assert omics_manifest["track"] == "tenx-gex"
     assert omics_manifest["assay_metadata"]["cellranger_version"] == "TODO"
     assert "molecule_info_h5" in omics_manifest["generated_artifacts"]

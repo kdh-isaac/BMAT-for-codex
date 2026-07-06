@@ -44,9 +44,9 @@ Current resource counts:
 | Codex reviewer TOML templates | 14 |
 | Workflow DAGs | 6 |
 | Domain packs | 3 |
-| Package scripts | 10 |
+| Package scripts | 11 |
 | Eval scripts | 3 |
-| Test modules | 9 |
+| Test modules | 10 |
 
 ## Install
 
@@ -235,25 +235,53 @@ When applicable, the bundle also includes:
 
 The validator checks required artifact presence, passing required stages,
 post-write verdict, independent review evidence, source-backed claim references,
-final wording drift, high-confidence S3 gates, results integration, tool-ledger
-honesty, and workflow DAG alias/mode/id consistency.
+lead-decision hard gates, omics manifest v2 requirements, final wording drift,
+high-confidence S3 gates, results integration, privacy-aware tool-ledger
+honesty, and workflow DAG alias/mode/id/track consistency.
 
 ## 1.1.0 Highlights
 
-- Canonical runtime artifact bundle centered on
-  `runtime_capability_preflight.json`.
-- Tool-use honesty through `tool_call_ledger.json` and
-  `bmat_tool_ledger_check.py`.
-- Results-to-source-to-claim reconciliation through
-  `results_integration.json`.
-- Six alias-specific workflow DAGs under `workflows/*.json`.
-- `bmat_run.py` local runner with DAG mode/id normalization, validator wrapping,
-  and Markdown workbench export.
-- Full-protocol gate enforcement for independent review and complete
-  `spawned_agent_instances` records.
-- Golden eval gates for PMID drift, contradiction, overclaim,
-  tournament-loop, tournament-ranking, Codex-runtime, and semantic-scope cases.
-- BOM-free release surface and source/cache parity checks.
+- `lead_decision.json` is a validator-enforced routing artifact for
+  source-backed `standard`, `deep`, `audit`, `team_level_selective_dag`, and
+  `Full protocol followed` runs.
+- `omics_run_manifest.json` v2 contracts 10x Cell Ranger, CellPlex,
+  CITE-seq, V(D)J, multiome, and bulk RNA-seq provenance with required QC,
+  biological-unit, pseudobulk/design, and review fields.
+- `bmat_run.py` and `bmat_codex_adapter.py` support `--tier compact|full` and
+  omics `--track` values, and now keep `workflow_dag.json` aligned with the
+  selected omics track.
+- `bmat_validate.py` emits machine-readable `fix_hint` guidance and blocks
+  workflow DAG alias/mode/id/track drift.
+- `tool_call_ledger.json` includes execution-governance fields for data class,
+  query redaction, approval reference, runtime surface, artifact hash,
+  retention policy, network boundary, and PII risk.
+- Golden eval coverage is 36 tasks, including 10x provenance/QC/statistics,
+  bulk RNA-seq provenance/design/FDR, privacy, and Codex-runtime cases.
+- The public omics benchmark smoke harness covers 9 metadata-only public cases:
+  10x PBMC GEX, GEO 10x/CellPlex/bulk cases, CITE-seq, V(D)J, and multiome.
+- Domain packs include `generic-biomedical`, `cell-therapy`, and
+  `immuno-oncology`.
+- Release tests check BOM-free text surfaces, legacy-version residue, source
+  manifest coverage, and source/cache parity.
+
+## Latest Local Verification
+
+The local source and installed cache were rechecked on 2026-07-07 KST after the
+latest workflow-DAG track patch:
+
+| Check | Result |
+| --- | --- |
+| Source vs installed cache `diff -qr` | clean |
+| `codex plugin list` | `biomedical-agent-teams` `1.1.0` installed, enabled |
+| `codex debug prompt-input` | `biomedical-agent-teams/1.1.0/.../SKILL.md` visible |
+| Targeted pytest suite | `114 passed` |
+| Full pytest suite | `199 passed` |
+| Package check and self-test | passed |
+| Golden schema and strict golden gate | passed |
+| Model golden sample gate | passed |
+| Public omics benchmark smoke | 9/9 bundles passed; no raw data downloaded |
+| Adapter dry-run smoke | validator exit 0 with expected compact-reviewer downgrade warning |
+| Bytecode/test-cache residue under source and installed cache | none found |
 
 ## Validation
 

@@ -308,6 +308,8 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     run_id = str(run_state["run_id"])
     workflow_dag = workflow_dag_for_run(args.alias, args.mode)
     omics_track = selected_omics_track(args)
+    if args.alias == "omics-analysis-team" or omics_track != "not-applicable":
+        workflow_dag["track"] = omics_track
 
     domain_pack_root = DOMAIN_PACKS_ROOT / args.domain_pack
 

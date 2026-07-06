@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -350,6 +351,48 @@ def test_command_recipes_name_v1_1_release_gate_artifacts() -> None:
         assert "## 1.0 Release-Gate Artifacts" not in text
         for token in required_tokens:
             assert token in text, f"{command.name} missing {token}"
+
+
+def test_current_user_facing_surfaces_have_no_legacy_version_residue() -> None:
+    checked_paths = [
+        PLUGIN_ROOT / "README.md",
+        PLUGIN_ROOT / "README.quickstart.md",
+        PLUGIN_ROOT / ".codex-plugin" / "plugin.json",
+        PLUGIN_ROOT / ".codex-plugin" / "biomedical-agent-teams.md",
+        SKILL_ROOT / "README.md",
+        SKILL_ROOT / "SKILL.md",
+    ]
+    checked_paths.extend(sorted((SKILL_ROOT / "agents").glob("*.md")))
+    checked_paths.extend(sorted((SKILL_ROOT / "commands").glob("*.md")))
+    checked_paths.extend(sorted((SKILL_ROOT / "codex-agents").glob("*.toml")))
+    checked_paths.extend(sorted((SKILL_ROOT / "loops").glob("*.md")))
+    checked_paths.extend(sorted((SKILL_ROOT / "references").glob("*.md")))
+    checked_paths.extend(sorted((SKILL_ROOT / "templates").glob("*.md")))
+
+    forbidden_patterns = {
+        "old_semver": re.compile(r"(?<![\w.])(0\.(?:3|4|8|9)\.\d+|1\.0\.0)(?![\w.])"),
+        "old_release_gate": re.compile(r"1\.0 Release-Gate|README 35|35 agent"),
+        "old_current_version": re.compile(r"Current (?:plugin )?version: `1\.0"),
+        "claude_runtime_surface": re.compile(
+            r"Claude Code|Claude-only|claude-code|\.claude|claude plugin",
+            re.IGNORECASE,
+        ),
+        "standalone_legacy_preflight": re.compile(r"(?<!runtime_capability_)preflight\.json"),
+    }
+    allowed_matches = {
+        (
+            SKILL_ROOT / "templates" / "rollback-resume-template.md",
+            "standalone_legacy_preflight",
+        ),
+    }
+
+    for path in checked_paths:
+        text = path.read_text(encoding="utf-8")
+        for label, pattern in forbidden_patterns.items():
+            match = pattern.search(text)
+            if (path, label) in allowed_matches:
+                continue
+            assert match is None, f"{path} contains {label}: {match.group(0)!r}"
 
 
 def test_provenance_architect_names_v1_traceability_artifacts() -> None:

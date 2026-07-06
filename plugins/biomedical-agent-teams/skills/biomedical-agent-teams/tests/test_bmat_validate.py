@@ -1294,6 +1294,79 @@ def test_workflow_dag_id_must_match_run_state_when_declared(tmp_path: Path) -> N
     assert "WORKFLOW_DAG_ID_MISMATCH" in combined_output(result)
 
 
+def test_workflow_dag_track_must_match_declared_omics_track(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["alias"] = "omics-analysis-team"
+    run_state["workflow_dag_id"] = "omics-analysis-team.audit"
+    run_state["omics_track"] = "survival"
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    preflight_path = bundle / PREFLIGHT_FILE
+    preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
+    preflight["requested_alias"] = "omics-analysis-team"
+    preflight["requested_omics_track"] = "survival"
+    preflight_path.write_text(json.dumps(preflight, indent=2), encoding="utf-8")
+
+    manifest = {
+        "schema_version": "2.0",
+        "analysis_id": "survival-track-fixture",
+        "workflow_run_id": run_state["run_id"],
+        "track": "survival",
+        "data_sources": [],
+        "sample_sheet": "samples.tsv",
+        "assay_metadata": {
+            "organism": "Homo sapiens",
+            "genome_build": "not-applicable",
+            "annotation_release": "fixture",
+        },
+        "biological_unit_policy": {
+            "unit": "sample",
+            "replicate_key": "sample_id",
+            "pseudobulk_required": False,
+        },
+        "contrast_or_endpoint": "OS",
+        "software_versions": ["fixture"],
+        "qc_decisions": {},
+        "de_strategy": {
+            "cross_sample_method": "CoxPH",
+            "multiplicity_method": "BH-FDR",
+        },
+        "generated_artifacts": {},
+        "review_status": {
+            "code_review": "fixture",
+            "provenance_review": "fixture",
+            "biostats_review": "fixture",
+        },
+    }
+    (bundle / "omics_run_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    workflow_dag = {
+        "workflow_id": "omics-analysis-team.audit",
+        "runtime": "codex",
+        "alias": "omics-analysis-team",
+        "mode": "audit",
+        "track": "omics",
+        "nodes": [
+            {
+                "id": "S0",
+                "agent": "protocol-context-locker",
+                "outputs": ["runtime_capability_preflight"],
+                "blocking": True,
+            }
+        ],
+        "release_gates": ["bmat_validate"],
+    }
+    (bundle / "workflow_dag.json").write_text(json.dumps(workflow_dag, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "WORKFLOW_DAG_TRACK_MISMATCH" in combined_output(result)
+
+
 def test_complete_team_spawn_lane_requires_team_output_artifact(tmp_path: Path) -> None:
     bundle = tmp_path / "bundle"
     shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
