@@ -1,18 +1,18 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
-  "agent_count": 36,
+  "agent_count": 38,
   "command_count": 6,
-  "template_count": 15,
-  "contract_count": 17,
+  "template_count": 16,
+  "contract_count": 18,
   "reference_count": 10,
-  "script_count": 9,
+  "script_count": 11,
   "test_fixture_count": 12,
   "eval_count": 3,
-  "golden_task_count": 24,
+  "golden_task_count": 36,
   "loop_count": 4,
-  "codex_agent_template_count": 12,
+  "codex_agent_template_count": 14,
   "agent_registry_count": 1,
   "workflow_spine": [
     "runtime-capability-preflight",
@@ -54,6 +54,7 @@
     "bayesian-decision-modeler",
     "biostats-repro-auditor",
     "bulk-deg-analyst",
+    "bulk-rnaseq-pipeline-specialist",
     "causal-inference-confounder-analyst",
     "central-claim-ledger-evidence-graph",
     "citation-verifier",
@@ -86,7 +87,8 @@
     "scenario-playbook-router",
     "scientific-literature-researcher",
     "scientific-writer-citation-agent",
-    "scrna-qc-specialist"
+    "scrna-qc-specialist",
+    "tenx-singlecell-specialist"
   ],
   "templates": [
     "biomedical-passport-template",
@@ -95,6 +97,7 @@
     "claim-ledger-template",
     "hypothesis-tournament-template",
     "integrity-gate-template",
+    "lead-decision-template",
     "research-overview-template",
     "research-workbench-index-template",
     "results-integration-template",
@@ -110,6 +113,7 @@
     "biomedical-passport.schema",
     "claim-ledger.schema",
     "hypothesis-tournament.schema",
+    "lead-decision.schema",
     "loop-state.schema",
     "omics-run-manifest.schema",
     "post-write-validation.schema",
@@ -143,11 +147,13 @@
     "weekly-literature-watch"
   ],
   "scripts": [
+    "bmat_codex_adapter",
     "bmat_docs_list",
     "bmat_elo",
     "bmat_init_bundle",
     "bmat_loop_check",
     "bmat_package_check",
+    "bmat_public_omics_benchmark_smoke",
     "bmat_run",
     "bmat_selftest",
     "bmat_tool_ledger_check",
@@ -155,6 +161,7 @@
   ],
   "codex_agent_templates": [
     "biostats-repro-auditor",
+    "bulk-rnaseq-pipeline-specialist",
     "causal-inference-confounder-analyst",
     "citation-verifier",
     "claim-level-evidence-verifier",
@@ -165,7 +172,8 @@
     "post-write-final-validator",
     "provenance-traceability-architect",
     "risk-of-bias-study-quality-auditor",
-    "safety-ethics-privacy-dual-use-auditor"
+    "safety-ethics-privacy-dual-use-auditor",
+    "tenx-singlecell-specialist"
   ],
   "new_in_v1_0_0": [
     "bmat-run-dry-run-runner-and-markdown-workbench-export",
@@ -187,7 +195,7 @@
     "workflow-dag-schema-and-six-command-dags"
   ],
   "workflow_dag_count": 6,
-  "domain_pack_count": 2,
+  "domain_pack_count": 3,
   "workflow_dags": [
     "biomedical-research-council",
     "evidence-audit-team",
@@ -198,6 +206,18 @@
   ],
   "domain_packs": [
     "cell-therapy",
-    "generic-biomedical"
+    "generic-biomedical",
+    "immuno-oncology"
+  ],
+  "new_in_v1_1_0": [
+    "codex-adapter-orchestration-script",
+    "immuno-oncology-domain-pack",
+    "lead-decision-contract-and-validator-gates",
+    "omics-run-manifest-v2-for-tenx-and-bulk-rnaseq",
+    "public-omics-real-world-benchmark-smoke-harness",
+    "tenx-and-bulk-golden-task-expansion",
+    "tier-and-omics-track-runner-wiring",
+    "tool-ledger-privacy-security-fields",
+    "validator-json-fix-hints"
   ]
 }

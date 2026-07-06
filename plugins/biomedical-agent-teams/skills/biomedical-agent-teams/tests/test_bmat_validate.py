@@ -52,7 +52,7 @@ def valid_results_integration_payload() -> dict[str, object]:
     return {
         "schema_version": "1.0",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "1.0.0",
+        "plugin_version": "1.1.0",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {
@@ -211,6 +211,179 @@ def write_valid_team_workflow_dag(bundle: Path) -> None:
     (bundle / "workflow_dag.json").write_text(json.dumps(workflow_dag, indent=2), encoding="utf-8")
 
 
+def sync_lead_decision(bundle: Path) -> None:
+    run_state = json.loads((bundle / "run_state.json").read_text(encoding="utf-8"))
+    preflight = json.loads((bundle / PREFLIGHT_FILE).read_text(encoding="utf-8"))
+    lead_path = bundle / "lead_decision.json"
+    lead = json.loads(lead_path.read_text(encoding="utf-8"))
+    lead["workflow_run_id"] = run_state.get("run_id")
+    lead["requested_alias"] = run_state.get("alias")
+    lead["selected_mode"] = run_state.get("mode")
+    lead["workflow_tier"] = run_state.get("workflow_tier", lead.get("workflow_tier", "compact"))
+    lead["omics_subtrack"] = run_state.get("omics_track", preflight.get("requested_omics_track", "not-applicable"))
+    lead["execution_strategy"] = run_state.get("execution_strategy")
+    lead["spawned_review_plan"] = preflight.get("spawned_review_plan", {})
+    lead["team_spawn_plan"] = preflight.get("team_spawn_plan", {})
+    lead["post_team_audit_plan"] = preflight.get("post_team_audit_plan", "fixture post-write validation")
+    lead_path.write_text(json.dumps(lead, indent=2), encoding="utf-8")
+
+
+def write_single_cell_other_omics_manifest(bundle: Path) -> None:
+    run_state = json.loads((bundle / "run_state.json").read_text(encoding="utf-8"))
+    manifest = {
+        "schema_version": "2.0",
+        "analysis_id": "omics-fixture",
+        "workflow_run_id": run_state.get("run_id", "omics-run-fixture"),
+        "track": "single-cell-other",
+        "data_sources": [],
+        "sample_sheet": "samples.csv",
+        "assay_metadata": {
+            "organism": "Homo sapiens",
+            "genome_build": "GRCh38",
+            "annotation_release": "GENCODE v44",
+        },
+        "biological_unit_policy": {
+            "unit": "sample",
+            "replicate_key": "sample_id",
+            "pseudobulk_required": False,
+            "pseudobulk_policy": "descriptive fixture",
+        },
+        "contrast_or_endpoint": "fixture contrast",
+        "software_versions": ["fixture"],
+        "qc_decisions": {},
+        "de_strategy": {
+            "cross_sample_method": "not-run",
+            "multiplicity_method": "not-run",
+        },
+        "generated_artifacts": {},
+        "review_status": {
+            "code_review": "not-run",
+            "provenance_review": "not-run",
+            "biostats_review": "not-run",
+        },
+    }
+    (bundle / "omics_run_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+
+def write_omics_track_context(bundle: Path, track: str) -> None:
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["alias"] = "omics-analysis-team"
+    run_state["omics_track"] = track
+    run_state["final_label"] = "Compact standard workflow"
+    run_state["downgrade_reasons"] = [f"synthetic compact {track} fixture"]
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    preflight_path = bundle / PREFLIGHT_FILE
+    preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
+    preflight["requested_alias"] = "omics-analysis-team"
+    preflight["requested_omics_track"] = track
+    preflight_path.write_text(json.dumps(preflight, indent=2), encoding="utf-8")
+
+    lead_path = bundle / "lead_decision.json"
+    lead = json.loads(lead_path.read_text(encoding="utf-8"))
+    lead["requested_alias"] = "omics-analysis-team"
+    lead["omics_subtrack"] = track
+    lead_path.write_text(json.dumps(lead, indent=2), encoding="utf-8")
+
+
+def valid_tenx_manifest(track: str) -> dict[str, object]:
+    cellranger_command = {
+        "tenx-citeseq": "multi",
+        "tenx-vdj": "vdj",
+        "tenx-multiome": "arc",
+    }.get(track, "count")
+    manifest: dict[str, object] = {
+        "schema_version": "2.0",
+        "analysis_id": "omics-test",
+        "track": track,
+        "data_sources": [],
+        "sample_sheet": "samples.csv",
+        "assay_metadata": {
+            "organism": "Homo sapiens",
+            "genome_build": "GRCh38",
+            "annotation_release": "GENCODE v44",
+            "chemistry": "5prime",
+            "cellranger_version": "8.0.0",
+            "cellranger_command": cellranger_command,
+        },
+        "biological_unit_policy": {
+            "unit": "donor",
+            "replicate_key": "donor_id",
+            "pseudobulk_required": True,
+            "pseudobulk_policy": "donor-aware pseudobulk for cross-sample DE",
+        },
+        "contrast_or_endpoint": "high vs low expression",
+        "software_versions": ["cellranger 8.0.0"],
+        "qc_decisions": {
+            "cell_calling_method": "Cell Ranger filtered matrix plus emptyDrops review",
+            "ambient_rna_method": "SoupX planned",
+            "doublet_method": "scDblFinder planned",
+            "empty_droplet_method": "DropletUtils emptyDrops planned",
+        },
+        "de_strategy": {
+            "cross_sample_method": "pseudobulk DESeq2",
+            "multiplicity_method": "BH-FDR",
+        },
+        "generated_artifacts": {
+            "web_summary_html": "web_summary.html",
+            "filtered_feature_bc_matrix": "filtered_feature_bc_matrix",
+            "raw_feature_bc_matrix": "raw_feature_bc_matrix",
+            "molecule_info_h5": "molecule_info.h5",
+        },
+        "review_status": {
+            "code_review": "not-run",
+            "provenance_review": "not-run",
+            "biostats_review": "not-run",
+        },
+    }
+    assay_metadata = manifest["assay_metadata"]
+    generated_artifacts = manifest["generated_artifacts"]
+    assert isinstance(assay_metadata, dict)
+    assert isinstance(generated_artifacts, dict)
+    if track == "tenx-citeseq":
+        assay_metadata.update(
+            {
+                "feature_reference_ref": "feature_reference.csv",
+                "antibody_panel_ref": "adt_panel.tsv",
+            }
+        )
+        generated_artifacts.update(
+            {
+                "feature_reference_csv": "feature_reference.csv",
+                "feature_barcode_matrix": "filtered_feature_bc_matrix/features.tsv.gz",
+            }
+        )
+    if track == "tenx-vdj":
+        assay_metadata.update(
+            {
+                "vdj_reference": "cellranger-vdj-GRCh38-alts-ensembl",
+                "gex_linkage_key": "cell_barcode",
+            }
+        )
+        generated_artifacts.update(
+            {
+                "vdj_contig_annotations": "filtered_contig_annotations.csv",
+                "vdj_clonotypes": "clonotypes.csv",
+            }
+        )
+    if track == "tenx-multiome":
+        assay_metadata.update(
+            {
+                "atac_reference": "refdata-cellranger-arc-GRCh38",
+                "feature_linkage_ref": "linked_features.csv",
+            }
+        )
+        generated_artifacts.update(
+            {
+                "fragments_tsv_gz": "atac_fragments.tsv.gz",
+                "atac_peak_matrix": "filtered_feature_bc_matrix/peaks.bed",
+                "arc_summary_html": "web_summary.html",
+            }
+        )
+    return manifest
+
+
 def make_omics_run_bundle(
     tmp_path: Path,
     *,
@@ -228,6 +401,7 @@ def make_omics_run_bundle(
     preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
     preflight["requested_alias"] = "omics-analysis-team"
     preflight["selected_mode"] = "run"
+    preflight["requested_omics_track"] = "single-cell-other"
     preflight["deliverable_type"] = "synthetic omics run fixture"
     preflight["required_role_outputs"] = [
         "omics-code-reviewer",
@@ -251,6 +425,7 @@ def make_omics_run_bundle(
     run_state["run_id"] = "omics-run-fixture"
     run_state["alias"] = "omics-analysis-team"
     run_state["mode"] = "run"
+    run_state["omics_track"] = "single-cell-other"
     run_state["execution_strategy"] = "inline_first_selective_review"
     run_state["spawned_review_lanes"] = spawned_review_lanes or []
     run_state["spawned_agent_instances"] = spawned_agent_instances or []
@@ -269,6 +444,8 @@ def make_omics_run_bundle(
         "Synthetic omics run fixture for reviewer-spawn policy.\n",
         encoding="utf-8",
     )
+    sync_lead_decision(bundle)
+    write_single_cell_other_omics_manifest(bundle)
     return bundle
 
 
@@ -409,6 +586,189 @@ def test_full_protocol_without_independent_review_fails() -> None:
     result = run_validator("invalid_full_protocol_without_independent_review")
     assert result.returncode == 1
     assert "FULL_PROTOCOL_REQUIRES_INDEPENDENT_SURFACE" in combined_output(result)
+
+
+def test_missing_lead_decision_emits_fix_hint_json(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    (bundle / "lead_decision.json").unlink()
+
+    result = run_validator_args("--bundle", str(bundle), "--json")
+
+    assert result.returncode == 1
+    findings = json.loads(result.stdout)
+    lead_findings = [finding for finding in findings if finding["code"] == "LEAD_DECISION_REQUIRED_FULL_PROTOCOL"]
+    assert lead_findings
+    assert lead_findings[0]["fix_hint"]
+    assert "lead_decision.json" in lead_findings[0]["fix_hint"]
+
+
+def test_omics_manifest_required_for_explicit_track(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["alias"] = "omics-analysis-team"
+    run_state["omics_track"] = "bulk-rnaseq"
+    run_state["final_label"] = "Compact standard workflow"
+    run_state["downgrade_reasons"] = ["synthetic compact omics fixture"]
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    preflight_path = bundle / PREFLIGHT_FILE
+    preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
+    preflight["requested_alias"] = "omics-analysis-team"
+    preflight["requested_omics_track"] = "bulk-rnaseq"
+    preflight_path.write_text(json.dumps(preflight, indent=2), encoding="utf-8")
+
+    lead_path = bundle / "lead_decision.json"
+    lead = json.loads(lead_path.read_text(encoding="utf-8"))
+    lead["requested_alias"] = "omics-analysis-team"
+    lead["omics_subtrack"] = "bulk-rnaseq"
+    lead_path.write_text(json.dumps(lead, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "OMICS_RUN_MANIFEST_REQUIRED" in combined_output(result)
+    assert "fix_hint=" in combined_output(result)
+
+
+def test_tenx_omics_manifest_requires_cellranger_artifacts(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["alias"] = "omics-analysis-team"
+    run_state["omics_track"] = "tenx-gex"
+    run_state["final_label"] = "Compact standard workflow"
+    run_state["downgrade_reasons"] = ["synthetic compact 10x fixture"]
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+
+    preflight_path = bundle / PREFLIGHT_FILE
+    preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
+    preflight["requested_alias"] = "omics-analysis-team"
+    preflight["requested_omics_track"] = "tenx-gex"
+    preflight_path.write_text(json.dumps(preflight, indent=2), encoding="utf-8")
+
+    lead_path = bundle / "lead_decision.json"
+    lead = json.loads(lead_path.read_text(encoding="utf-8"))
+    lead["requested_alias"] = "omics-analysis-team"
+    lead["omics_subtrack"] = "tenx-gex"
+    lead_path.write_text(json.dumps(lead, indent=2), encoding="utf-8")
+
+    omics_manifest = {
+        "schema_version": "2.0",
+        "analysis_id": "omics-test",
+        "track": "tenx-gex",
+        "data_sources": [],
+        "sample_sheet": "samples.csv",
+        "assay_metadata": {
+            "organism": "Homo sapiens",
+            "genome_build": "GRCh38",
+            "annotation_release": "GENCODE v44",
+            "chemistry": "5prime",
+            "cellranger_version": "8.0.0",
+            "cellranger_command": "count",
+        },
+        "biological_unit_policy": {
+            "unit": "donor",
+            "replicate_key": "donor_id",
+            "pseudobulk_required": True,
+            "pseudobulk_policy": "donor-aware pseudobulk for cross-sample DE",
+        },
+        "contrast_or_endpoint": "high vs low expression",
+        "software_versions": ["cellranger 8.0.0"],
+        "qc_decisions": {
+            "cell_calling_method": "Cell Ranger filtered matrix plus emptyDrops review",
+            "ambient_rna_method": "SoupX planned",
+            "doublet_method": "scDblFinder planned",
+            "empty_droplet_method": "DropletUtils emptyDrops planned",
+        },
+        "de_strategy": {
+            "cross_sample_method": "pseudobulk DESeq2",
+            "multiplicity_method": "BH-FDR",
+        },
+        "generated_artifacts": {
+            "web_summary_html": "web_summary.html",
+            "filtered_feature_bc_matrix": "filtered_feature_bc_matrix",
+            "raw_feature_bc_matrix": "raw_feature_bc_matrix"
+        },
+        "review_status": {
+            "code_review": "not-run",
+            "provenance_review": "not-run",
+            "biostats_review": "not-run",
+        },
+    }
+    (bundle / "omics_run_manifest.json").write_text(json.dumps(omics_manifest, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "SCHEMA_VALIDATION_FAILED" in combined_output(result)
+    assert "molecule_info_h5" in combined_output(result)
+
+
+@pytest.mark.parametrize(
+    ("track", "artifact_key"),
+    [
+        ("tenx-citeseq", "feature_barcode_matrix"),
+        ("tenx-vdj", "vdj_clonotypes"),
+        ("tenx-multiome", "fragments_tsv_gz"),
+    ],
+)
+def test_p2_tenx_subtracks_require_track_specific_artifacts(
+    tmp_path: Path,
+    track: str,
+    artifact_key: str,
+) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    write_omics_track_context(bundle, track)
+    omics_manifest = valid_tenx_manifest(track)
+    generated_artifacts = omics_manifest["generated_artifacts"]
+    assert isinstance(generated_artifacts, dict)
+    generated_artifacts.pop(artifact_key)
+    (bundle / "omics_run_manifest.json").write_text(json.dumps(omics_manifest, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "SCHEMA_VALIDATION_FAILED" in combined_output(result)
+    assert artifact_key in combined_output(result)
+
+
+def test_tool_ledger_execution_governance_fields_are_policy_checked(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    ledger_path = bundle / "tool_call_ledger.json"
+    ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+    ledger["calls"] = [
+        {
+            "call_id": "TC-GOV-001",
+            "tool_id": "pubmed-ncbi-entrez",
+            "status": "success",
+            "inputs_digest": "synthetic sensitive query",
+            "allowed_data_class": "public-only",
+            "actual_data_class": "deidentified-human",
+            "query_redaction_applied": False,
+            "runtime_surface": "mcp_connector",
+            "network_boundary": "authenticated-connector",
+            "output_ref": "results_integration:RI-ROW-001",
+            "retrieval_date": "2026-07-07",
+            "affected_claim_ids": ["CL-001"],
+        }
+    ]
+    ledger_path.write_text(json.dumps(ledger, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+    output = combined_output(result)
+
+    assert result.returncode == 1
+    assert "TOOL_CALL_DATA_CLASS_EXCEEDS_ALLOWED_SCOPE" in output
+    assert "TOOL_CALL_MCP_SERVER_NAME_REQUIRED" in output
+    assert "TOOL_CALL_PRIVACY_APPROVAL_REQUIRED" in output
+    assert "TOOL_CALL_QUERY_REDACTION_REQUIRED" in output
+    assert "TOOL_CALL_PRIVACY_NETWORK_BOUNDARY_BLOCK" in output
 
 
 def test_s3_block_blocks_high_confidence_claim() -> None:
@@ -872,6 +1232,7 @@ def test_valid_team_level_selective_dag_passes(tmp_path: Path) -> None:
     write_valid_team_workflow_dag(bundle)
     write_team_output_artifacts(bundle)
     run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+    sync_lead_decision(bundle)
 
     result = run_validator_path(bundle)
 

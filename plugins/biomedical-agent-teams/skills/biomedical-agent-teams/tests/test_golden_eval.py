@@ -87,7 +87,7 @@ def test_readme_sample_outputs_exist_and_strict_gate_passes() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(result.stdout)
     assert payload["schema_valid"] is True
-    assert payload["task_count"] == 24
+    assert payload["task_count"] == 36
     assert payload["output_integrity_ok"] is True
     assert payload["gate"]["passed"] is True
     assert payload["missing_output_task_ids"] == []
@@ -131,7 +131,7 @@ def test_model_golden_eval_sample_mode_generates_scoreable_outputs(tmp_path: Pat
 
     assert result.returncode == 0, result.stdout + result.stderr
     rows = read_jsonl(outputs)
-    assert len(rows) == 24
+    assert len(rows) == 36
     assert rows[0]["runtime"] == "codex"
     assert rows[0]["shell_family"] == "zsh"
     assert "prompt_hash" in rows[0]
@@ -184,7 +184,7 @@ def test_model_golden_eval_adapter_command_generates_scoreable_outputs(tmp_path:
 
     assert result.returncode == 0, result.stdout + result.stderr
     rows = read_jsonl(outputs)
-    assert len(rows) == 24
+    assert len(rows) == 36
     assert rows[0]["model_name"] == "adapter-smoke-model"
     assert rows[0]["output_text"] == "adapter smoke output"
 

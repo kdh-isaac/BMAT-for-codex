@@ -3,7 +3,7 @@
 Codex Desktop marketplace package for the Biomedical Agent Teams (BMAT)
 plugin.
 
-Current plugin version: `1.0.0`.
+Current plugin version: `1.1.0`.
 
 ## What This Package Is
 
@@ -17,7 +17,13 @@ execution, hypothesis tournaments, experiment design, translational scouting,
 recurring loop checks, tool/result ledgers, workflow DAGs, and validator-backed
 artifact bundles.
 
-## Current 1.0.0 Surface
+The current 1.1.0 contract layer adds `lead_decision.json`, 10x/bulk
+`omics_run_manifest.json` v2, `--tier compact|full`, omics `--track` subtracks,
+validator JSON `fix_hint`, privacy/security tool-ledger fields, 10x/bulk golden
+tasks, a local Codex adapter scaffold, a public-omics benchmark smoke harness,
+and an `immuno-oncology` domain pack.
+
+## Current 1.1.0 Surface
 
 - Plugin metadata: `plugins/biomedical-agent-teams/.codex-plugin/plugin.json`
 - Skill router: `plugins/biomedical-agent-teams/skills/biomedical-agent-teams/SKILL.md`
@@ -28,17 +34,17 @@ Current resource counts:
 
 | Resource | Count |
 | --- | ---: |
-| Agent role prompts | 36 |
+| Agent role prompts | 38 |
 | Command recipes | 6 |
-| Contract schemas | 17 |
-| Templates | 15 |
+| Contract schemas | 18 |
+| Templates | 16 |
 | Markdown references | 10 |
 | JSON references | 1 |
 | Loop recipes | 4 |
-| Codex reviewer TOML templates | 12 |
+| Codex reviewer TOML templates | 14 |
 | Workflow DAGs | 6 |
-| Domain packs | 2 |
-| Package scripts | 9 |
+| Domain packs | 3 |
+| Package scripts | 10 |
 | Eval scripts | 3 |
 | Test modules | 9 |
 
@@ -83,7 +89,7 @@ biomedical-agent-teams:biomedical-agent-teams
 and the installed cache should resolve under:
 
 ```text
-~/.codex/plugins/cache/biomedical-agent-teams-marketplace/biomedical-agent-teams/1.0.0
+~/.codex/plugins/cache/biomedical-agent-teams-marketplace/biomedical-agent-teams/1.1.0
 ```
 
 ## Primary Aliases
@@ -101,13 +107,13 @@ and the installed cache should resolve under:
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v1.0.0 End-to-End Workflow Structure
+    accTitle: BMAT v1.1.0 Workflow Structure
     accDescr: Full package workflow from Codex routing through command DAGs, optional team, reviewer, tool, and loop lanes, artifact bundle creation, validation gates, and final label selection.
 
     request["1. User request<br/>or explicit BMAT alias"]
     router["2. SKILL.md lightweight router<br/>selects one command recipe"]
     recipe["3. Command recipe<br/>loads only required agents,<br/>references, templates, contracts, scripts"]
-    preflight["4. Runtime capability preflight<br/>mode, scope, source needs,<br/>tools, file/write, web, spawn support"]
+    preflight["4. Runtime, scope, source, and strategy lock<br/>mode, scope, source needs,<br/>tools, file/write, web, spawn support"]
     strategy{"5. Execution strategy"}
 
     request --> router --> recipe --> preflight --> strategy
@@ -135,7 +141,7 @@ flowchart TD
     dag_select --> design
     dag_select --> scout
 
-    subgraph team_lane["Optional team-level DAG lane"]
+    subgraph team_lane["Optional team_level_selective_dag lane"]
         direction TB
         team_plan["team_spawn_plan<br/>dependency-aware lane selection"]
         team_outputs["team_output_artifacts<br/>artifact path, checks, dependencies"]
@@ -143,7 +149,7 @@ flowchart TD
         team_plan --> team_outputs --> team_record
     end
 
-    subgraph reviewer_lane["Optional spawned reviewer lane"]
+    subgraph reviewer_lane["Optional selective spawned review lane"]
         direction TB
         registry["agent-registry.json<br/>codex-agents/*.toml"]
         spawned["spawned_agent_instances<br/>role, task, status, output_artifact"]
@@ -181,7 +187,7 @@ flowchart TD
     bundle -. "independent review required by recipe or label" .-> registry
 
     bundle["7. Canonical artifact bundle<br/>run_state.json<br/>runtime_capability_preflight.json<br/>source_corpus.json<br/>claim_ledger.json<br/>stage_evaluation.json<br/>post_write_validation.json<br/>final.md"]
-    extras["Policy-checked extras<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json"]
+    extras["Policy-checked extras<br/>lead_decision.json<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json<br/>omics_run_manifest.json"]
     gates{"8. Release gates"}
     postwrite["post-write-final-validator<br/>final wording and limitation check"]
     validate["bmat_validate.py<br/>bundle schema + policy gate<br/>source-backed claims, DAG consistency,<br/>independent review, final wording"]
@@ -213,6 +219,7 @@ claim. A full-protocol run must include:
 
 - `run_state.json`
 - `runtime_capability_preflight.json`
+- `lead_decision.json`
 - `source_corpus.json`
 - `claim_ledger.json`
 - `stage_evaluation.json`
@@ -224,13 +231,14 @@ When applicable, the bundle also includes:
 - `workflow_dag.json`
 - `results_integration.json`
 - `tool_call_ledger.json`
+- `omics_run_manifest.json`
 
 The validator checks required artifact presence, passing required stages,
 post-write verdict, independent review evidence, source-backed claim references,
 final wording drift, high-confidence S3 gates, results integration, tool-ledger
 honesty, and workflow DAG alias/mode/id consistency.
 
-## 1.0.0 Highlights
+## 1.1.0 Highlights
 
 - Canonical runtime artifact bundle centered on
   `runtime_capability_preflight.json`.
@@ -249,7 +257,7 @@ honesty, and workflow DAG alias/mode/id consistency.
 
 ## Validation
 
-The 1.0.0 package is validated from the repository or marketplace root with:
+The 1.1.0 package is validated from the repository or marketplace root with:
 
 ```bash
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
@@ -257,6 +265,7 @@ python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_model_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out /tmp/bmat-model-sample.jsonl --sample-mode --then-score --gate
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_public_omics_benchmark_smoke.py --out /tmp/bmat-public-omics-benchmark --validate --force
 uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
 ```
 

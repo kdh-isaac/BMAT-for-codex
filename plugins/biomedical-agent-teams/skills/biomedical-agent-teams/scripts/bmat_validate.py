@@ -37,9 +37,11 @@ BUNDLE_FILE_ALIASES = {
 }
 
 OPTIONAL_BUNDLE_FILES = {
+    "lead_decision": "lead_decision.json",
     "results_integration": "results_integration.json",
     "tool_call_ledger": "tool_call_ledger.json",
     "workflow_dag": "workflow_dag.json",
+    "omics_run_manifest": "omics_run_manifest.json",
 }
 
 INTERNAL_ARTIFACT_PATHS = "_artifact_paths"
@@ -47,11 +49,13 @@ INTERNAL_ARTIFACT_PATHS = "_artifact_paths"
 SCHEMA_FILES = {
     "run_state": "workflow-run.schema.json",
     "preflight": "preflight-contract.schema.json",
+    "lead_decision": "lead-decision.schema.json",
     "source_corpus": "source-corpus.schema.json",
     "claim_ledger": "claim-ledger.schema.json",
     "results_integration": "results-integration.schema.json",
     "tool_call_ledger": "tool-call-ledger.schema.json",
     "workflow_dag": "workflow-dag.schema.json",
+    "omics_run_manifest": "omics-run-manifest.schema.json",
     "stage_evaluation": "stage-evaluation.schema.json",
     "post_write_validation": "post-write-validation.schema.json",
 }
@@ -133,6 +137,21 @@ REQUIRED_RUN_STATE_FIELDS = {
     "downgrade_reasons",
 }
 OMICS_ALIASES = {"omics-analysis-team", "omics-team", "/omics-analysis-team", "/omics-team"}
+OMICS_TRACKS = {
+    "bulk-rnaseq",
+    "tenx-gex",
+    "tenx-cellplex",
+    "tenx-citeseq",
+    "tenx-vdj",
+    "tenx-multiome",
+    "single-cell-other",
+    "survival",
+    "multi-omics",
+    "other",
+}
+TENX_TRACKS = {"tenx-gex", "tenx-cellplex", "tenx-citeseq", "tenx-vdj", "tenx-multiome"}
+PRIVACY_SENSITIVE_DATA_CLASSES = {"local-private-approved", "deidentified-human", "controlled-access", "PHI"}
+PUBLIC_ONLY_DATA_CLASSES = {"public-only", "not-applicable"}
 OMICS_CORE_REVIEWERS = {"omics-code-reviewer", "omics-provenance-validator", "biostats-repro-auditor"}
 OMICS_REVIEW_SKIP_EXCEPTION_MARKERS = {
     "spawned-subagent support unavailable",
@@ -186,6 +205,7 @@ class Finding:
     code: str
     message: str
     path: str = ""
+    fix_hint: str = ""
 
 
 def parse_args() -> argparse.Namespace:
@@ -197,9 +217,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--claim-ledger", type=Path)
     parser.add_argument("--stage-evaluation", type=Path)
     parser.add_argument("--post-write-validation", type=Path)
+    parser.add_argument("--lead-decision", type=Path)
     parser.add_argument("--results-integration", type=Path)
     parser.add_argument("--tool-call-ledger", type=Path)
     parser.add_argument("--workflow-dag", type=Path)
+    parser.add_argument("--omics-run-manifest", type=Path)
     parser.add_argument("--final-text", type=Path)
     parser.add_argument(
         "--require-label",
@@ -609,6 +631,162 @@ def included_sources(source_corpus: Any) -> set[str]:
         if source.get("inclusion_status") == "included" and source.get("source_id"):
             out.add(str(source["source_id"]))
     return out
+
+
+def source_backed_bundle(artifacts: dict[str, Any]) -> bool:
+    if included_sources(artifacts.get("source_corpus")):
+        return True
+    return any(is_source_backed(claim) for claim in iter_claims(artifacts.get("claim_ledger")))
+
+
+def lead_decision_required_reasons(
+    artifacts: dict[str, Any],
+    required_label: str | None = None,
+) -> list[tuple[str, str]]:
+    run_state = artifacts.get("run_state")
+    mode = normalized_text(run_mode(run_state))
+    strategy = execution_strategy(run_state)
+    labels = declared_workflow_labels(artifacts, required_label)
+    reasons: list[tuple[str, str]] = []
+    if FULL_LABEL in labels:
+        reasons.append(("LEAD_DECISION_REQUIRED_FULL_PROTOCOL", "Full protocol requires lead_decision.json"))
+    if mode == "deep":
+        reasons.append(("LEAD_DECISION_REQUIRED_DEEP_MODE", "deep mode requires lead_decision.json"))
+    if mode == "audit":
+        reasons.append(("LEAD_DECISION_REQUIRED_AUDIT_MODE", "audit mode requires lead_decision.json"))
+    if mode == "standard" and source_backed_bundle(artifacts):
+        reasons.append(
+            (
+                "LEAD_DECISION_REQUIRED_STANDARD_SOURCE_BACKED",
+                "standard source-backed output requires lead_decision.json",
+            )
+        )
+    if strategy == TEAM_LEVEL_STRATEGY:
+        reasons.append(("LEAD_DECISION_REQUIRED_TEAM_DAG", "team_level_selective_dag requires lead_decision.json"))
+    return list(dict.fromkeys(reasons))
+
+
+def validate_lead_decision_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    required_label: str | None = None,
+) -> None:
+    lead_decision = artifacts.get("lead_decision")
+    reasons = lead_decision_required_reasons(artifacts, required_label)
+    if reasons and lead_decision is None:
+        for code, message in reasons:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    code,
+                    message,
+                    OPTIONAL_BUNDLE_FILES["lead_decision"],
+                    "Create lead_decision.json from templates/lead-decision-template.md and align workflow_run_id, requested_alias, selected_mode, execution_strategy, selected lanes, and review plans with run_state/preflight.",
+                )
+            )
+        return
+    if lead_decision is None or not isinstance(lead_decision, dict):
+        return
+
+    run_state = artifacts.get("run_state")
+    preflight = artifacts.get("preflight")
+    if isinstance(run_state, dict):
+        expected_pairs = {
+            "workflow_run_id": run_state.get("run_id"),
+            "requested_alias": run_state.get("alias"),
+            "selected_mode": run_state.get("mode"),
+            "execution_strategy": run_state.get("execution_strategy"),
+        }
+        for field, expected in expected_pairs.items():
+            actual = lead_decision.get(field)
+            if expected is not None and actual is not None and str(actual) != str(expected):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "LEAD_DECISION_RUN_STATE_MISMATCH",
+                        f"lead_decision.{field}={actual!r} does not match run_state value {expected!r}",
+                        OPTIONAL_BUNDLE_FILES["lead_decision"],
+                        "Update lead_decision.json after changing run_state.json; the lead decision is the auditable routing surface.",
+                    )
+                )
+    if isinstance(preflight, dict):
+        expected_alias = preflight.get("requested_alias")
+        expected_mode = preflight.get("selected_mode")
+        if expected_alias and lead_decision.get("requested_alias") and str(lead_decision["requested_alias"]) != str(expected_alias):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "LEAD_DECISION_PREFLIGHT_ALIAS_MISMATCH",
+                    "lead_decision requested_alias must match preflight requested_alias",
+                    OPTIONAL_BUNDLE_FILES["lead_decision"],
+                    "Keep the lead decision, runtime preflight, and run state as one routing contract.",
+                )
+            )
+        if expected_mode and lead_decision.get("selected_mode") and str(lead_decision["selected_mode"]) != str(expected_mode):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "LEAD_DECISION_PREFLIGHT_MODE_MISMATCH",
+                    "lead_decision selected_mode must match preflight selected_mode",
+                    OPTIONAL_BUNDLE_FILES["lead_decision"],
+                    "Keep the lead decision, runtime preflight, and run state as one routing contract.",
+                )
+            )
+
+
+def requested_omics_track(artifacts: dict[str, Any]) -> str:
+    run_state = artifacts.get("run_state")
+    preflight = artifacts.get("preflight")
+    for owner, key in ((run_state, "omics_track"), (preflight, "requested_omics_track")):
+        if isinstance(owner, dict):
+            value = normalized_text(owner.get(key))
+            if value and value != "not-applicable":
+                return value
+    return ""
+
+
+def validate_omics_manifest_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    run_state = artifacts.get("run_state")
+    alias = normalized_text(run_state.get("alias")) if isinstance(run_state, dict) else ""
+    track = requested_omics_track(artifacts)
+    manifest = artifacts.get("omics_run_manifest")
+    manifest_required = alias in OMICS_ALIASES or track in OMICS_TRACKS
+    if manifest_required and manifest is None:
+        findings.append(
+            Finding(
+                "ERROR",
+                "OMICS_RUN_MANIFEST_REQUIRED",
+                "omics-analysis workflows and explicit omics tracks require omics_run_manifest.json",
+                OPTIONAL_BUNDLE_FILES["omics_run_manifest"],
+                "Create omics_run_manifest.json using contracts/omics-run-manifest.schema.json; include 10x Cell Ranger artifacts for tenx tracks or count/design provenance for bulk-rnaseq.",
+            )
+        )
+        return
+    if manifest is None or not isinstance(manifest, dict):
+        return
+    manifest_track = normalized_text(manifest.get("track"))
+    if track and manifest_track and track != manifest_track:
+        findings.append(
+            Finding(
+                "ERROR",
+                "OMICS_RUN_MANIFEST_TRACK_MISMATCH",
+                f"omics_run_manifest track {manifest_track!r} does not match requested track {track!r}",
+                OPTIONAL_BUNDLE_FILES["omics_run_manifest"],
+                "Keep run_state.omics_track, preflight.requested_omics_track, lead_decision.omics_subtrack, and omics_run_manifest.track aligned.",
+            )
+        )
+    if manifest_track in TENX_TRACKS:
+        bio_policy = manifest.get("biological_unit_policy", {})
+        if isinstance(bio_policy, dict) and bio_policy.get("pseudobulk_required") is False:
+            findings.append(
+                Finding(
+                    "WARN",
+                    "TENX_PSEUDOBULK_NOT_REQUIRED",
+                    "10x cross-sample analysis should justify why donor/sample-aware pseudobulk is not required",
+                    OPTIONAL_BUNDLE_FILES["omics_run_manifest"],
+                    "Set pseudobulk_required=true for cross-sample differential testing, or document a bounded cell-level descriptive use.",
+                )
+            )
 
 
 def review_surface_text(post_write_validation: Any, run_state: Any) -> str:
@@ -1377,6 +1555,70 @@ def validate_tool_ledger_policy(
                     OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
                 )
             )
+        actual_data_class = str(call.get("actual_data_class", "")).strip()
+        allowed_data_class = str(call.get("allowed_data_class", "")).strip()
+        runtime_surface = str(call.get("runtime_surface", "")).strip()
+        network_boundary = str(call.get("network_boundary", "")).strip()
+        query_redaction_applied = call.get("query_redaction_applied")
+        query_redaction = str(call.get("query_redaction", "")).strip()
+        if allowed_data_class in PUBLIC_ONLY_DATA_CLASSES and actual_data_class and actual_data_class not in PUBLIC_ONLY_DATA_CLASSES:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TOOL_CALL_DATA_CLASS_EXCEEDS_ALLOWED_SCOPE",
+                    f"tool_call_ledger calls[{index}] actual_data_class={actual_data_class} exceeds allowed_data_class={allowed_data_class}",
+                    OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
+                    "Set allowed_data_class to the approved maximum data class for this tool call, or keep the call public-only by redacting/removing private inputs.",
+                )
+            )
+        if runtime_surface == "mcp_connector" and not str(call.get("mcp_server_name", "")).strip():
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TOOL_CALL_MCP_SERVER_NAME_REQUIRED",
+                    f"tool_call_ledger calls[{index}] runtime_surface=mcp_connector requires mcp_server_name",
+                    OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
+                    "Record the MCP server or connector name so connector-backed evidence can be audited later.",
+                )
+            )
+        if actual_data_class in PRIVACY_SENSITIVE_DATA_CLASSES and not str(call.get("approval_ref", "")).strip():
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TOOL_CALL_PRIVACY_APPROVAL_REQUIRED",
+                    f"tool_call_ledger calls[{index}] actual_data_class={actual_data_class} requires approval_ref",
+                    OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
+                    "Record the local approval, human gate, DUA/IRB note, or explicit private-data handling approval before using sensitive inputs with any tool surface.",
+                )
+            )
+        if (
+            actual_data_class in PRIVACY_SENSITIVE_DATA_CLASSES
+            and network_boundary != "local-only"
+            and query_redaction_applied is not True
+            and query_redaction not in {"redacted", "none-needed"}
+        ):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TOOL_CALL_QUERY_REDACTION_REQUIRED",
+                    f"tool_call_ledger calls[{index}] actual_data_class={actual_data_class} requires query_redaction_applied=true or query_redaction=redacted/none-needed outside local-only use",
+                    OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
+                    "Record query redaction status for any sensitive or human-derived data before connector, browser, or public-network tool use.",
+                )
+            )
+        if actual_data_class in PRIVACY_SENSITIVE_DATA_CLASSES and network_boundary in {
+            "public-internet",
+            "authenticated-connector",
+        }:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TOOL_CALL_PRIVACY_NETWORK_BOUNDARY_BLOCK",
+                    f"tool_call_ledger calls[{index}] cannot send {actual_data_class} through {call.get('network_boundary')}",
+                    OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
+                    "Use local-only handling for sensitive data, or de-identify and record approval before any external or connector-backed use.",
+                )
+            )
 
     for claim in tool_backed_claims:
         cid = claim_id(claim)
@@ -2003,10 +2245,12 @@ def validate_policies(
     check_tool_ledger: bool = False,
 ) -> None:
     validate_required_label(artifacts, findings, required_label)
+    validate_lead_decision_policy(artifacts, findings, required_label)
     validate_compact_standard_artifacts(artifacts, findings, required_label)
     validate_full_protocol(artifacts, findings, required_label)
     validate_spawned_instance_policy(artifacts, findings)
     validate_omics_reviewer_spawn_policy(artifacts, findings)
+    validate_omics_manifest_policy(artifacts, findings)
     validate_team_dag_policy(artifacts, findings)
     validate_workflow_dag_policy(artifacts, findings)
     validate_results_integration_policy(artifacts, findings)
@@ -2026,7 +2270,8 @@ def emit(findings: list[Finding], as_json: bool) -> None:
         return
     for finding in findings:
         suffix = f" ({finding.path})" if finding.path else ""
-        print(f"{finding.level} {finding.code}: {finding.message}{suffix}")
+        hint = f" fix_hint={finding.fix_hint}" if finding.fix_hint else ""
+        print(f"{finding.level} {finding.code}: {finding.message}{suffix}{hint}")
 
 
 def main() -> int:

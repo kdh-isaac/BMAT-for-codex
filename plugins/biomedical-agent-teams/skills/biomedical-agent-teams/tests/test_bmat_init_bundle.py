@@ -33,11 +33,11 @@ def test_plugin_version_accepts_utf8_bom_prefixed_version_file(tmp_path: Path) -
     scripts.mkdir(parents=True)
     script_copy = scripts / "bmat_init_bundle.py"
     shutil.copy2(INIT_BUNDLE, script_copy)
-    (skill_root / "VERSION").write_bytes(UTF8_BOM_BYTES + b"1.0.0\n")
+    (skill_root / "VERSION").write_bytes(UTF8_BOM_BYTES + b"1.1.0\n")
 
     module = load_init_bundle_module(script_copy)
 
-    assert module.plugin_version() == "1.0.0"
+    assert module.plugin_version() == "1.1.0"
 
 
 def test_shell_family_detects_windows_powershell_from_comspec(monkeypatch) -> None:
@@ -75,9 +75,15 @@ def test_omics_run_scaffold_validates_with_explicit_reviewer_downgrade(tmp_path:
     assert (bundle / PREFLIGHT_FILE).exists()
     assert not (bundle / "preflight.json").exists()
     preflight = json.loads((bundle / PREFLIGHT_FILE).read_text(encoding="utf-8"))
+    lead_decision = json.loads((bundle / "lead_decision.json").read_text(encoding="utf-8"))
     assert preflight["runtime_id"] == preflight["runtime_capability_preflight_id"]
     assert preflight["codex_client"] == "codex"
-    assert preflight["plugin_version"] == "1.0.0"
+    assert preflight["plugin_version"] == "1.1.0"
+    assert preflight["workflow_tier"] == "compact"
+    assert preflight["requested_omics_track"] == "single-cell-other"
+    assert lead_decision["requested_alias"] == "omics-analysis-team"
+    assert lead_decision["selected_mode"] == "run"
+    assert lead_decision["omics_subtrack"] == "single-cell-other"
     assert preflight["python_invocation"]
     assert preflight["capabilities"]["shell_available"] == "yes"
     assert preflight["validator_cli_available"] == "yes"
@@ -263,6 +269,100 @@ def test_bmat_run_accepts_cell_therapy_domain_pack(tmp_path: Path) -> None:
     assert run_state["domain_pack"] == "cell-therapy"
     assert preflight["domain_pack"] == "cell-therapy"
     assert preflight["domain_specific_failure_modes_loaded"] is True
+
+
+def test_bmat_run_extended_tier_and_omics_fields_validate(tmp_path: Path) -> None:
+    bundle = tmp_path / "extended_runner_bundle"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(BMAT_RUN),
+            "--alias",
+            "omics-analysis-team",
+            "--mode",
+            "run",
+            "--question",
+            "synthetic future runner field smoke",
+            "--tier",
+            "full",
+            "--track",
+            "tenx-gex",
+            "--out",
+            str(bundle),
+            "--dry-run",
+            "--validate",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+    run_state_path = bundle / "run_state.json"
+    preflight_path = bundle / PREFLIGHT_FILE
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
+    lead_decision = json.loads((bundle / "lead_decision.json").read_text(encoding="utf-8"))
+    omics_manifest = json.loads((bundle / "omics_run_manifest.json").read_text(encoding="utf-8"))
+    assert run_state["workflow_tier"] == "full"
+    assert run_state["omics_track"] == "tenx-gex"
+    assert preflight["workflow_tier"] == "full"
+    assert preflight["requested_omics_track"] == "tenx-gex"
+    assert lead_decision["omics_subtrack"] == "tenx-gex"
+    assert omics_manifest["track"] == "tenx-gex"
+    assert omics_manifest["assay_metadata"]["cellranger_version"] == "TODO"
+    assert "molecule_info_h5" in omics_manifest["generated_artifacts"]
+
+    validate_result = subprocess.run(
+        [sys.executable, str(VALIDATOR), "--bundle", str(bundle), "--check-tool-ledger"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert validate_result.returncode == 0, validate_result.stdout + validate_result.stderr
+    output = validate_result.stdout + validate_result.stderr
+    assert "SCHEMA_VALIDATION_FAILED" not in output
+    assert "OMICS_RUN_REVIEWER_SPAWN_SKIPPED_WITH_DOWNGRADE" in output
+
+
+def test_bmat_run_p2_tenx_subtracks_scaffold_track_specific_fields(tmp_path: Path) -> None:
+    expected = {
+        "tenx-citeseq": ("multi", "feature_barcode_matrix"),
+        "tenx-vdj": ("vdj", "vdj_clonotypes"),
+        "tenx-multiome": ("arc", "fragments_tsv_gz"),
+    }
+    for track, (cellranger_command, artifact_key) in expected.items():
+        bundle = tmp_path / track
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(BMAT_RUN),
+                "--alias",
+                "omics-analysis-team",
+                "--mode",
+                "run",
+                "--question",
+                f"synthetic {track} runner field smoke",
+                "--tier",
+                "full",
+                "--track",
+                track,
+                "--out",
+                str(bundle),
+                "--dry-run",
+                "--validate",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+        omics_manifest = json.loads((bundle / "omics_run_manifest.json").read_text(encoding="utf-8"))
+        assert omics_manifest["track"] == track
+        assert omics_manifest["assay_metadata"]["cellranger_command"] == cellranger_command
+        assert artifact_key in omics_manifest["generated_artifacts"]
 
 
 def test_bmat_run_all_workflow_dags_scaffold_stages_and_validate(tmp_path: Path) -> None:

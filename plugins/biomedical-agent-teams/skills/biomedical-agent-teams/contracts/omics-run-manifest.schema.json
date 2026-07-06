@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Biomedical Agent Teams Omics Run Manifest",
+  "title": "Biomedical Agent Teams Omics Run Manifest v2",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -8,45 +8,157 @@
     "track",
     "data_sources",
     "sample_sheet",
-    "genome_build",
-    "biological_unit",
+    "assay_metadata",
+    "biological_unit_policy",
     "contrast_or_endpoint",
     "software_versions",
     "qc_decisions",
-    "statistical_plan",
+    "de_strategy",
     "generated_artifacts",
     "review_status"
   ],
   "properties": {
+    "schema_version": { "type": "string" },
     "analysis_id": { "type": "string" },
+    "workflow_run_id": { "type": "string" },
     "track": {
       "type": "string",
-      "enum": ["bulk", "single-cell", "survival", "multi-omics", "other"]
+      "enum": [
+        "bulk-rnaseq",
+        "tenx-gex",
+        "tenx-cellplex",
+        "tenx-citeseq",
+        "tenx-vdj",
+        "tenx-multiome",
+        "single-cell-other",
+        "survival",
+        "multi-omics",
+        "other"
+      ]
     },
     "data_sources": {
       "type": "array",
       "items": { "type": "object", "additionalProperties": true }
     },
     "sample_sheet": { "type": "string" },
-    "genome_build": { "type": "string" },
-    "biological_unit": { "type": "string" },
+    "assay_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["organism", "genome_build", "annotation_release"],
+      "properties": {
+        "organism": { "type": "string" },
+        "genome_build": { "type": "string" },
+        "annotation_release": { "type": "string" },
+        "chemistry": { "type": "string" },
+        "cellranger_version": { "type": "string" },
+        "cellranger_command": {
+          "type": "string",
+          "enum": ["count", "multi", "vdj", "arc", "not-applicable", "unknown"]
+        },
+        "multiplexing_method": { "type": "string" },
+        "feature_reference_ref": { "type": "string" },
+        "antibody_panel_ref": { "type": "string" },
+        "sample_barcode_mapping_ref": { "type": "string" },
+        "vdj_reference": { "type": "string" },
+        "gex_linkage_key": { "type": "string" },
+        "atac_reference": { "type": "string" },
+        "feature_linkage_ref": { "type": "string" },
+        "read_layout": { "type": "string" },
+        "quantifier": { "type": "string" },
+        "transcriptome_reference": { "type": "string" },
+        "tx_to_gene_method": { "type": "string" }
+      }
+    },
+    "biological_unit_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "replicate_key", "pseudobulk_required"],
+      "properties": {
+        "unit": {
+          "type": "string",
+          "enum": ["sample", "donor", "patient", "cell", "spot", "not-applicable"]
+        },
+        "replicate_key": { "type": "string" },
+        "donor_key": { "type": "string" },
+        "pseudobulk_required": { "type": "boolean" },
+        "pseudobulk_policy": { "type": "string" },
+        "cell_level_tests_limited_to": { "type": "string" }
+      }
+    },
     "contrast_or_endpoint": { "type": "string" },
     "software_versions": {
       "type": "array",
       "items": { "type": "string" }
     },
     "qc_decisions": {
-      "type": "array",
-      "items": { "type": "string" }
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cell_calling_method": { "type": "string" },
+        "ambient_rna_method": { "type": "string" },
+        "doublet_method": { "type": "string" },
+        "doublet_threshold": { "type": "string" },
+        "mito_threshold": { "type": "string" },
+        "min_genes": { "type": "integer", "minimum": 0 },
+        "max_genes": { "type": "integer", "minimum": 0 },
+        "empty_droplet_method": { "type": "string" },
+        "batch_integration_method": { "type": "string" },
+        "excluded_samples": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "fastq_qc": { "type": "string" },
+        "multiqc_ref": { "type": "string" },
+        "low_count_filter": { "type": "string" },
+        "outlier_policy": { "type": "string" }
+      }
     },
-    "statistical_plan": { "type": "string" },
+    "de_strategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cross_sample_method", "multiplicity_method"],
+      "properties": {
+        "cross_sample_method": { "type": "string" },
+        "within_cluster_marker_method": { "type": "string" },
+        "batch_covariates": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "multiplicity_method": { "type": "string" },
+        "design_formula": { "type": "string" },
+        "design_matrix_rank_checked": { "type": "boolean" },
+        "count_model": { "type": "string" },
+        "effect_size_report": { "type": "string" }
+      }
+    },
     "stage_evaluation": {
       "type": "object",
       "additionalProperties": true
     },
     "generated_artifacts": {
-      "type": "array",
-      "items": { "type": "string" }
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "web_summary_html": { "type": "string" },
+        "filtered_feature_bc_matrix": { "type": "string" },
+        "raw_feature_bc_matrix": { "type": "string" },
+        "molecule_info_h5": { "type": "string" },
+        "cloupe": { "type": "string" },
+        "feature_reference_csv": { "type": "string" },
+        "feature_barcode_matrix": { "type": "string" },
+        "sample_barcode_mapping": { "type": "string" },
+        "vdj_contig_annotations": { "type": "string" },
+        "vdj_clonotypes": { "type": "string" },
+        "fragments_tsv_gz": { "type": "string" },
+        "atac_peak_matrix": { "type": "string" },
+        "arc_summary_html": { "type": "string" },
+        "multiqc_html": { "type": "string" },
+        "fastqc_dir": { "type": "string" },
+        "count_matrix": { "type": "string" },
+        "tximport_or_tximeta_object": { "type": "string" },
+        "design_matrix": { "type": "string" },
+        "de_results_table": { "type": "string" }
+      }
     },
     "review_status": {
       "type": "object",
@@ -58,5 +170,130 @@
         "biostats_review": { "type": "string" }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "track": {
+            "enum": ["tenx-gex", "tenx-cellplex", "tenx-citeseq", "tenx-vdj", "tenx-multiome"]
+          }
+        },
+        "required": ["track"]
+      },
+      "then": {
+        "properties": {
+          "assay_metadata": {
+            "required": ["chemistry", "cellranger_version", "cellranger_command"]
+          },
+          "biological_unit_policy": {
+            "required": ["unit", "replicate_key", "pseudobulk_required", "pseudobulk_policy"]
+          },
+          "qc_decisions": {
+            "required": ["cell_calling_method", "ambient_rna_method", "doublet_method", "empty_droplet_method"]
+          },
+          "generated_artifacts": {
+            "required": [
+              "web_summary_html",
+              "filtered_feature_bc_matrix",
+              "raw_feature_bc_matrix",
+              "molecule_info_h5"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "track": { "const": "tenx-cellplex" } },
+        "required": ["track"]
+      },
+      "then": {
+        "properties": {
+          "assay_metadata": {
+            "required": ["multiplexing_method", "sample_barcode_mapping_ref"]
+          },
+          "generated_artifacts": {
+            "required": ["sample_barcode_mapping"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "track": { "const": "tenx-citeseq" } },
+        "required": ["track"]
+      },
+      "then": {
+        "properties": {
+          "assay_metadata": {
+            "required": ["feature_reference_ref", "antibody_panel_ref"]
+          },
+          "generated_artifacts": {
+            "required": ["feature_reference_csv", "feature_barcode_matrix"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "track": { "const": "tenx-vdj" } },
+        "required": ["track"]
+      },
+      "then": {
+        "properties": {
+          "assay_metadata": {
+            "required": ["vdj_reference", "gex_linkage_key"]
+          },
+          "generated_artifacts": {
+            "required": ["vdj_contig_annotations", "vdj_clonotypes"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "track": { "const": "tenx-multiome" } },
+        "required": ["track"]
+      },
+      "then": {
+        "properties": {
+          "assay_metadata": {
+            "required": ["atac_reference", "feature_linkage_ref"]
+          },
+          "generated_artifacts": {
+            "required": ["fragments_tsv_gz", "atac_peak_matrix", "arc_summary_html"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "track": { "const": "bulk-rnaseq" } },
+        "required": ["track"]
+      },
+      "then": {
+        "properties": {
+          "assay_metadata": {
+            "required": ["quantifier", "transcriptome_reference", "tx_to_gene_method", "read_layout"]
+          },
+          "qc_decisions": {
+            "required": ["fastq_qc", "multiqc_ref", "low_count_filter", "outlier_policy"]
+          },
+          "de_strategy": {
+            "required": [
+              "cross_sample_method",
+              "multiplicity_method",
+              "design_formula",
+              "design_matrix_rank_checked",
+              "count_model"
+            ]
+          },
+          "generated_artifacts": {
+            "required": ["multiqc_html", "count_matrix", "design_matrix", "de_results_table"]
+          }
+        }
+      }
+    }
+  ]
 }

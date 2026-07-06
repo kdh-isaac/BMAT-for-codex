@@ -14,7 +14,7 @@ the source corpus and central claim ledger.
 |---|---|
 | integration_id | RI-YYYYMMDD-001 |
 | schema_version | 1.0 |
-| plugin_version | 1.0.0 |
+| plugin_version | 1.1.0 |
 | workflow_run_id |  |
 | source_corpus_lock | locked / partial / missing |
 | input_artifacts |  |

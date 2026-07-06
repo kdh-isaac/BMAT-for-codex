@@ -1,6 +1,6 @@
 name = "bmat-omics-code-reviewer"
 agent_id = "omics-code-reviewer"
-version = "1.0.0"
+version = "1.1.0"
 description = "Template for a Codex reviewer that audits omics scripts, notebooks, reproducibility, leakage, and parameter provenance."
 role_prompt = "../agents/omics-code-reviewer.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

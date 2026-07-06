@@ -23,6 +23,67 @@
             "enum": ["success", "skipped", "unavailable", "blocked", "failed"]
           },
           "inputs_digest": { "type": "string" },
+          "query_redaction": {
+            "type": "string",
+            "enum": ["none-needed", "redacted", "not-applicable", "unknown"]
+          },
+          "query_redaction_applied": { "type": "boolean" },
+          "allowed_data_class": {
+            "type": "string",
+            "enum": [
+              "public-only",
+              "local-private-approved",
+              "deidentified-human",
+              "controlled-access",
+              "PHI",
+              "not-applicable",
+              "unknown"
+            ]
+          },
+          "actual_data_class": {
+            "type": "string",
+            "enum": [
+              "public-only",
+              "local-private-approved",
+              "deidentified-human",
+              "controlled-access",
+              "PHI",
+              "not-applicable",
+              "unknown"
+            ]
+          },
+          "approval_ref": { "type": "string" },
+          "mcp_server_name": { "type": "string" },
+          "runtime_surface": {
+            "type": "string",
+            "enum": [
+              "local_shell",
+              "local_file_read",
+              "codex_tool",
+              "mcp_connector",
+              "browser",
+              "spawned_reviewer",
+              "human_review",
+              "not-applicable",
+              "unknown"
+            ]
+          },
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^(not-applicable|[A-Fa-f0-9]{64})$"
+          },
+          "retention_policy": {
+            "type": "string",
+            "enum": ["ephemeral", "bundle-artifact", "project-retained", "not-applicable", "unknown"]
+          },
+          "network_boundary": {
+            "type": "string",
+            "enum": ["local-only", "public-internet", "authenticated-connector", "not-applicable", "unknown"]
+          },
+          "pii_risk": {
+            "type": "string",
+            "enum": ["none", "low", "moderate", "high", "unknown"]
+          },
           "output_ref": { "type": "string" },
           "retrieval_date": { "type": "string" },
           "affected_claim_ids": {

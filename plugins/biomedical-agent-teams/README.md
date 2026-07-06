@@ -2,7 +2,7 @@
 
 Codex Desktop compatible plugin wrapper for the `biomedical-agent-teams` skill.
 
-Current plugin version: `1.0.0`.
+Current plugin version: `1.1.0`.
 
 ## Purpose
 
@@ -18,18 +18,19 @@ making the selected workflow auditable.
 
 | Resource | Count |
 | --- | ---: |
-| Agent role prompts | 36 |
+| Agent role prompts | 38 |
 | Command recipes | 6 |
-| Contract schemas | 17 |
-| Templates | 15 |
+| Contract schemas | 18 |
+| Templates | 16 |
 | Markdown references | 10 |
 | JSON references | 1 |
 | Loop recipes | 4 |
-| Codex reviewer TOML templates | 12 |
+| Codex reviewer TOML templates | 14 |
 | Workflow DAGs | 6 |
-| Domain packs | 2 |
-| Package scripts | 9 |
+| Domain packs | 3 |
+| Package scripts | 11 |
 | Eval scripts | 3 |
+| Public omics benchmark cases | 6 |
 
 Important files:
 
@@ -43,6 +44,10 @@ Important files:
   schema and policy gate.
 - `skills/biomedical-agent-teams/scripts/bmat_run.py`: local runner, DAG
   normalizer, validator wrapper, and Markdown workbench exporter.
+- `skills/biomedical-agent-teams/scripts/bmat_codex_adapter.py`: local adapter
+  scaffold for preflight -> optional Codex command -> artifact validation.
+- `skills/biomedical-agent-teams/scripts/bmat_public_omics_benchmark_smoke.py`:
+  metadata-only public benchmark smoke harness for 10x/GEO/bulk cases.
 
 ## Current Capabilities
 
@@ -50,6 +55,12 @@ Important files:
 - Records runtime capability, source lock, external-tool authorization,
   reviewer strategy, validator availability, and label ceiling before strong
   workflow claims are made.
+- Records `lead_decision.json` for source-backed `standard`, `deep`, `audit`,
+  team-DAG, and full-protocol runs.
+- Supports `--tier compact|full` and omics subtracks such as `bulk-rnaseq`,
+  `tenx-gex`, `tenx-cellplex`, `tenx-citeseq`, `tenx-vdj`, and `tenx-multiome`.
+- Uses `omics_run_manifest.json` v2 to contract 10x Cell Ranger artifacts,
+  doublet/ambient/pseudobulk policy, and bulk RNA-seq design/provenance.
 - Supports `inline_first_selective_review` and `team_level_selective_dag`.
 - Routes substantive public-omics work through `omics-analysis-team` with code,
   provenance, and statistics reviewer floors when runtime support exists.
@@ -64,13 +75,13 @@ Important files:
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v1.0.0 End-to-End Workflow Structure
+    accTitle: BMAT v1.1.0 Workflow Structure
     accDescr: Full package workflow from Codex routing through command DAGs, optional team, reviewer, tool, and loop lanes, artifact bundle creation, validation gates, and final label selection.
 
     request["1. User request<br/>or explicit BMAT alias"]
     router["2. SKILL.md lightweight router<br/>selects one command recipe"]
     recipe["3. Command recipe<br/>loads only required agents,<br/>references, templates, contracts, scripts"]
-    preflight["4. Runtime capability preflight<br/>mode, scope, source needs,<br/>tools, file/write, web, spawn support"]
+    preflight["4. Runtime, scope, source, and strategy lock<br/>mode, scope, source needs,<br/>tools, file/write, web, spawn support"]
     strategy{"5. Execution strategy"}
 
     request --> router --> recipe --> preflight --> strategy
@@ -98,7 +109,7 @@ flowchart TD
     dag_select --> design
     dag_select --> scout
 
-    subgraph team_lane["Optional team-level DAG lane"]
+    subgraph team_lane["Optional team_level_selective_dag lane"]
         direction TB
         team_plan["team_spawn_plan<br/>dependency-aware lane selection"]
         team_outputs["team_output_artifacts<br/>artifact path, checks, dependencies"]
@@ -106,7 +117,7 @@ flowchart TD
         team_plan --> team_outputs --> team_record
     end
 
-    subgraph reviewer_lane["Optional spawned reviewer lane"]
+    subgraph reviewer_lane["Optional selective spawned review lane"]
         direction TB
         registry["agent-registry.json<br/>codex-agents/*.toml"]
         spawned["spawned_agent_instances<br/>role, task, status, output_artifact"]
@@ -144,7 +155,7 @@ flowchart TD
     bundle -. "independent review required by recipe or label" .-> registry
 
     bundle["7. Canonical artifact bundle<br/>run_state.json<br/>runtime_capability_preflight.json<br/>source_corpus.json<br/>claim_ledger.json<br/>stage_evaluation.json<br/>post_write_validation.json<br/>final.md"]
-    extras["Policy-checked extras<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json"]
+    extras["Policy-checked extras<br/>lead_decision.json<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json<br/>omics_run_manifest.json"]
     gates{"8. Release gates"}
     postwrite["post-write-final-validator<br/>final wording and limitation check"]
     validate["bmat_validate.py<br/>bundle schema + policy gate<br/>source-backed claims, DAG consistency,<br/>independent review, final wording"]
@@ -176,6 +187,7 @@ artifacts:
 
 - `run_state.json`
 - `runtime_capability_preflight.json`
+- `lead_decision.json`
 - `source_corpus.json`
 - `claim_ledger.json`
 - `stage_evaluation.json`
@@ -187,6 +199,7 @@ Optional but policy-checked artifacts include:
 - `workflow_dag.json`
 - `results_integration.json`
 - `tool_call_ledger.json`
+- `omics_run_manifest.json`
 
 The validator fails full-protocol claims when required artifacts are missing,
 required stages are blocked, post-write validation does not pass, independent
@@ -249,6 +262,7 @@ python skills/biomedical-agent-teams/scripts/bmat_selftest.py --root .
 python skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs skills/biomedical-agent-teams/evals/sample_outputs.jsonl
 python skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
 python skills/biomedical-agent-teams/evals/run_model_golden_eval.py --tasks skills/biomedical-agent-teams/evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out bmat_eval_outputs/model-sample.jsonl --sample-mode --then-score --gate
+python skills/biomedical-agent-teams/scripts/bmat_public_omics_benchmark_smoke.py --out bmat_eval_outputs/public-omics-benchmark --validate --force
 ```
 
 When test tooling is available, also run from the marketplace root:

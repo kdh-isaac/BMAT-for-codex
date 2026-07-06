@@ -35,7 +35,10 @@ def read_json(path: Path) -> dict:
 
 
 def release_text_paths() -> list[Path]:
-    paths = [PLUGIN_ROOT / ".codex-plugin" / "plugin.json"]
+    paths = [
+        PLUGIN_ROOT / ".codex-plugin" / "plugin.json",
+        PLUGIN_ROOT / ".codex-plugin" / "biomedical-agent-teams.md",
+    ]
     for path in sorted(SKILL_ROOT.rglob("*")):
         if not path.is_file():
             continue
@@ -51,9 +54,15 @@ def release_text_paths() -> list[Path]:
 def test_release_surface_files_exist() -> None:
     required_paths = [
         SKILL_ROOT / "references" / "tool-registry.md",
+        SKILL_ROOT / "contracts" / "lead-decision.schema.json",
+        SKILL_ROOT / "contracts" / "omics-run-manifest.schema.json",
         SKILL_ROOT / "contracts" / "results-integration.schema.json",
+        SKILL_ROOT / "templates" / "lead-decision-template.md",
         SKILL_ROOT / "templates" / "results-integration-template.md",
         SKILL_ROOT / "templates" / "research-overview-template.md",
+        SKILL_ROOT / "evals" / "public_omics_benchmark_cases.jsonl",
+        SKILL_ROOT / "scripts" / "bmat_public_omics_benchmark_smoke.py",
+        PLUGIN_ROOT / ".codex-plugin" / "biomedical-agent-teams.md",
     ]
 
     for path in required_paths:
@@ -71,7 +80,7 @@ def test_release_surface_text_files_are_bom_free() -> None:
 def test_version_aligned_in_primary_metadata() -> None:
     version = (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
-    assert version == "1.0.0"
+    assert version == "1.1.0"
     assert read_json(SKILL_ROOT / "manifest.json")["version"] == version
     assert read_json(SKILL_ROOT / "manifest.json")["adapter_version"] == version
     assert read_json(SKILL_ROOT / "source-manifest.json")["version"] == version
@@ -84,18 +93,24 @@ def test_manifest_lists_release_resources() -> None:
 
     assert "tool-registry" in source_manifest["references"]
     assert "claim-ledger.schema" in source_manifest["contracts"]
+    assert "lead-decision.schema" in source_manifest["contracts"]
+    assert "omics-run-manifest.schema" in source_manifest["contracts"]
     assert "results-integration.schema" in source_manifest["contracts"]
     assert "tool-call-ledger.schema" in source_manifest["contracts"]
     assert "workflow-dag.schema" in source_manifest["contracts"]
+    assert "lead-decision-template" in source_manifest["templates"]
     assert "results-integration-template" in source_manifest["templates"]
     assert "research-overview-template" in source_manifest["templates"]
     assert "research-workbench-index-template" in source_manifest["templates"]
     assert "bmat_tool_ledger_check" in source_manifest["scripts"]
+    assert "bmat_codex_adapter" in source_manifest["scripts"]
+    assert "bmat_public_omics_benchmark_smoke" in source_manifest["scripts"]
     assert "bmat_run" in source_manifest["scripts"]
     assert "evidence-audit-team" in source_manifest["workflow_dags"]
     assert "cell-therapy" in source_manifest["domain_packs"]
+    assert "immuno-oncology" in source_manifest["domain_packs"]
     release_note_keys = [key for key in source_manifest if key.startswith("new_in_v")]
-    assert release_note_keys == ["new_in_v1_0_0"]
+    assert release_note_keys == ["new_in_v1_0_0", "new_in_v1_1_0"]
     assert (
         "runtime-capability-preflight-canonical-artifact-name"
         in source_manifest["new_in_v1_0_0"]
@@ -120,6 +135,10 @@ def test_manifest_lists_release_resources() -> None:
         "workflow-dag-schema-and-six-command-dags"
         in source_manifest["new_in_v1_0_0"]
     )
+    assert "lead-decision-contract-and-validator-gates" in source_manifest["new_in_v1_1_0"]
+    assert "omics-run-manifest-v2-for-tenx-and-bulk-rnaseq" in source_manifest["new_in_v1_1_0"]
+    assert "public-omics-real-world-benchmark-smoke-harness" in source_manifest["new_in_v1_1_0"]
+    assert "tenx-and-bulk-golden-task-expansion" in source_manifest["new_in_v1_1_0"]
 
 
 def test_tool_registry_blocks_unlogged_tool_claims() -> None:
@@ -130,6 +149,53 @@ def test_tool_registry_blocks_unlogged_tool_claims() -> None:
     assert "results integration row" in text
     assert "selected specialist lanes in parallel" in text
     assert "dependency graph" in text
+
+
+def test_tool_call_ledger_schema_has_execution_governance_fields() -> None:
+    schema = read_json(SKILL_ROOT / "contracts" / "tool-call-ledger.schema.json")
+    call_properties = schema["properties"]["calls"]["items"]["properties"]
+
+    for field in (
+        "allowed_data_class",
+        "actual_data_class",
+        "query_redaction",
+        "query_redaction_applied",
+        "approval_ref",
+        "runtime_surface",
+        "mcp_server_name",
+        "artifact_sha256",
+        "retention_policy",
+        "network_boundary",
+        "pii_risk",
+    ):
+        assert field in call_properties
+
+
+def test_omics_manifest_schema_has_p2_track_specific_artifacts() -> None:
+    schema = read_json(SKILL_ROOT / "contracts" / "omics-run-manifest.schema.json")
+    assay_properties = schema["properties"]["assay_metadata"]["properties"]
+    artifact_properties = schema["properties"]["generated_artifacts"]["properties"]
+
+    for field in (
+        "feature_reference_ref",
+        "antibody_panel_ref",
+        "vdj_reference",
+        "gex_linkage_key",
+        "atac_reference",
+        "feature_linkage_ref",
+    ):
+        assert field in assay_properties
+
+    for field in (
+        "feature_reference_csv",
+        "feature_barcode_matrix",
+        "vdj_contig_annotations",
+        "vdj_clonotypes",
+        "fragments_tsv_gz",
+        "atac_peak_matrix",
+        "arc_summary_html",
+    ):
+        assert field in artifact_properties
 
 
 def test_results_integration_schema_classifies_result_status() -> None:
@@ -147,7 +213,7 @@ def valid_results_integration_payload() -> dict:
     return {
         "schema_version": "1.0",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "1.0.0",
+        "plugin_version": "1.1.0",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {

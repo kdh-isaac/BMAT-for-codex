@@ -1,6 +1,6 @@
 # Biomedical Agent Teams
 
-Current version: `1.0.0`.
+Current version: `1.1.0`.
 
 Codex biomedical agent-team bundle with a lightweight router, protocol and
 runtime lock, source corpus, central claim ledger, results integration,
@@ -11,27 +11,32 @@ Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
 Long governance instructions live in command recipes, references, templates,
 contracts, and scripts that are lazy-loaded only when needed.
 
-## 1.0.0 Resource Surface
+## 1.1.0 Resource Surface
 
 | Resource | Count |
 | --- | ---: |
-| Agent role prompts in `agents/` | 36 |
+| Agent role prompts in `agents/` | 38 |
 | Workflow recipes in `commands/` | 6 |
-| Contract schemas in `contracts/` | 17 |
-| Templates in `templates/` | 15 |
+| Contract schemas in `contracts/` | 18 |
+| Templates in `templates/` | 16 |
 | Markdown references in `references/` | 10 |
 | JSON references in `references/` | 1 |
 | Loop recipes in `loops/` | 4 |
-| Codex reviewer TOML templates in `codex-agents/` | 12 |
+| Codex reviewer TOML templates in `codex-agents/` | 14 |
 | Workflow DAGs in `workflows/` | 6 |
-| Domain packs in `domain-packs/` | 2 |
-| Package scripts in `scripts/` | 9 |
+| Domain packs in `domain-packs/` | 3 |
+| Package scripts in `scripts/` | 11 |
 | Eval scripts in `evals/` | 3 |
+| Public omics benchmark cases in `evals/` | 6 |
 
-## 1.0.0 Highlights
+## 1.1.0 Highlights
 
 - `runtime_capability_preflight.json` is the canonical runtime capability
   preflight artifact.
+- `lead_decision.json` is the auditable lead-scientist routing artifact for
+  source-backed `standard`, `deep`, `audit`, team-DAG, and full-protocol runs.
+- `omics_run_manifest.json` uses the v2 10x/bulk contract for Cell Ranger,
+  matrix, doublet/ambient, pseudobulk, bulk reference, design, and DE provenance.
 - `results_integration.json` maps sources, tools, reviewer outputs, omics
   outputs, and literature outputs back to claim rows.
 - `tool_call_ledger.json` records successful, skipped, blocked, failed, or
@@ -42,11 +47,18 @@ contracts, and scripts that are lazy-loaded only when needed.
   final wording, post-write verdict, independent review evidence, S3/high
   confidence gates, team DAG contracts, tool-ledger policy, and workflow DAG
   alias/mode/id consistency.
-- `bmat_run.py` creates local dry-run bundles, writes workflow DAGs, runs
-  validator/tool-ledger checks, and can export a Markdown workbench.
+- `bmat_run.py` creates local dry-run bundles, supports `--tier compact|full`
+  and `--track bulk-rnaseq|tenx-*|single-cell-other|survival|multi-omics`,
+  writes workflow DAGs, runs validator/tool-ledger checks, and can export a
+  Markdown workbench.
+- `bmat_codex_adapter.py` scaffolds a local Codex orchestration bundle and
+  validates collected artifacts.
+- `bmat_public_omics_benchmark_smoke.py` runs metadata-only public benchmark
+  smokes for 10x PBMC, GEO single-cell/CellPlex, and bulk RNA-seq cases without
+  downloading raw data.
 - Golden eval gates cover PMID drift, contradiction, overclaim,
-  tournament-loop, tournament-ranking, Codex-runtime, semantic-scope, and
-  expected-block behavior.
+  tournament-loop, tournament-ranking, Codex-runtime, semantic-scope, 10x/bulk
+  omics provenance, privacy/runtime, and expected-block behavior.
 - Runtime documentation keeps only the current release surface; older release
   archaeology belongs in git history.
 
@@ -54,7 +66,7 @@ contracts, and scripts that are lazy-loaded only when needed.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v1.0.0 End-to-End Workflow Structure
+    accTitle: BMAT v1.1.0 End-to-End Workflow Structure
     accDescr: Full package workflow from Codex routing through command DAGs, optional team, reviewer, tool, and loop lanes, artifact bundle creation, validation gates, and final label selection.
 
     request["1. User request<br/>or explicit BMAT alias"]
@@ -134,7 +146,7 @@ flowchart TD
     bundle -. "independent review required by recipe or label" .-> registry
 
     bundle["7. Canonical artifact bundle<br/>run_state.json<br/>runtime_capability_preflight.json<br/>source_corpus.json<br/>claim_ledger.json<br/>stage_evaluation.json<br/>post_write_validation.json<br/>final.md"]
-    extras["Policy-checked extras<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json"]
+    extras["Policy-checked extras<br/>lead_decision.json<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json<br/>omics_run_manifest.json"]
     gates{"8. Release gates"}
     postwrite["post-write-final-validator<br/>final wording and limitation check"]
     validate["bmat_validate.py<br/>bundle schema + policy gate<br/>source-backed claims, DAG consistency,<br/>independent review, final wording"]
@@ -181,6 +193,7 @@ Required full-protocol artifacts:
 
 - `run_state.json`
 - `runtime_capability_preflight.json`
+- `lead_decision.json`
 - `source_corpus.json`
 - `claim_ledger.json`
 - `stage_evaluation.json`
@@ -192,6 +205,7 @@ Optional but policy-checked artifacts:
 - `workflow_dag.json`
 - `results_integration.json`
 - `tool_call_ledger.json`
+- `omics_run_manifest.json`
 
 ## Included Commands
 
@@ -257,6 +271,7 @@ python scripts/bmat_selftest.py --root ../..
 python evals/validate_golden_eval_schema.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl
 python evals/run_golden_eval.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl --strict --gate
 python evals/run_model_golden_eval.py --tasks evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out bmat_eval_outputs/model-sample.jsonl --sample-mode --then-score --gate
+python scripts/bmat_public_omics_benchmark_smoke.py --out bmat_eval_outputs/public-omics-benchmark --validate --force
 uvx --with jsonschema pytest tests -q
 ```
 

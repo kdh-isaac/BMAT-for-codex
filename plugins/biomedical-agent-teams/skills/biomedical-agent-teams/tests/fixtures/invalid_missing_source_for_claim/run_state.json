@@ -2,7 +2,7 @@
   "run_id": "run-valid-001",
   "alias": "evidence-audit-team",
   "mode": "audit",
-  "plugin_version": "1.0.0",
+  "plugin_version": "1.1.0",
   "execution_strategy": "inline_first_selective_review",
   "nested_spawn_allowed": false,
   "spawned_review_lanes": [

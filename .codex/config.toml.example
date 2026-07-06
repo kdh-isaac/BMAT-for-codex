@@ -1,0 +1,31 @@
+# BMAT for Codex project-scoped configuration example.
+# Copy into a project .codex/config.toml only after reviewing local policy.
+
+[profiles.bmat-compact]
+model = "gpt-5"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[profiles.bmat-full]
+model = "gpt-5"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[bmat]
+default_alias = "biomedical-research-council"
+default_tier = "compact"
+required_artifacts = [
+  "runtime_capability_preflight.json",
+  "lead_decision.json",
+  "source_corpus.json",
+  "claim_ledger.json",
+  "stage_evaluation.json",
+  "post_write_validation.json",
+  "final.md"
+]
+optional_artifacts = [
+  "workflow_dag.json",
+  "results_integration.json",
+  "tool_call_ledger.json",
+  "omics_run_manifest.json"
+]

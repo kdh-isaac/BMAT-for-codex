@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "decision_id": "lead-run-valid-001",
+  "workflow_run_id": "run-valid-001",
+  "lead_scientist_agent_id": "life-science-lead-scientist",
+  "requested_alias": "evidence-audit-team",
+  "selected_mode": "audit",
+  "workflow_tier": "full",
+  "selected_playbook": "evidence-audit",
+  "omics_subtrack": "not-applicable",
+  "execution_strategy": "inline_first_selective_review",
+  "lead_route_required": true,
+  "mode_rule": "synthetic fixture lead decision for validator regression",
+  "decision_rationale": "Fixture preserves the original validator scenario while satisfying the auditable lead-decision contract.",
+  "selected_lanes": [
+    "evidence-audit-team"
+  ],
+  "skipped_lanes": [],
+  "spawned_review_plan": {},
+  "team_spawn_plan": {},
+  "post_team_audit_plan": "fixture post-write validation"
+}

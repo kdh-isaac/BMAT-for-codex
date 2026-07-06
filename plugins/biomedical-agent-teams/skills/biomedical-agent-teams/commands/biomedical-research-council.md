@@ -26,6 +26,11 @@ Run a lead-controlled biomedical research council. Default to Korean. Treat the 
 5. Lock external connector use with `references/connector-binding-matrix.md`
    before literature, trial, omics, pathway, protein, chemical, or repository lookup.
 6. Use `life-science-lead-scientist` and `scenario-playbook-router` to build the task graph and select the smallest useful specialist lanes.
+   For `standard` source-backed, `deep`, `audit`, team-level DAG, or full
+   protocol work, write `lead_decision.json` before release. This artifact is
+   the auditable surface for the lead scientist's route, mode, tier, selected
+   lanes, skipped lanes, spawned review plan, team DAG plan, and post-team audit
+   plan.
 7. Lock the execution strategy using `references/hybrid-execution-policy.md`: default inline-first, add selective spawned review or dependency-aware team-level spawned workflows only when they materially improve review quality.
 8. If `team_level_selective_dag` is selected, run dependency-aware command-level
    team bundles before final ledger synthesis; Phase 2 teams must wait for
@@ -97,11 +102,13 @@ state.
 ## 1.0 Release-Gate Artifacts
 
 For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
-outputs, keep the 1.0.0 hard-gate artifacts aligned with the narrative:
+outputs, keep the 1.1.0 hard-gate artifacts aligned with the narrative:
 
 - Use `workflow_dag.json` when `execution_strategy=team_level_selective_dag`,
   when `scripts/bmat_run.py` scaffolds the run, or when the final answer claims
   a planned command-to-agent DAG.
+- Use `lead_decision.json` when the run is `standard` source-backed, `deep`,
+  `audit`, `team_level_selective_dag`, or claims `Full protocol followed`.
 - Use `results_integration.json` when literature, omics, reviewer, validator,
   tool, or human-review output changes a claim, ranking, label, or final wording.
 - Use `tool_call_ledger.json` before saying a database, external service, local

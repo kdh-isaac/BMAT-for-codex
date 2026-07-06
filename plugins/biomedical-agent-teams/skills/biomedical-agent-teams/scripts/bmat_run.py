@@ -25,6 +25,20 @@ WORKFLOWS_ROOT = SKILL_ROOT / "workflows"
 DOMAIN_PACKS_ROOT = SKILL_ROOT / "domain-packs"
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
 TOOL_LEDGER_CHECK = SKILL_ROOT / "scripts" / "bmat_tool_ledger_check.py"
+OMICS_TRACKS = (
+    "bulk-rnaseq",
+    "tenx-gex",
+    "tenx-cellplex",
+    "tenx-citeseq",
+    "tenx-vdj",
+    "tenx-multiome",
+    "single-cell-other",
+    "survival",
+    "multi-omics",
+    "other",
+    "not-applicable",
+)
+TENX_TRACKS = {"tenx-gex", "tenx-cellplex", "tenx-citeseq", "tenx-vdj", "tenx-multiome"}
 
 
 def available_domain_packs() -> tuple[str, ...]:
@@ -38,6 +52,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a local BMAT scaffold workflow.")
     parser.add_argument("--alias", choices=bmat_init_bundle.WORKFLOWS, required=True)
     parser.add_argument("--mode", choices=bmat_init_bundle.MODES, default="standard")
+    parser.add_argument("--tier", choices=("compact", "full"), default="compact")
+    parser.add_argument("--track", choices=OMICS_TRACKS, help="Requested omics subtrack for omics-analysis-team runs.")
     parser.add_argument("--question", required=True, help="Locked research question or audit object.")
     parser.add_argument("--out", type=Path, required=True, help="Output bundle directory.")
     parser.add_argument("--domain-pack", choices=available_domain_packs(), default="generic-biomedical")
@@ -100,6 +116,175 @@ def default_tool_call_ledger(run_id: str, version: str) -> dict[str, Any]:
     }
 
 
+def selected_omics_track(args: argparse.Namespace) -> str:
+    if args.track:
+        return args.track
+    if args.alias == "omics-analysis-team":
+        return "single-cell-other"
+    return "not-applicable"
+
+
+def cellranger_command_for_track(track: str) -> str:
+    if track in {"tenx-cellplex", "tenx-citeseq"}:
+        return "multi"
+    if track == "tenx-vdj":
+        return "vdj"
+    if track == "tenx-multiome":
+        return "arc"
+    return "count"
+
+
+def default_omics_manifest(run_id: str, track: str) -> dict[str, Any]:
+    manifest: dict[str, Any] = {
+        "schema_version": "2.0",
+        "analysis_id": f"omics-{run_id}",
+        "workflow_run_id": run_id,
+        "track": track if track != "not-applicable" else "single-cell-other",
+        "data_sources": [],
+        "sample_sheet": "TODO: lock sample sheet path or accession sample table before analysis",
+        "assay_metadata": {
+            "organism": "TODO",
+            "genome_build": "TODO",
+            "annotation_release": "TODO",
+        },
+        "biological_unit_policy": {
+            "unit": "sample",
+            "replicate_key": "TODO",
+            "pseudobulk_required": False,
+            "pseudobulk_policy": "TODO: justify for descriptive-only runs; use donor/sample-aware pseudobulk for cross-sample testing",
+        },
+        "contrast_or_endpoint": "TODO",
+        "software_versions": ["TODO"],
+        "qc_decisions": {},
+        "de_strategy": {
+            "cross_sample_method": "TODO",
+            "multiplicity_method": "TODO",
+        },
+        "generated_artifacts": {},
+        "review_status": {
+            "code_review": "not-run",
+            "provenance_review": "not-run",
+            "biostats_review": "not-run",
+        },
+    }
+
+    if track in TENX_TRACKS:
+        manifest["assay_metadata"].update(
+            {
+                "chemistry": "TODO",
+                "cellranger_version": "TODO",
+                "cellranger_command": cellranger_command_for_track(track),
+            }
+        )
+        manifest["biological_unit_policy"].update(
+            {
+                "unit": "donor",
+                "donor_key": "TODO",
+                "pseudobulk_required": True,
+                "pseudobulk_policy": "Donor/sample-aware pseudobulk is required for cross-sample DE; cell-level tests are descriptive unless justified.",
+                "cell_level_tests_limited_to": "descriptive markers, QC, and annotation support only",
+            }
+        )
+        manifest["qc_decisions"].update(
+            {
+                "cell_calling_method": "TODO",
+                "ambient_rna_method": "TODO",
+                "doublet_method": "TODO",
+                "empty_droplet_method": "TODO",
+            }
+        )
+        manifest["generated_artifacts"].update(
+            {
+                "web_summary_html": "TODO",
+                "filtered_feature_bc_matrix": "TODO",
+                "raw_feature_bc_matrix": "TODO",
+                "molecule_info_h5": "TODO",
+            }
+        )
+        if track == "tenx-cellplex":
+            manifest["assay_metadata"].update(
+                {
+                    "multiplexing_method": "CellPlex/CMO",
+                    "sample_barcode_mapping_ref": "TODO",
+                }
+            )
+            manifest["generated_artifacts"]["sample_barcode_mapping"] = "TODO"
+        if track == "tenx-citeseq":
+            manifest["assay_metadata"].update(
+                {
+                    "feature_reference_ref": "TODO",
+                    "antibody_panel_ref": "TODO",
+                }
+            )
+            manifest["generated_artifacts"].update(
+                {
+                    "feature_reference_csv": "TODO",
+                    "feature_barcode_matrix": "TODO",
+                }
+            )
+        if track == "tenx-vdj":
+            manifest["assay_metadata"].update(
+                {
+                    "vdj_reference": "TODO",
+                    "gex_linkage_key": "TODO",
+                }
+            )
+            manifest["generated_artifacts"].update(
+                {
+                    "vdj_contig_annotations": "TODO",
+                    "vdj_clonotypes": "TODO",
+                }
+            )
+        if track == "tenx-multiome":
+            manifest["assay_metadata"].update(
+                {
+                    "atac_reference": "TODO",
+                    "feature_linkage_ref": "TODO",
+                }
+            )
+            manifest["generated_artifacts"].update(
+                {
+                    "fragments_tsv_gz": "TODO",
+                    "atac_peak_matrix": "TODO",
+                    "arc_summary_html": "TODO",
+                }
+            )
+
+    if track == "bulk-rnaseq":
+        manifest["assay_metadata"].update(
+            {
+                "quantifier": "TODO",
+                "transcriptome_reference": "TODO",
+                "tx_to_gene_method": "TODO",
+                "read_layout": "TODO",
+            }
+        )
+        manifest["qc_decisions"].update(
+            {
+                "fastq_qc": "TODO",
+                "multiqc_ref": "TODO",
+                "low_count_filter": "TODO",
+                "outlier_policy": "TODO",
+            }
+        )
+        manifest["de_strategy"].update(
+            {
+                "design_formula": "TODO",
+                "design_matrix_rank_checked": False,
+                "count_model": "TODO",
+            }
+        )
+        manifest["generated_artifacts"].update(
+            {
+                "multiqc_html": "TODO",
+                "count_matrix": "TODO",
+                "design_matrix": "TODO",
+                "de_results_table": "TODO",
+            }
+        )
+    return manifest
+
+
 def select_workflow_dag(alias: str) -> dict[str, Any]:
     path = WORKFLOWS_ROOT / f"{alias}.json"
     return json.loads(path.read_text(encoding="utf-8"))
@@ -116,15 +301,20 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     version = bmat_init_bundle.plugin_version()
     run_state = payloads["run_state.json"]
     preflight = payloads["runtime_capability_preflight.json"]
+    lead_decision = payloads["lead_decision.json"]
     assert isinstance(run_state, dict)
     assert isinstance(preflight, dict)
+    assert isinstance(lead_decision, dict)
     run_id = str(run_state["run_id"])
     workflow_dag = workflow_dag_for_run(args.alias, args.mode)
+    omics_track = selected_omics_track(args)
 
     domain_pack_root = DOMAIN_PACKS_ROOT / args.domain_pack
 
     preflight["domain_pack"] = args.domain_pack
     preflight["domain_pack_version"] = "0.1.0"
+    preflight["workflow_tier"] = args.tier
+    preflight["requested_omics_track"] = omics_track
     preflight["domain_specific_failure_modes_loaded"] = (domain_pack_root / "failure-modes.md").exists()
     preflight["domain_assumptions_skipped"] = []
     preflight["workflow_dag_id"] = workflow_dag["workflow_id"]
@@ -132,6 +322,8 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
 
     run_state["domain_pack"] = args.domain_pack
     run_state["domain_pack_version"] = "0.1.0"
+    run_state["workflow_tier"] = args.tier
+    run_state["omics_track"] = omics_track
     run_state["workflow_dag_id"] = workflow_dag["workflow_id"]
     run_state["results_integration_required"] = True
     run_state["tool_calls_used"] = []
@@ -150,9 +342,21 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
         for node in workflow_dag["nodes"]
     ]
 
+    lead_decision["workflow_run_id"] = run_id
+    lead_decision["requested_alias"] = args.alias
+    lead_decision["selected_mode"] = args.mode
+    lead_decision["workflow_tier"] = args.tier
+    lead_decision["omics_subtrack"] = omics_track
+    lead_decision["execution_strategy"] = run_state["execution_strategy"]
+    lead_decision["spawned_review_plan"] = preflight["spawned_review_plan"]
+    lead_decision["team_spawn_plan"] = preflight["team_spawn_plan"]
+    lead_decision["post_team_audit_plan"] = preflight["post_team_audit_plan"]
+
     payloads["workflow_dag.json"] = workflow_dag
     payloads["results_integration.json"] = default_results_integration(run_id, version)
     payloads["tool_call_ledger.json"] = default_tool_call_ledger(run_id, version)
+    if args.alias == "omics-analysis-team" or omics_track != "not-applicable":
+        payloads["omics_run_manifest.json"] = default_omics_manifest(run_id, omics_track)
 
 
 def write_payloads(payloads: dict[str, dict[str, Any] | str], out: Path, force: bool) -> None:

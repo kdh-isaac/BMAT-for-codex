@@ -2,7 +2,7 @@
   "loop_id": "BMAT-LOOP-20260612-003",
   "loop_name": "Public omics dataset watch",
   "loop_type": "public_omics_dataset_watch",
-  "plugin_version": "1.0.0",
+  "plugin_version": "1.1.0",
   "status": "complete",
   "public_only": true,
   "private_context_allowed": false,

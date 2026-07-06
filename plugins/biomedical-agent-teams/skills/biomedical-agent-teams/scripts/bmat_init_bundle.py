@@ -30,6 +30,7 @@ MODES = ("quick", "standard", "deep", "audit", "plan", "run")
 BUNDLE_FILES = (
     "runtime_capability_preflight.json",
     "run_state.json",
+    "lead_decision.json",
     "source_corpus.json",
     "claim_ledger.json",
     "stage_evaluation.json",
@@ -38,6 +39,14 @@ BUNDLE_FILES = (
     "README.md",
 )
 UTF8_BOM = "\ufeff"
+PLAYBOOK_BY_WORKFLOW = {
+    "biomedical-research-council": "mechanism-review",
+    "idea-discovery-team": "hypothesis-ranking",
+    "omics-analysis-team": "omics-analysis",
+    "evidence-audit-team": "evidence-audit",
+    "experiment-design-team": "wet-lab-validation",
+    "translational-scout-team": "clinical-translation",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -120,6 +129,41 @@ def write_text(path: Path, text: str, force: bool) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def default_omics_manifest(run_id: str) -> dict[str, Any]:
+    return {
+        "schema_version": "2.0",
+        "analysis_id": f"omics-{run_id}",
+        "workflow_run_id": run_id,
+        "track": "single-cell-other",
+        "data_sources": [],
+        "sample_sheet": "TODO: lock sample sheet path or accession sample table before analysis",
+        "assay_metadata": {
+            "organism": "TODO",
+            "genome_build": "TODO",
+            "annotation_release": "TODO",
+        },
+        "biological_unit_policy": {
+            "unit": "sample",
+            "replicate_key": "TODO",
+            "pseudobulk_required": False,
+            "pseudobulk_policy": "TODO: justify for descriptive-only runs; use donor/sample-aware pseudobulk for cross-sample testing",
+        },
+        "contrast_or_endpoint": "TODO",
+        "software_versions": ["TODO"],
+        "qc_decisions": {},
+        "de_strategy": {
+            "cross_sample_method": "TODO",
+            "multiplicity_method": "TODO",
+        },
+        "generated_artifacts": {},
+        "review_status": {
+            "code_review": "not-run",
+            "provenance_review": "not-run",
+            "biostats_review": "not-run",
+        },
+    }
+
+
 def quoted_path(path: Path) -> str:
     return f'"{path}"'
 
@@ -188,6 +232,8 @@ def build_payloads(
         ),
         "requested_alias": workflow,
         "selected_mode": mode,
+        "workflow_tier": "compact",
+        "requested_omics_track": "single-cell-other" if workflow == "omics-analysis-team" else "not-applicable",
         "deliverable_type": "TODO: compact final, audit bundle, report, notebook, or generated file",
         "evidence_scope": {
             "source_types": [],
@@ -252,6 +298,8 @@ def build_payloads(
         "alias": workflow,
         "mode": mode,
         "plugin_version": version,
+        "workflow_tier": "compact",
+        "omics_track": "single-cell-other" if workflow == "omics-analysis-team" else "not-applicable",
         "execution_strategy": "inline_only",
         "nested_spawn_allowed": False,
         "spawned_review_lanes": [],
@@ -277,6 +325,32 @@ def build_payloads(
             "scaffold created before evidence collection, review, and validation",
             review_skip_reason,
         ],
+    }
+
+    lead_decision = {
+        "schema_version": "1.0",
+        "decision_id": f"lead-{run_id}",
+        "workflow_run_id": run_id,
+        "lead_scientist_agent_id": "life-science-lead-scientist",
+        "requested_alias": workflow,
+        "selected_mode": mode,
+        "workflow_tier": "compact",
+        "selected_playbook": PLAYBOOK_BY_WORKFLOW.get(workflow, "mechanism-review"),
+        "omics_subtrack": "single-cell-other" if workflow == "omics-analysis-team" else "not-applicable",
+        "execution_strategy": "inline_only",
+        "lead_route_required": mode in {"standard", "deep", "audit", "run"},
+        "mode_rule": "scaffold default; update after the lead/router locks scope, evidence, and runtime capability",
+        "decision_rationale": "Initial scaffold created before source expansion or reviewer execution.",
+        "selected_lanes": [workflow],
+        "skipped_lanes": [
+            {
+                "lane": "spawned-review",
+                "reason": review_skip_reason,
+            }
+        ],
+        "spawned_review_plan": preflight["spawned_review_plan"],
+        "team_spawn_plan": preflight["team_spawn_plan"],
+        "post_team_audit_plan": preflight["post_team_audit_plan"],
     }
 
     source_corpus = {
@@ -353,9 +427,10 @@ def build_payloads(
         "   Re-run this command before using a high-confidence workflow label.\n"
     )
 
-    return {
+    payloads: dict[str, dict[str, Any] | str] = {
         "runtime_capability_preflight.json": preflight,
         "run_state.json": run_state,
+        "lead_decision.json": lead_decision,
         "source_corpus.json": source_corpus,
         "claim_ledger.json": claim_ledger,
         "stage_evaluation.json": stage_evaluation,
@@ -363,15 +438,17 @@ def build_payloads(
         "final.md": final_text,
         "README.md": readme,
     }
+    if workflow == "omics-analysis-team":
+        payloads["omics_run_manifest.json"] = default_omics_manifest(run_id)
+    return payloads
 
 
 def main() -> int:
     args = parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     payloads = build_payloads(args.workflow, args.mode, args.topic, args.out)
-    for filename in BUNDLE_FILES:
+    for filename, payload in payloads.items():
         path = args.out / filename
-        payload = payloads[filename]
         if isinstance(payload, str):
             write_text(path, payload, args.force)
         else:

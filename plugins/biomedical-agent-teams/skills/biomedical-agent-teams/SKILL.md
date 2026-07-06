@@ -1,10 +1,10 @@
 ---
 name: biomedical-agent-teams
 description: >
-  BMAT for Codex v1.0.0 router for biomedical evidence audit, public-omics
+  BMAT for Codex v1.1.0 router for biomedical evidence audit, public-omics
   analysis, hypothesis tournaments, experiment design, translational scouting,
   loop workflows, tool-use/result integration, and validator-backed artifacts.
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # Biomedical Agent Teams Router
@@ -29,10 +29,11 @@ contracts.
 7. If routing is ambiguous, choose the smallest reversible command and state the
    assumption in the runtime capability preflight.
 
-The current version adds stricter spawned-instance evidence checks, tool-use
-honesty, results integration, one-page research overview, compute-budget,
-team-DAG, loop-policy, and release-surface checks on top of the golden eval and
-lightweight-router gates.
+The current version adds lead-decision routing artifacts, 10x/bulk omics
+manifest v2 gates, `--tier`/`--track` runner wiring, validator `fix_hint`
+output, tool-ledger privacy fields, 10x/bulk golden tasks, a Codex adapter
+scaffold, a public-omics benchmark smoke harness, and an immuno-oncology domain
+pack on top of the existing golden eval and lightweight-router gates.
 
 ## Command Aliases
 
@@ -137,7 +138,8 @@ this minimum spine:
 
 Golden evals under `evals/` exercise this spine with public synthetic cases,
 including negative controls, and should block releases that miss PMID drift,
-contradiction, or overclaim cases.
+contradiction, overclaim, 10x/bulk omics provenance, privacy/runtime, or
+semantic-scope cases.
 
 ## Omics and Benchmark Hygiene
 
@@ -145,6 +147,10 @@ For omics work, lock genome build, annotation release, sample IDs, biological
 unit, contrasts, QC thresholds, normalization, batch handling, exclusions, and
 multiple-testing strategy before confirmatory interpretation. Keep raw data
 read-only and write derived outputs only to approved project locations.
+For `tenx-*` and `bulk-rnaseq` tracks, create `omics_run_manifest.json` with
+the v2 contract: Cell Ranger or quantifier provenance, raw/filtered or count
+artifacts, sample/donor mapping, ambient/doublet or QC policy, pseudobulk or
+design formula policy, and review status.
 
 For benchmark, challenge, or hidden-evaluation work, do not inspect hidden
 truth files, private results, scoring scripts, Dockerfiles, or equivalent answer keys
@@ -179,6 +185,10 @@ Use these inventory surfaces instead of expanding this router:
 - `references/tool-registry.json`: deterministic tool IDs for ledger checks.
 - `contracts/results-integration.schema.json`: source/result/claim mapping
   contract for tool, reviewer, omics, and literature outputs.
+- `contracts/lead-decision.schema.json`: auditable lead-scientist route,
+  selected mode/tier/playbook, lane, and team/reviewer decision contract.
+- `contracts/omics-run-manifest.schema.json`: v2 10x/bulk omics provenance,
+  QC, pseudobulk/design, artifact, and review contract.
 - `contracts/tool-call-ledger.schema.json`: successful, skipped, blocked, or
   unavailable tool-call evidence contract.
 - `contracts/workflow-dag.schema.json` and `workflows/*.json`: command-to-agent
@@ -196,7 +206,13 @@ Use these inventory surfaces instead of expanding this router:
 - `scripts/bmat_validate.py`: complete artifact bundle schema and policy gate.
 - `scripts/bmat_tool_ledger_check.py`: deterministic tool-use honesty gate.
 - `scripts/bmat_run.py`: local dry-run runner, DAG selector, validator wrapper,
-  and Markdown workbench exporter.
+  `--tier`/`--track` wiring, and Markdown workbench exporter.
+- `scripts/bmat_codex_adapter.py`: conservative local Codex adapter scaffold
+  for preflight, optional command execution, artifact collection, and validation.
+- `scripts/bmat_public_omics_benchmark_smoke.py`: metadata-only public benchmark
+  smoke harness for 10x/GEO/bulk cases, with no raw-data downloads by default.
+- `evals/public_omics_benchmark_cases.jsonl`: official URL/accession locks for
+  the public omics benchmark smoke cases.
 - `evals/run_golden_eval.py`: golden-case eval gate.
 - `evals/run_model_golden_eval.py`: sample-mode model-in-loop harness boundary.
 - `evals/validate_golden_eval_schema.py`: thin schema-validation wrapper.
@@ -215,6 +231,7 @@ python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_model_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out bmat_eval_outputs/model-sample.jsonl --sample-mode --then-score --gate
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_public_omics_benchmark_smoke.py --out bmat_eval_outputs/public-omics-benchmark --validate --force
 ```
 
 When test tooling is available, also run the package tests:

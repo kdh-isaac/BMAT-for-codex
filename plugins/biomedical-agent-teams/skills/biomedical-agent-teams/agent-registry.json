@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "runtime": "codex",
   "agents": [
     {
@@ -7,20 +7,37 @@
       "prompt_path": "agents/bayesian-decision-modeler.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["standard", "deep"]
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "biostats-repro-auditor",
       "prompt_path": "agents/biostats-repro-auditor.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "omics-analysis-team", "evidence-audit-team", "experiment-design-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["deep", "audit", "run"],
+      "recommended_modes": [
+        "deep",
+        "audit",
+        "run"
+      ],
       "toml_template_path": "codex-agents/biostats-repro-auditor.toml"
     },
     {
@@ -28,20 +45,51 @@
       "prompt_path": "agents/bulk-deg-analyst.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["omics-analysis-team"],
+      "allowed_workflows": [
+        "omics-analysis-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["plan", "run"]
+      "recommended_modes": [
+        "plan",
+        "run"
+      ]
+    },
+    {
+      "agent_id": "bulk-rnaseq-pipeline-specialist",
+      "prompt_path": "agents/bulk-rnaseq-pipeline-specialist.md",
+      "spawnable": true,
+      "default_execution_surface": "spawned_reviewer",
+      "allowed_workflows": [
+        "omics-analysis-team"
+      ],
+      "required_output_schema": "contracts/spawned-agent-output.schema.json",
+      "privacy_level": "public_or_local_private",
+      "recommended_modes": [
+        "run",
+        "audit"
+      ],
+      "toml_template_path": "codex-agents/bulk-rnaseq-pipeline-specialist.toml"
     },
     {
       "agent_id": "causal-inference-confounder-analyst",
       "prompt_path": "agents/causal-inference-confounder-analyst.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["deep", "audit"],
+      "recommended_modes": [
+        "deep",
+        "audit"
+      ],
       "toml_template_path": "codex-agents/causal-inference-confounder-analyst.toml"
     },
     {
@@ -49,20 +97,43 @@
       "prompt_path": "agents/central-claim-ledger-evidence-graph.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["standard", "deep", "audit", "run"]
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "audit",
+        "run"
+      ]
     },
     {
       "agent_id": "citation-verifier",
       "prompt_path": "agents/citation-verifier.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_only",
-      "recommended_modes": ["standard", "deep", "audit"],
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "audit"
+      ],
       "toml_template_path": "codex-agents/citation-verifier.toml"
     },
     {
@@ -70,10 +141,21 @@
       "prompt_path": "agents/claim-level-evidence-verifier.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_only",
-      "recommended_modes": ["standard", "deep", "audit"],
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "audit"
+      ],
       "toml_template_path": "codex-agents/claim-level-evidence-verifier.toml"
     },
     {
@@ -81,20 +163,36 @@
       "prompt_path": "agents/clinical-trial-operations-scout.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_only",
-      "recommended_modes": ["standard", "deep"]
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "contradiction-red-team",
       "prompt_path": "agents/contradiction-red-team.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["deep", "audit"],
+      "recommended_modes": [
+        "deep",
+        "audit"
+      ],
       "toml_template_path": "codex-agents/contradiction-red-team.toml"
     },
     {
@@ -102,121 +200,212 @@
       "prompt_path": "agents/entity-normalizer.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["quick", "standard", "deep", "audit", "plan", "run"]
+      "recommended_modes": [
+        "quick",
+        "standard",
+        "deep",
+        "audit",
+        "plan",
+        "run"
+      ]
     },
     {
       "agent_id": "experimental-design-planner",
       "prompt_path": "agents/experimental-design-planner.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "experiment-design-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "experiment-design-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "local_private_with_gate",
-      "recommended_modes": ["standard", "deep"]
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "figure-schematic-director",
       "prompt_path": "agents/figure-schematic-director.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "experiment-design-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "experiment-design-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "local_private_with_gate",
-      "recommended_modes": ["standard", "deep"]
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "grant-ip-landscape-scout",
       "prompt_path": "agents/grant-ip-landscape-scout.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "local_private_with_gate",
-      "recommended_modes": ["standard", "deep"]
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "hypothesis-generator",
       "prompt_path": "agents/hypothesis-generator.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["standard", "deep"]
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "hypothesis-ranker",
       "prompt_path": "agents/hypothesis-ranker.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["standard", "deep"]
-    },
-    {
-      "agent_id": "meta-review-synthesizer",
-      "prompt_path": "agents/meta-review-synthesizer.md",
-      "spawnable": true,
-      "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team"],
-      "required_output_schema": "contracts/spawned-agent-output.schema.json",
-      "privacy_level": "public_or_local_private",
-      "recommended_modes": ["standard", "deep", "audit"],
-      "toml_template_path": "codex-agents/meta-review-synthesizer.toml"
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "immunology-mechanism-critic",
       "prompt_path": "agents/immunology-mechanism-critic.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "experiment-design-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "experiment-design-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["standard", "deep"]
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "life-science-lead-scientist",
       "prompt_path": "agents/life-science-lead-scientist.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["quick", "standard", "deep", "audit", "plan", "run"]
+      "recommended_modes": [
+        "quick",
+        "standard",
+        "deep",
+        "audit",
+        "plan",
+        "run"
+      ]
     },
     {
       "agent_id": "life-science-literature-curator",
       "prompt_path": "agents/life-science-literature-curator.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "evidence-audit-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "evidence-audit-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_only",
-      "recommended_modes": ["standard", "deep", "audit"]
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "audit"
+      ]
+    },
+    {
+      "agent_id": "meta-review-synthesizer",
+      "prompt_path": "agents/meta-review-synthesizer.md",
+      "spawnable": true,
+      "default_execution_surface": "spawned_reviewer",
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team"
+      ],
+      "required_output_schema": "contracts/spawned-agent-output.schema.json",
+      "privacy_level": "public_or_local_private",
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "audit"
+      ],
+      "toml_template_path": "codex-agents/meta-review-synthesizer.toml"
     },
     {
       "agent_id": "model-card-dataset-card-writer",
       "prompt_path": "agents/model-card-dataset-card-writer.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["omics-analysis-team"],
+      "allowed_workflows": [
+        "omics-analysis-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["run"]
+      "recommended_modes": [
+        "run"
+      ]
     },
     {
       "agent_id": "omics-code-reviewer",
       "prompt_path": "agents/omics-code-reviewer.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["omics-analysis-team"],
+      "allowed_workflows": [
+        "omics-analysis-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["run", "audit"],
+      "recommended_modes": [
+        "run",
+        "audit"
+      ],
       "toml_template_path": "codex-agents/omics-code-reviewer.toml"
     },
     {
@@ -224,20 +413,32 @@
       "prompt_path": "agents/omics-data-curator.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "omics-analysis-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "omics-analysis-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["plan", "run"]
+      "recommended_modes": [
+        "plan",
+        "run"
+      ]
     },
     {
       "agent_id": "omics-provenance-validator",
       "prompt_path": "agents/omics-provenance-validator.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["omics-analysis-team", "evidence-audit-team"],
+      "allowed_workflows": [
+        "omics-analysis-team",
+        "evidence-audit-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["run", "audit"],
+      "recommended_modes": [
+        "run",
+        "audit"
+      ],
       "toml_template_path": "codex-agents/omics-provenance-validator.toml"
     },
     {
@@ -245,30 +446,53 @@
       "prompt_path": "agents/omics-reporter.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["omics-analysis-team"],
+      "allowed_workflows": [
+        "omics-analysis-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["run"]
+      "recommended_modes": [
+        "run"
+      ]
     },
     {
       "agent_id": "pathway-interpreter",
       "prompt_path": "agents/pathway-interpreter.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_only",
-      "recommended_modes": ["standard", "deep", "run"]
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "run"
+      ]
     },
     {
       "agent_id": "post-write-final-validator",
       "prompt_path": "agents/post-write-final-validator.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["deep", "audit", "run"],
+      "recommended_modes": [
+        "deep",
+        "audit",
+        "run"
+      ],
       "toml_template_path": "codex-agents/post-write-final-validator.toml"
     },
     {
@@ -276,30 +500,60 @@
       "prompt_path": "agents/protocol-context-locker.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["quick", "standard", "deep", "audit", "plan", "run"]
+      "recommended_modes": [
+        "quick",
+        "standard",
+        "deep",
+        "audit",
+        "plan",
+        "run"
+      ]
     },
     {
       "agent_id": "protocol-reagent-logistics-planner",
       "prompt_path": "agents/protocol-reagent-logistics-planner.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "experiment-design-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "experiment-design-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "local_private_with_gate",
-      "recommended_modes": ["standard", "deep"]
+      "recommended_modes": [
+        "standard",
+        "deep"
+      ]
     },
     {
       "agent_id": "provenance-traceability-architect",
       "prompt_path": "agents/provenance-traceability-architect.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["deep", "audit", "run"],
+      "recommended_modes": [
+        "deep",
+        "audit",
+        "run"
+      ],
       "toml_template_path": "codex-agents/provenance-traceability-architect.toml"
     },
     {
@@ -307,20 +561,39 @@
       "prompt_path": "agents/public-omics-analyst.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_only",
-      "recommended_modes": ["standard", "deep", "plan", "run"]
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "plan",
+        "run"
+      ]
     },
     {
       "agent_id": "risk-of-bias-study-quality-auditor",
       "prompt_path": "agents/risk-of-bias-study-quality-auditor.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "public_only",
-      "recommended_modes": ["deep", "audit"],
+      "recommended_modes": [
+        "deep",
+        "audit"
+      ],
       "toml_template_path": "codex-agents/risk-of-bias-study-quality-auditor.toml"
     },
     {
@@ -328,10 +601,22 @@
       "prompt_path": "agents/safety-ethics-privacy-dual-use-auditor.md",
       "spawnable": true,
       "default_execution_surface": "spawned_reviewer",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/spawned-agent-output.schema.json",
       "privacy_level": "local_private_with_gate",
-      "recommended_modes": ["standard", "deep", "audit", "run"],
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "audit",
+        "run"
+      ],
       "toml_template_path": "codex-agents/safety-ethics-privacy-dual-use-auditor.toml"
     },
     {
@@ -339,40 +624,96 @@
       "prompt_path": "agents/scenario-playbook-router.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["quick", "standard", "deep", "audit", "plan", "run"]
+      "recommended_modes": [
+        "quick",
+        "standard",
+        "deep",
+        "audit",
+        "plan",
+        "run"
+      ]
     },
     {
       "agent_id": "scientific-literature-researcher",
       "prompt_path": "agents/scientific-literature-researcher.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "evidence-audit-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "evidence-audit-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_only",
-      "recommended_modes": ["standard", "deep", "audit"]
+      "recommended_modes": [
+        "standard",
+        "deep",
+        "audit"
+      ]
     },
     {
       "agent_id": "scientific-writer-citation-agent",
       "prompt_path": "agents/scientific-writer-citation-agent.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["biomedical-research-council", "idea-discovery-team", "omics-analysis-team", "evidence-audit-team", "experiment-design-team", "translational-scout-team"],
+      "allowed_workflows": [
+        "biomedical-research-council",
+        "idea-discovery-team",
+        "omics-analysis-team",
+        "evidence-audit-team",
+        "experiment-design-team",
+        "translational-scout-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["quick", "standard", "deep", "audit", "run"]
+      "recommended_modes": [
+        "quick",
+        "standard",
+        "deep",
+        "audit",
+        "run"
+      ]
     },
     {
       "agent_id": "scrna-qc-specialist",
       "prompt_path": "agents/scrna-qc-specialist.md",
       "spawnable": false,
       "default_execution_surface": "inline_only",
-      "allowed_workflows": ["omics-analysis-team"],
+      "allowed_workflows": [
+        "omics-analysis-team"
+      ],
       "required_output_schema": "contracts/role-output.schema.json",
       "privacy_level": "public_or_local_private",
-      "recommended_modes": ["plan", "run"]
+      "recommended_modes": [
+        "plan",
+        "run"
+      ]
+    },
+    {
+      "agent_id": "tenx-singlecell-specialist",
+      "prompt_path": "agents/tenx-singlecell-specialist.md",
+      "spawnable": true,
+      "default_execution_surface": "spawned_reviewer",
+      "allowed_workflows": [
+        "omics-analysis-team"
+      ],
+      "required_output_schema": "contracts/spawned-agent-output.schema.json",
+      "privacy_level": "public_or_local_private",
+      "recommended_modes": [
+        "run",
+        "audit"
+      ],
+      "toml_template_path": "codex-agents/tenx-singlecell-specialist.toml"
     }
   ]
 }

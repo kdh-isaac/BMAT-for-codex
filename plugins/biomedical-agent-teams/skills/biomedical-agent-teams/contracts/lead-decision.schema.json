@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Lead Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_id",
+    "workflow_run_id",
+    "requested_alias",
+    "selected_mode",
+    "selected_playbook",
+    "execution_strategy",
+    "lead_route_required",
+    "mode_rule",
+    "selected_lanes",
+    "skipped_lanes",
+    "spawned_review_plan",
+    "team_spawn_plan",
+    "post_team_audit_plan"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "decision_id": { "type": "string" },
+    "workflow_run_id": { "type": "string" },
+    "lead_scientist_agent_id": {
+      "type": "string",
+      "const": "life-science-lead-scientist"
+    },
+    "requested_alias": { "type": "string" },
+    "selected_mode": {
+      "type": "string",
+      "enum": ["quick", "standard", "deep", "audit", "plan", "run"]
+    },
+    "workflow_tier": {
+      "type": "string",
+      "enum": ["compact", "full"]
+    },
+    "selected_playbook": {
+      "type": "string",
+      "enum": [
+        "mechanism-review",
+        "public-omics-feasibility",
+        "omics-analysis",
+        "hypothesis-ranking",
+        "evidence-audit",
+        "wet-lab-validation",
+        "clinical-translation",
+        "manuscript-or-grant"
+      ]
+    },
+    "omics_subtrack": {
+      "type": "string",
+      "enum": [
+        "bulk-rnaseq",
+        "tenx-gex",
+        "tenx-cellplex",
+        "tenx-citeseq",
+        "tenx-vdj",
+        "tenx-multiome",
+        "single-cell-other",
+        "survival",
+        "multi-omics",
+        "other",
+        "not-applicable"
+      ]
+    },
+    "execution_strategy": {
+      "type": "string",
+      "enum": [
+        "inline_only",
+        "inline_first_selective_review",
+        "team_level_selective_dag",
+        "user_requested_full_spawn",
+        "blocked"
+      ]
+    },
+    "lead_route_required": { "type": "boolean" },
+    "mode_rule": { "type": "string" },
+    "decision_rationale": { "type": "string" },
+    "selected_lanes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "skipped_lanes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lane", "reason"],
+        "properties": {
+          "lane": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "spawned_review_plan": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "team_spawn_plan": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "post_team_audit_plan": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "additionalProperties": true
+        }
+      ]
+    }
+  }
+}

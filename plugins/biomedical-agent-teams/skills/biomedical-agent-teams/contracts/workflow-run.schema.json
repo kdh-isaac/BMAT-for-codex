@@ -27,6 +27,26 @@
     "workflow_dag_id": { "type": "string" },
     "domain_pack": { "type": "string" },
     "domain_pack_version": { "type": "string" },
+    "workflow_tier": {
+      "type": "string",
+      "enum": ["compact", "full"]
+    },
+    "omics_track": {
+      "type": "string",
+      "enum": [
+        "bulk-rnaseq",
+        "tenx-gex",
+        "tenx-cellplex",
+        "tenx-citeseq",
+        "tenx-vdj",
+        "tenx-multiome",
+        "single-cell-other",
+        "survival",
+        "multi-omics",
+        "other",
+        "not-applicable"
+      ]
+    },
     "results_integration_required": { "type": "boolean" },
     "tool_calls_used": {
       "type": "array",

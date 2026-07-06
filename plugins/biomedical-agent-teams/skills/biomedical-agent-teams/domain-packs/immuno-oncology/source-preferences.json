@@ -1,0 +1,23 @@
+{
+  "domain_pack": "immuno-oncology",
+  "version": "0.1.0",
+  "preferred_sources": [
+    {
+      "source_type": "primary-study",
+      "use": "Mechanism, perturbation, clinical association, and patient-level endpoint claims."
+    },
+    {
+      "source_type": "public-omics-repository",
+      "use": "Exploratory expression, cell-state, and cohort-level association claims with accession and metadata lock."
+    },
+    {
+      "source_type": "clinical-trial-record",
+      "use": "Intervention, population, endpoint, status, and safety context."
+    },
+    {
+      "source_type": "review",
+      "use": "Background only; do not use as sole support for mechanistic or prognostic final claims."
+    }
+  ],
+  "source_floor": "Use stable identifiers, retrieval dates, cohort/sample metadata, and claim-scope notes for every final claim."
+}

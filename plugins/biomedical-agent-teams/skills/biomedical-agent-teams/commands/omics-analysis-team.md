@@ -1,6 +1,6 @@
 ---
-description: "Public-omics analysis team for dataset curation, bulk/single-cell/survival/pathway analysis, causal/statistical review, provenance traceability, and reporting"
-argument-hint: "<public omics analysis goal> [--track bulk|single-cell|survival|multi-omics] [--mode plan|run|audit]"
+description: "Public-omics analysis team for dataset curation, 10x/bulk/survival/pathway analysis, causal/statistical review, provenance traceability, and reporting"
+argument-hint: "<public omics analysis goal> [--track bulk-rnaseq|tenx-gex|tenx-cellplex|tenx-citeseq|tenx-vdj|tenx-multiome|single-cell-other|survival|multi-omics] [--mode plan|run|audit] [--tier compact|full]"
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 ---
 
@@ -36,7 +36,7 @@ state.
 ## 1.0 Release-Gate Artifacts
 
 For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
-outputs, keep the 1.0.0 hard-gate artifacts aligned with the narrative:
+outputs, keep the 1.1.0 hard-gate artifacts aligned with the narrative:
 
 - Use `workflow_dag.json` when `execution_strategy=team_level_selective_dag`,
   when `scripts/bmat_run.py` scaffolds the run, or when the final answer claims
@@ -119,6 +119,12 @@ claim-ledger handoff.
 9. Maintain S1-S5 stage evaluation using `templates/stage-evaluation-template.md` or `contracts/stage-evaluation.schema.json`.
 10. Maintain `central-claim-ledger-evidence-graph` for results, source artifacts, uncertainty, contradictions, and blocked claims.
 11. Maintain workflow-run state, an omics run manifest using `contracts/omics-run-manifest.schema.json` or the same field order, plus biomedical passport status for `run` and `audit` modes.
+    For `tenx-*` and `bulk-rnaseq` tracks, the omics manifest is a v2 contract:
+    record Cell Ranger/CellPlex provenance, raw/filtered matrix artifacts,
+    `molecule_info.h5`, ambient/doublet/empty-droplet decisions, donor/sample
+    mapping, pseudobulk policy, bulk quantifier/reference provenance, design
+    formula, design-matrix rank check, count model, and multiplicity method as
+    applicable.
 12. Run review gate before final reporting. In `run` mode, at least one core
    reviewer must be a spawned reviewer or tool-backed reviewer instance when
    runtime support is available, with the lane started alongside S4/S5 when
@@ -164,8 +170,13 @@ Use the matching track checklist before analysis or reporting:
 
 | Track | Required locks before run | Required review focus |
 |---|---|---|
-| `bulk` | Organism, assay platform, count vs normalized matrix, genome build/annotation, sample sheet, biological unit, batch/covariates, contrast, multiple-testing plan | Design matrix validity, batch/confounding, count-model assumptions, independent or tool-backed validation status, effect size and FDR reporting |
-| `single-cell` | Accession/files, chemistry/platform, cell barcode/sample mapping, donor/biological unit, cell type labels, QC thresholds, batch correction plan, cluster/DE contrast | Sample leakage, pseudo-replication, doublets, mito/ribo thresholds, donor-aware statistics, marker and GSEA interpretation boundaries |
+| `bulk-rnaseq` | FASTQ/count source, sample sheet, organism, genome build/annotation, quantifier, transcriptome reference, tx-to-gene method, biological unit, batch/covariates, design formula, design-rank check, contrast, multiple-testing plan | Count provenance, FastQC/MultiQC surface, tximport/tximeta or count import trace, design matrix validity, batch/confounding, count-model assumptions, effect size and FDR reporting |
+| `tenx-gex` | Cell Ranger command/version, chemistry, raw/filtered matrix, `molecule_info.h5`, `web_summary.html`, donor/sample barcode mapping, biological unit, annotation release, QC thresholds, empty-droplet, ambient RNA, doublet, batch/integration, pseudobulk policy | Sample leakage, donor-aware pseudobulk for cross-sample DE, pseudo-replication, ambient marker contamination, doublets, mito/ribo thresholds, marker and GSEA interpretation boundaries |
+| `tenx-cellplex` | `tenx-gex` locks plus multiplexing method, CMO/sample barcode mapping, demultiplexing confidence, singlet/multiplet policy | Donor/sample mismatch, cell hashing/CellPlex demultiplexing errors, multiplet carryover, pseudobulk unit correctness |
+| `tenx-citeseq` | `tenx-gex` locks plus feature reference, ADT/protein feature handling, antibody panel provenance | ADT normalization/QC, feature barcode provenance, RNA-protein interpretation boundaries |
+| `tenx-vdj` | Cell Ranger V(D)J command/version, contig annotations, clonotype calls, GEX linkage key when integrated | Clonotype overclaim, chain-pairing ambiguity, expansion versus function boundary |
+| `tenx-multiome` | Cell Ranger ARC/multiome command/version, GEX/ATAC linkage, fragment and matrix artifacts, modality-specific QC | Cross-modality sample leakage, peak/gene linkage overclaim, modality batch handling |
+| `single-cell-other` | Accession/files, platform, cell/sample mapping, donor/biological unit, cell type labels, QC thresholds, batch correction plan, cluster/DE contrast | Sample leakage, pseudo-replication, doublets, donor-aware statistics, marker and GSEA interpretation boundaries |
 | `survival` | Cohort source/version, endpoint, event/censor definitions, follow-up time unit, inclusion/exclusion, covariates, grouping rule, event counts | Prognostic vs predictive boundary, censoring, proportional hazards, multiplicity, median survival/CI, number-at-risk feasibility |
 | `multi-omics` | Matched sample IDs, modality versions, genome build consistency, missingness, integration method, biological unit, primary endpoint | Cross-modality leakage, batch/source mixing, dimensionality reduction overclaim, validation and sensitivity analyses |
 

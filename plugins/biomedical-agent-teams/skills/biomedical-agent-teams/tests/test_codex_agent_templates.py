@@ -12,6 +12,7 @@ REGISTRY_PATH = SKILL_ROOT / "agent-registry.json"
 UTF8_BOM_BYTES = b"\xef\xbb\xbf"
 EXPECTED_SPAWNABLE_TEMPLATES = {
     "biostats-repro-auditor",
+    "bulk-rnaseq-pipeline-specialist",
     "causal-inference-confounder-analyst",
     "citation-verifier",
     "claim-level-evidence-verifier",
@@ -23,6 +24,7 @@ EXPECTED_SPAWNABLE_TEMPLATES = {
     "provenance-traceability-architect",
     "risk-of-bias-study-quality-auditor",
     "safety-ethics-privacy-dual-use-auditor",
+    "tenx-singlecell-specialist",
 }
 GLOBAL_SPAWNED_OUTPUT_FIELDS = {
     "objective",

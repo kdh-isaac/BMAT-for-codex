@@ -140,6 +140,26 @@
     "domain_pack_version": {
       "type": "string"
     },
+    "workflow_tier": {
+      "type": "string",
+      "enum": ["compact", "full"]
+    },
+    "requested_omics_track": {
+      "type": "string",
+      "enum": [
+        "bulk-rnaseq",
+        "tenx-gex",
+        "tenx-cellplex",
+        "tenx-citeseq",
+        "tenx-vdj",
+        "tenx-multiome",
+        "single-cell-other",
+        "survival",
+        "multi-omics",
+        "other",
+        "not-applicable"
+      ]
+    },
     "domain_specific_failure_modes_loaded": {
       "oneOf": [
         { "type": "boolean" },

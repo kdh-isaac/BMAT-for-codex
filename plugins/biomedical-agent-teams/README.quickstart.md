@@ -52,11 +52,14 @@ before claiming `Compact standard workflow` or `Full protocol followed`.
 ## Run A Local Scaffold With Validators
 
 ```bash
-python skills/biomedical-agent-teams/scripts/bmat_run.py --alias evidence-audit-team --mode audit --question "audit FOXO1 dependency claim" --out ./bmat_runs/foxo1_audit --force --validate --export markdown
+python skills/biomedical-agent-teams/scripts/bmat_run.py --alias evidence-audit-team --mode audit --tier compact --question "audit FOXO1 dependency claim" --out ./bmat_runs/foxo1_audit --force --validate --export markdown
 ```
 
-`bmat_run.py` writes `workflow_dag.json`, `results_integration.json`, and
-`tool_call_ledger.json` alongside the core bundle. In 1.0.0 the generated
+`bmat_run.py` writes `lead_decision.json`, `workflow_dag.json`,
+`results_integration.json`, and `tool_call_ledger.json` alongside the core
+bundle. For omics runs, add `--track bulk-rnaseq`, `--track tenx-gex`,
+`--track tenx-cellplex`, or another supported subtrack to generate
+`omics_run_manifest.json`. In 1.1.0 the generated
 workflow DAG is normalized to the requested alias and mode before validation.
 
 ## Smoke Test

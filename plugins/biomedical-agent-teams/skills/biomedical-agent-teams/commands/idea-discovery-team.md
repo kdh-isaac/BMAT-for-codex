@@ -35,7 +35,7 @@ state.
 ## 1.0 Release-Gate Artifacts
 
 For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
-outputs, keep the 1.0.0 hard-gate artifacts aligned with the narrative:
+outputs, keep the 1.1.0 hard-gate artifacts aligned with the narrative:
 
 - Use `workflow_dag.json` when `execution_strategy=team_level_selective_dag`,
   when `scripts/bmat_run.py` scaffolds the run, or when the final answer claims

@@ -1,0 +1,21 @@
+{
+  "domain_pack": "immuno-oncology",
+  "version": "0.1.0",
+  "normalization_rules": [
+    {
+      "entity_type": "cell_state",
+      "preferred_terms": ["exhaustion", "cytotoxicity", "memory", "progenitor exhausted", "terminal exhausted"],
+      "rule": "Record the marker basis and avoid treating broad state labels as direct mechanism without supporting perturbation."
+    },
+    {
+      "entity_type": "tme_component",
+      "preferred_terms": ["T cell", "Treg", "myeloid", "macrophage", "MDSC", "fibroblast", "tumor cell"],
+      "rule": "Separate tumor, immune, stromal, and bulk proxy signals in claim ledgers."
+    },
+    {
+      "entity_type": "therapy_context",
+      "preferred_terms": ["CAR-T", "TCR-T", "TIL", "checkpoint blockade", "bispecific antibody"],
+      "rule": "Record whether evidence is product-level, patient-level, preclinical, or in vitro."
+    }
+  ]
+}
