@@ -1367,6 +1367,45 @@ def test_workflow_dag_track_must_match_declared_omics_track(tmp_path: Path) -> N
     assert "WORKFLOW_DAG_TRACK_MISMATCH" in combined_output(result)
 
 
+def test_workflow_dag_track_required_when_omics_track_declared(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    write_omics_track_context(bundle, "tenx-gex")
+
+    run_state_path = bundle / "run_state.json"
+    run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
+    run_state["mode"] = "run"
+    run_state["workflow_dag_id"] = "omics-analysis-team.run"
+    run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+    sync_lead_decision(bundle)
+
+    omics_manifest = valid_tenx_manifest("tenx-gex")
+    omics_manifest["workflow_run_id"] = run_state["run_id"]
+    (bundle / "omics_run_manifest.json").write_text(json.dumps(omics_manifest, indent=2), encoding="utf-8")
+
+    workflow_dag = {
+        "workflow_id": "omics-analysis-team.run",
+        "runtime": "codex",
+        "alias": "omics-analysis-team",
+        "mode": "run",
+        "nodes": [
+            {
+                "id": "S0",
+                "agent": "protocol-context-locker",
+                "outputs": ["runtime_capability_preflight"],
+                "blocking": True,
+            }
+        ],
+        "release_gates": ["bmat_validate"],
+    }
+    (bundle / "workflow_dag.json").write_text(json.dumps(workflow_dag, indent=2), encoding="utf-8")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "WORKFLOW_DAG_TRACK_MISSING" in combined_output(result)
+
+
 def test_complete_team_spawn_lane_requires_team_output_artifact(tmp_path: Path) -> None:
     bundle = tmp_path / "bundle"
     shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)

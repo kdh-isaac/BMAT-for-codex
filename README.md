@@ -274,8 +274,8 @@ latest workflow-DAG track patch:
 | Source vs installed cache `diff -qr` | clean |
 | `codex plugin list` | `biomedical-agent-teams` `1.1.0` installed, enabled |
 | `codex debug prompt-input` | `biomedical-agent-teams/1.1.0/.../SKILL.md` visible |
-| Targeted pytest suite | `114 passed` |
-| Full pytest suite | `199 passed` |
+| Targeted pytest suite | `115 passed` |
+| Full pytest suite | `200 passed` |
 | Package check and self-test | passed |
 | Golden schema and strict golden gate | passed |
 | Model golden sample gate | passed |

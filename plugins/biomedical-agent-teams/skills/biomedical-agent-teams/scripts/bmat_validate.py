@@ -1778,7 +1778,17 @@ def validate_workflow_dag_policy(artifacts: dict[str, Any], findings: list[Findi
                     "Keep run_state.omics_track, preflight.requested_omics_track, omics_run_manifest.track, and workflow_dag.track aligned.",
                 )
             )
-        if dag_track and dag_track != expected_track:
+        if not dag_track:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "WORKFLOW_DAG_TRACK_MISSING",
+                    f"workflow_dag track is missing while omics track {expected_track!r} is declared",
+                    OPTIONAL_BUNDLE_FILES["workflow_dag"],
+                    "Write workflow_dag.track whenever run_state.omics_track, preflight.requested_omics_track, or omics_run_manifest.track declares an omics track.",
+                )
+            )
+        elif dag_track != expected_track:
             findings.append(
                 Finding(
                     "ERROR",

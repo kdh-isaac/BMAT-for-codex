@@ -220,8 +220,8 @@ Verified locally on 2026-07-07 KST:
 | Source vs installed cache `diff -qr` | clean |
 | Installed plugin | `biomedical-agent-teams` `1.1.0`, enabled |
 | Prompt surface | `biomedical-agent-teams/1.1.0/.../SKILL.md` visible |
-| Targeted tests | `114 passed` |
-| Full tests | `199 passed` |
+| Targeted tests | `115 passed` |
+| Full tests | `200 passed` |
 | Package check / self-test / strict golden gate | passed |
 | Public omics benchmark smoke | 9/9 metadata-only bundles passed |
 | Adapter dry-run smoke | validator exit 0 |
