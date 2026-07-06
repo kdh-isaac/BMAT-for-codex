@@ -523,6 +523,10 @@ def validate_domain_packs(skill_root: Path, findings: list[Finding]) -> None:
         "source-preferences.json",
         "golden-tasks.jsonl",
     }
+    immuno_oncology_required = {
+        "interpretation-boundaries.md",
+        "marker-panels.json",
+    }
     packs = [path for path in sorted(packs_root.iterdir()) if path.is_dir()]
     if not packs:
         findings.append(Finding("ERROR", "DOMAIN_PACKS_MISSING", "at least one domain pack is required", str(packs_root)))
@@ -530,6 +534,10 @@ def validate_domain_packs(skill_root: Path, findings: list[Finding]) -> None:
         for filename in sorted(required):
             if not (pack / filename).exists():
                 findings.append(Finding("ERROR", "DOMAIN_PACK_FILE_MISSING", f"{pack.name} missing {filename}", str(pack)))
+        if pack.name == "immuno-oncology":
+            for filename in sorted(immuno_oncology_required):
+                if not (pack / filename).exists():
+                    findings.append(Finding("ERROR", "DOMAIN_PACK_FILE_MISSING", f"{pack.name} missing {filename}", str(pack)))
 
 
 def validate_fixture_versions(skill_root: Path, version: str, findings: list[Finding]) -> None:

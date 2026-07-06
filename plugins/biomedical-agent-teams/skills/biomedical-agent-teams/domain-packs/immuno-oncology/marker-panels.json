@@ -1,0 +1,52 @@
+{
+  "domain_pack": "immuno-oncology",
+  "version": "0.1.0",
+  "marker_panels": [
+    {
+      "panel_id": "io-t-cell-state-core",
+      "scope": "T cell state annotation and boundary checks",
+      "markers": {
+        "cytotoxic": ["GZMB", "GZMH", "PRF1", "NKG7", "GNLY"],
+        "activation": ["CD69", "IL2RA", "TNFRSF9", "ICOS", "CD40LG"],
+        "exhaustion_or_checkpoint": ["PDCD1", "LAG3", "HAVCR2", "TIGIT", "CTLA4", "TOX"],
+        "memory_or_naive": ["CCR7", "IL7R", "SELL", "TCF7", "LEF1"],
+        "regulatory": ["FOXP3", "IL2RA", "CTLA4", "IKZF2", "TNFRSF18"]
+      },
+      "boundary_note": "Marker panels support annotation sanity checks; they do not prove mechanism without donor-aware statistics and perturbation or longitudinal support."
+    },
+    {
+      "panel_id": "io-myeloid-suppression-core",
+      "scope": "Myeloid and macrophage suppressive-state boundary checks",
+      "markers": {
+        "macrophage_myeloid": ["LYZ", "LST1", "FCGR3A", "MS4A7", "CST3"],
+        "suppressive_or_m2_like": ["MRC1", "CD163", "MSR1", "IL10", "TGFB1"],
+        "inflammatory": ["IL1B", "TNF", "CXCL8", "NLRP3", "S100A8", "S100A9"],
+        "antigen_presentation": ["HLA-DRA", "HLA-DRB1", "CD74", "B2M", "TAP1"]
+      },
+      "boundary_note": "Bulk myeloid signatures are TME proxies unless cell-resolved or spatial evidence links them to a specific cellular source."
+    },
+    {
+      "panel_id": "io-tumor-immune-interface",
+      "scope": "Tumor-immune interface and checkpoint interpretation",
+      "markers": {
+        "checkpoint_ligands": ["CD274", "PDCD1LG2", "LGALS9", "NECTIN2"],
+        "antigen_presentation": ["HLA-A", "HLA-B", "HLA-C", "B2M", "TAP1", "TAP2"],
+        "interferon_response": ["STAT1", "IRF1", "CXCL9", "CXCL10", "ISG15", "IFIT1"],
+        "immune_exclusion_stroma": ["COL1A1", "COL1A2", "ACTA2", "FAP", "CXCL12"]
+      },
+      "boundary_note": "These markers indicate interface hypotheses; separate tumor-intrinsic expression from immune or stromal composition."
+    },
+    {
+      "panel_id": "cart-product-context",
+      "scope": "CAR-T product phenotype boundary checks",
+      "markers": {
+        "t_cell_identity": ["CD3D", "CD3E", "TRAC", "CD2", "CD7"],
+        "proliferation": ["MKI67", "TOP2A", "STMN1", "TYMS"],
+        "effector_function": ["IFNG", "TNF", "GZMB", "PRF1", "FASLG"],
+        "persistence_memory": ["IL7R", "TCF7", "LEF1", "BCL2"],
+        "dysfunction_or_checkpoint": ["PDCD1", "LAG3", "HAVCR2", "TOX", "ENTPD1"]
+      },
+      "boundary_note": "Product claims require product-level measurements; tumor-biopsy association is not manufacturing or product-mechanism evidence."
+    }
+  ]
+}

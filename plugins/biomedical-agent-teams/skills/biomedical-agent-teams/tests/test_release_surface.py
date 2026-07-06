@@ -141,6 +141,29 @@ def test_manifest_lists_release_resources() -> None:
     assert "tenx-and-bulk-golden-task-expansion" in source_manifest["new_in_v1_1_0"]
 
 
+def test_immuno_oncology_domain_pack_has_marker_and_boundary_assets() -> None:
+    pack_root = SKILL_ROOT / "domain-packs" / "immuno-oncology"
+    marker_panels = read_json(pack_root / "marker-panels.json")
+    boundaries = (pack_root / "interpretation-boundaries.md").read_text(encoding="utf-8")
+
+    assert marker_panels["domain_pack"] == "immuno-oncology"
+    panel_ids = {panel["panel_id"] for panel in marker_panels["marker_panels"]}
+    assert {
+        "io-t-cell-state-core",
+        "io-myeloid-suppression-core",
+        "io-tumor-immune-interface",
+        "cart-product-context",
+    } <= panel_ids
+
+    for token in (
+        "TME and Bulk-Proxy Boundaries",
+        "Single-Cell and Spatial Boundaries",
+        "CAR-T and Adoptive-Cell Therapy Boundaries",
+        "tumor-biopsy TME association alone",
+    ):
+        assert token in boundaries
+
+
 def test_tool_registry_blocks_unlogged_tool_claims() -> None:
     text = (SKILL_ROOT / "references" / "tool-registry.md").read_text(encoding="utf-8")
 
