@@ -13,6 +13,7 @@ from types import ModuleType
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 INIT_BUNDLE = SKILL_ROOT / "scripts" / "bmat_init_bundle.py"
 BMAT_RUN = SKILL_ROOT / "scripts" / "bmat_run.py"
+BMAT_ADAPTER = SKILL_ROOT / "scripts" / "bmat_codex_adapter.py"
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
 PREFLIGHT_FILE = "runtime_capability_preflight.json"
 UTF8_BOM_BYTES = b"\xef\xbb\xbf"
@@ -142,6 +143,93 @@ def test_generated_readme_validator_command_uses_plugin_script_path(tmp_path: Pa
         check=False,
     )
     assert validate_result.returncode == 0, validate_result.stdout + validate_result.stderr
+
+
+def test_bmat_codex_adapter_executes_command_collects_artifacts_and_validates(tmp_path: Path) -> None:
+    bundle = tmp_path / "adapter_bundle"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(BMAT_ADAPTER),
+            "--alias",
+            "evidence-audit-team",
+            "--mode",
+            "audit",
+            "--tier",
+            "full",
+            "--question",
+            "synthetic adapter artifact collection smoke",
+            "--out",
+            str(bundle),
+            "--force",
+            "--codex-command",
+            sys.executable,
+            "-c",
+            "from pathlib import Path; Path('adapter_payload.txt').write_text('adapter ok\\n', encoding='utf-8'); print('adapter stdout sentinel')",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    adapter_run = json.loads((bundle / "adapter_run.json").read_text(encoding="utf-8"))
+    artifact_manifest = json.loads((bundle / "adapter_artifact_manifest.json").read_text(encoding="utf-8"))
+    artifact_paths = {artifact["path"] for artifact in artifact_manifest["artifacts"]}
+
+    assert adapter_run["command_executed"] is True
+    assert adapter_run["command_exit"] == 0
+    assert adapter_run["command_timed_out"] is False
+    assert adapter_run["validator_exit"] == 0
+    assert (bundle / "adapter_payload.txt").read_text(encoding="utf-8") == "adapter ok\n"
+    assert "adapter stdout sentinel" in (bundle / "adapter_command_stdout.md").read_text(encoding="utf-8")
+    assert "adapter_payload.txt" in artifact_paths
+    assert "adapter_command_stdout.md" in artifact_paths
+    assert "adapter_validator_stdout.log" in artifact_paths
+    assert "adapter_run.json" in artifact_paths
+
+
+def test_bmat_codex_adapter_times_out_command_and_still_collects_artifacts(tmp_path: Path) -> None:
+    bundle = tmp_path / "adapter_timeout_bundle"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(BMAT_ADAPTER),
+            "--alias",
+            "evidence-audit-team",
+            "--mode",
+            "audit",
+            "--tier",
+            "full",
+            "--question",
+            "synthetic adapter timeout smoke",
+            "--out",
+            str(bundle),
+            "--force",
+            "--command-timeout-seconds",
+            "1",
+            "--codex-command",
+            sys.executable,
+            "-c",
+            "import time; time.sleep(2)",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 124, result.stdout + result.stderr
+    adapter_run = json.loads((bundle / "adapter_run.json").read_text(encoding="utf-8"))
+    artifact_manifest = json.loads((bundle / "adapter_artifact_manifest.json").read_text(encoding="utf-8"))
+    artifact_paths = {artifact["path"] for artifact in artifact_manifest["artifacts"]}
+
+    assert adapter_run["command_executed"] is True
+    assert adapter_run["command_exit"] == 124
+    assert adapter_run["command_timed_out"] is True
+    assert adapter_run["validator_exit"] == 0
+    assert "Command timed out after 1 seconds." in (bundle / "adapter_command_stderr.log").read_text(encoding="utf-8")
+    assert "adapter_command_stderr.log" in artifact_paths
+    assert "adapter_run.json" in artifact_paths
 
 
 def test_bmat_run_dry_run_creates_dag_tool_ledger_and_workbench(tmp_path: Path) -> None:

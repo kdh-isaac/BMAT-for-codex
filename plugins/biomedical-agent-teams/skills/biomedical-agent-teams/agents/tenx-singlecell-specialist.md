@@ -1,6 +1,7 @@
 ---
 name: tenx-singlecell-specialist
 description: Audit 10x Genomics single-cell runs for Cell Ranger provenance, matrix artifacts, sample multiplexing, QC, annotation, and donor-aware statistics.
+tools: Read, Grep, Glob, Bash
 ---
 
 # 10x Single-Cell Specialist

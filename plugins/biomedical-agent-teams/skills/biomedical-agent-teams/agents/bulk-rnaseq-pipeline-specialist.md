@@ -1,6 +1,7 @@
 ---
 name: bulk-rnaseq-pipeline-specialist
 description: Audit bulk RNA-seq runs for FASTQ/count provenance, QC, transcriptome/reference traceability, design formula, count model, and DE reporting.
+tools: Read, Grep, Glob, Bash
 ---
 
 # Bulk RNA-Seq Pipeline Specialist

@@ -26,8 +26,18 @@ def test_public_omics_benchmark_cases_cover_improvement_plan_table() -> None:
         "GSE224333",
         "GSE227412",
         "GSE196297",
+        "TENX-PBMC-CITESEQ-TBNK",
+        "TENX-PBMC-VDJ-CMV",
+        "TENX-PBMC-MULTIOME-10K",
     }
-    assert {case["track"] for case in cases} >= {"tenx-gex", "tenx-cellplex", "bulk-rnaseq"}
+    assert {case["track"] for case in cases} >= {
+        "tenx-gex",
+        "tenx-cellplex",
+        "bulk-rnaseq",
+        "tenx-citeseq",
+        "tenx-vdj",
+        "tenx-multiome",
+    }
 
     for case in cases:
         assert case["official_url"].startswith("https://")
@@ -49,6 +59,12 @@ def test_public_omics_benchmark_smoke_runner_validates_representative_cases(tmp_
             "TENX-PBMC10K-V31",
             "--case",
             "GSE196297",
+            "--case",
+            "TENX-PBMC-CITESEQ-TBNK",
+            "--case",
+            "TENX-PBMC-VDJ-CMV",
+            "--case",
+            "TENX-PBMC-MULTIOME-10K",
             "--validate",
             "--force",
         ],
@@ -59,7 +75,14 @@ def test_public_omics_benchmark_smoke_runner_validates_representative_cases(tmp_
 
     assert result.returncode == 0, result.stdout + result.stderr
     summary = json.loads((out / "public_omics_benchmark_summary.json").read_text(encoding="utf-8"))
-    assert summary["case_count"] == 2
+    assert summary["case_count"] == 5
     assert summary["validated"] is True
     assert summary["raw_data_downloaded"] is False
     assert {row["status"] for row in summary["results"]} == {"pass"}
+    assert {row["track"] for row in summary["results"]} >= {
+        "tenx-gex",
+        "bulk-rnaseq",
+        "tenx-citeseq",
+        "tenx-vdj",
+        "tenx-multiome",
+    }

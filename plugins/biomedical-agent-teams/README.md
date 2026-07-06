@@ -30,7 +30,7 @@ making the selected workflow auditable.
 | Domain packs | 3 |
 | Package scripts | 11 |
 | Eval scripts | 3 |
-| Public omics benchmark cases | 6 |
+| Public omics benchmark cases | 9 |
 
 Important files:
 
@@ -47,7 +47,7 @@ Important files:
 - `skills/biomedical-agent-teams/scripts/bmat_codex_adapter.py`: local adapter
   scaffold for preflight -> optional Codex command -> artifact validation.
 - `skills/biomedical-agent-teams/scripts/bmat_public_omics_benchmark_smoke.py`:
-  metadata-only public benchmark smoke harness for 10x/GEO/bulk cases.
+  metadata-only public benchmark smoke harness for 10x/GEO/bulk/CITE-seq/VDJ/multiome cases.
 
 ## Current Capabilities
 

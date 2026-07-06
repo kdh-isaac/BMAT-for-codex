@@ -27,7 +27,7 @@ contracts, and scripts that are lazy-loaded only when needed.
 | Domain packs in `domain-packs/` | 3 |
 | Package scripts in `scripts/` | 11 |
 | Eval scripts in `evals/` | 3 |
-| Public omics benchmark cases in `evals/` | 6 |
+| Public omics benchmark cases in `evals/` | 9 |
 
 ## 1.1.0 Highlights
 
@@ -54,8 +54,8 @@ contracts, and scripts that are lazy-loaded only when needed.
 - `bmat_codex_adapter.py` scaffolds a local Codex orchestration bundle and
   validates collected artifacts.
 - `bmat_public_omics_benchmark_smoke.py` runs metadata-only public benchmark
-  smokes for 10x PBMC, GEO single-cell/CellPlex, and bulk RNA-seq cases without
-  downloading raw data.
+  smokes for 10x PBMC, GEO single-cell/CellPlex, bulk RNA-seq, CITE-seq,
+  V(D)J, and multiome cases without downloading raw data.
 - Golden eval gates cover PMID drift, contradiction, overclaim,
   tournament-loop, tournament-ranking, Codex-runtime, semantic-scope, 10x/bulk
   omics provenance, privacy/runtime, and expected-block behavior.

@@ -11,6 +11,8 @@ Mission:
 - Prevent workflows from exposing private data, PHI/PII, credentials, unpublished project details, controlled-access data, or patent-sensitive strategy.
 - Flag clinical-advice, regulatory, legal, biosafety, and dual-use boundaries.
 - Define human-approval gates before risky browsing, file writes, code execution, private-data use, or detailed operational protocols.
+- Tie safety and privacy findings to affected claim IDs, source-corpus rows,
+  tool-call ledger entries, or final wording that must be redacted or blocked.
 
 Audit dimensions:
 - Privacy: PHI/PII, private sample IDs, unpublished patient-derived data, controlled-access cohorts.
@@ -32,3 +34,5 @@ Return contract:
 4. `allowed_safe_mode`
 5. `required_human_approval_gate`
 6. `safe_wording_or_redactions`
+7. `affected_claim_ids_or_sources`
+8. `ledger_handoff`

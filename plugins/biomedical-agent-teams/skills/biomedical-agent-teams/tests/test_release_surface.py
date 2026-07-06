@@ -335,8 +335,10 @@ def test_research_overview_template_is_ledger_bound() -> None:
     assert "workflow label" in text
 
 
-def test_command_recipes_name_v1_release_gate_artifacts() -> None:
+def test_command_recipes_name_v1_1_release_gate_artifacts() -> None:
     required_tokens = (
+        "## 1.1 Release-Gate Artifacts",
+        "lead_decision.json",
         "workflow_dag.json",
         "results_integration.json",
         "tool_call_ledger.json",
@@ -345,6 +347,7 @@ def test_command_recipes_name_v1_release_gate_artifacts() -> None:
 
     for command in sorted((SKILL_ROOT / "commands").glob("*.md")):
         text = command.read_text(encoding="utf-8")
+        assert "## 1.0 Release-Gate Artifacts" not in text
         for token in required_tokens:
             assert token in text, f"{command.name} missing {token}"
 

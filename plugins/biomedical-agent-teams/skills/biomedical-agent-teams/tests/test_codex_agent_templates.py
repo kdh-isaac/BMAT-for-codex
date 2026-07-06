@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 import tomllib
 
@@ -158,6 +159,63 @@ def test_agent_registry_covers_all_role_prompt_files() -> None:
         assert (SKILL_ROOT / prompt_path).exists(), f"{agent_id} prompt missing: {prompt_path}"
         assert isinstance(output_schema, str)
         assert (SKILL_ROOT / output_schema).exists(), f"{agent_id} output schema missing: {output_schema}"
+
+
+def frontmatter_fields(text: str) -> dict[str, str]:
+    assert text.startswith("---\n")
+    frontmatter = text.split("---\n", 2)[1]
+    fields: dict[str, str] = {}
+    for line in frontmatter.splitlines():
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        fields[key.strip()] = value.strip().strip('"')
+    return fields
+
+
+def test_agent_role_prompts_have_router_metadata_and_handoff_contracts() -> None:
+    agents = registry_agents()
+    for agent_id, agent in sorted(agents.items()):
+        prompt_path = agent.get("prompt_path")
+        assert isinstance(prompt_path, str)
+        text = read_text_file(SKILL_ROOT / prompt_path)
+        fields = frontmatter_fields(text)
+
+        assert fields.get("name") == agent_id
+        assert fields.get("description"), f"{agent_id} missing frontmatter description"
+        assert fields.get("tools"), f"{agent_id} missing frontmatter tools"
+        assert (
+            "Return contract:" in text
+            or "Return a structured spawned-review report" in text
+            or "Return a structured" in text
+        ), f"{agent_id} missing explicit return contract"
+        assert any(
+            marker in text.lower()
+            for marker in ("claim", "scope", "evidence", "provenance", "verdict", "ledger")
+        ), f"{agent_id} missing claim/scope/provenance handoff language"
+
+
+def test_command_recipes_reference_only_registered_allowed_agents() -> None:
+    agents = registry_agents()
+    for command in sorted((SKILL_ROOT / "commands").glob("*.md")):
+        workflow = command.stem
+        text = read_text_file(command)
+        referenced_agents = set(re.findall(r"agents/([a-z0-9-]+)\.md", text))
+        referenced_agents.update(
+            agent_id
+            for agent_id in agents
+            if re.search(r"`" + re.escape(agent_id) + r"`|\b" + re.escape(agent_id) + r"\b", text)
+        )
+
+        unknown = sorted(agent_id for agent_id in referenced_agents if agent_id not in agents)
+        assert not unknown, f"{command.name} references unknown agents: {unknown}"
+
+        not_allowed = sorted(
+            agent_id
+            for agent_id in referenced_agents
+            if workflow not in agents[agent_id].get("allowed_workflows", [])
+        )
+        assert not not_allowed, f"{command.name} references agents not allowed for {workflow}: {not_allowed}"
 
 
 def test_spawnable_registry_entries_have_matching_toml_templates() -> None:
