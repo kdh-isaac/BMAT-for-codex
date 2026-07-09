@@ -6,7 +6,7 @@ Use `experiment_design.json` for experiment-design release gates.
 {
   "design_id": "exp-<workflow_run_id>",
   "workflow_run_id": "<workflow_run_id>",
-  "plugin_version": "1.1.0",
+  "plugin_version": "1.1.1",
   "hypothesis": "State the bounded hypothesis.",
   "experimental_objective": "State the objective and intended decision.",
   "experimental_unit": {

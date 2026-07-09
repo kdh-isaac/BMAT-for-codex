@@ -14,7 +14,7 @@ downgraded rather than inferring.
 | field | value |
 |---|---|
 | overview_id | RO-YYYYMMDD-001 |
-| plugin_version | 1.1.0 |
+| plugin_version | 1.1.1 |
 | workflow_run_id |  |
 | alias | biomedical-research-council / idea-discovery-team / omics-analysis-team / evidence-audit-team / experiment-design-team / translational-scout-team |
 | source_basis | central claim ledger / source corpus / results integration / meta-review / partial |

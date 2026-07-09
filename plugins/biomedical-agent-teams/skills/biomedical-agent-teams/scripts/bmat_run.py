@@ -11,11 +11,14 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+
+sys.dont_write_bytecode = True
 
 import bmat_init_bundle
 
@@ -539,7 +542,9 @@ def export_markdown_workbench(bundle: Path, force: bool) -> Path:
 
 
 def run_check(command: list[str]) -> int:
-    result = subprocess.run(command, text=True, check=False)
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    result = subprocess.run(command, text=True, check=False, env=env)
     return result.returncode
 
 

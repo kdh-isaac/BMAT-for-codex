@@ -141,8 +141,8 @@ class BmatPackageTest(unittest.TestCase):
             "run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/"
             "biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/"
             "biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate",
-            "uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/"
-            "biomedical-agent-teams/tests -q",
+            "uvx --with pytest --with jsonschema python -B -m pytest -p no:cacheprovider "
+            "tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q",
         )
 
         self.assertIn("from the repository or marketplace root", skill_text)

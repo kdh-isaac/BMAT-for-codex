@@ -1,6 +1,6 @@
 name = "bmat-meta-review-synthesizer"
 agent_id = "meta-review-synthesizer"
-version = "1.1.0"
+version = "1.1.1"
 description = "Template for a Codex reviewer that synthesizes cross-iteration tournament weaknesses and next-round generation guidance."
 role_prompt = "../agents/meta-review-synthesizer.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

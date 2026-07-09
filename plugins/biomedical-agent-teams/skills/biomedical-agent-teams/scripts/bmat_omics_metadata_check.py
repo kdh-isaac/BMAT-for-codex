@@ -40,6 +40,14 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
+def plugin_version() -> str:
+    version_path = Path(__file__).resolve().parents[1] / "VERSION"
+    try:
+        return version_path.read_text(encoding="utf-8-sig").strip()
+    except FileNotFoundError:
+        return "unknown"
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -109,7 +117,7 @@ def main() -> int:
     payload = {
         "schema_version": "1.0",
         "check_id": f"omc-{manifest.get('workflow_run_id', 'manual')}",
-        "plugin_version": "1.1.0",
+        "plugin_version": plugin_version(),
         "workflow_run_id": manifest.get("workflow_run_id", ""),
         "track": args.track,
         "checked_at": utc_now(),

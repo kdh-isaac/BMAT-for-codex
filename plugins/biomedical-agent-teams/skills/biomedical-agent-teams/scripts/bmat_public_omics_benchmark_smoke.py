@@ -4,7 +4,7 @@
 This harness intentionally does not download raw public data. It locks official
 dataset URLs/accessions into the source corpus and omics manifest, then runs the
 local bundle validator. Use it as a lightweight release gate for the public
-benchmark cases described in the BMAT v1.1.0 improvement plan.
+benchmark cases described in the BMAT v1.1.1 improvement plan.
 """
 
 from __future__ import annotations

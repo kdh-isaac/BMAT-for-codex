@@ -2,7 +2,7 @@
 
 Codex Desktop compatible plugin wrapper for the `biomedical-agent-teams` skill.
 
-Current plugin version: `1.1.0`.
+Current plugin version: `1.1.1`.
 
 ## Purpose
 
@@ -83,7 +83,7 @@ Important files:
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v1.1.0 Workflow Structure
+    accTitle: BMAT v1.1.1 Workflow Structure
     accDescr: Full package workflow from Codex routing through command DAGs, optional team, reviewer, tool, and loop lanes, artifact bundle creation, validation gates, and final label selection.
 
     request["1. User request<br/>or explicit BMAT alias"]
@@ -233,8 +233,8 @@ Verified locally on 2026-07-09 KST:
 | Check | Result |
 | --- | --- |
 | Source vs installed cache `diff -qr` | clean |
-| Installed plugin | `biomedical-agent-teams` `1.1.0`, enabled |
-| Prompt surface | `biomedical-agent-teams/1.1.0/.../SKILL.md` visible |
+| Installed plugin | `biomedical-agent-teams` `1.1.1`, enabled |
+| Prompt surface | `biomedical-agent-teams/1.1.1/.../SKILL.md` visible |
 | Targeted tests | `133 passed` |
 | Full tests | `243 passed, 162 subtests passed` |
 | Package check / self-test / release fixture / strict golden gate | passed |
@@ -302,5 +302,5 @@ python skills/biomedical-agent-teams/scripts/bmat_public_omics_benchmark_smoke.p
 When test tooling is available, also run from the marketplace root:
 
 ```bash
-uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
+uvx --with pytest --with jsonschema python -B -m pytest -p no:cacheprovider tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
 ```

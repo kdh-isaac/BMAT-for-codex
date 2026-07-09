@@ -1,10 +1,10 @@
 # Biomedical Agent Teams for Codex
 
-BMAT for Codex v1.1.0 is a skill-routed biomedical workflow plugin. The live
+BMAT for Codex v1.1.1 is a skill-routed biomedical workflow plugin. The live
 router is `skills/biomedical-agent-teams/SKILL.md`; this file keeps the hidden
 plugin metadata surface aligned with the user-facing workflow contract.
 
-## v1.1.0 Runtime Contract
+## v1.1.1 Runtime Contract
 
 - Use `--tier compact|full` to make the expected bundle depth explicit.
 - Use `--track bulk-rnaseq|tenx-gex|tenx-cellplex|tenx-citeseq|tenx-vdj|tenx-multiome|single-cell-other|survival|multi-omics|other` for omics runs.

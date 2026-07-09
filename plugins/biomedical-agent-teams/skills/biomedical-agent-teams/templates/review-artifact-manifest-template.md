@@ -6,7 +6,7 @@ Use `review_artifact_manifest.json` to bind independent review claims to concret
 {
   "schema_version": "1.0",
   "workflow_run_id": "<workflow_run_id>",
-  "plugin_version": "1.1.0",
+  "plugin_version": "1.1.1",
   "review_instances": [
     {
       "instance_id": "BMAT-SPAWN-001",

@@ -1,6 +1,6 @@
 # Biomedical Agent Teams
 
-Current version: `1.1.0`.
+Current version: `1.1.1`.
 
 Codex biomedical agent-team bundle with a lightweight router, protocol and
 runtime lock, source corpus, central claim ledger, results integration,
@@ -11,7 +11,7 @@ Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
 Long governance instructions live in command recipes, references, templates,
 contracts, and scripts that are lazy-loaded only when needed.
 
-## 1.1.0 Resource Surface
+## 1.1.1 Resource Surface
 
 | Resource | Count |
 | --- | ---: |
@@ -29,7 +29,7 @@ contracts, and scripts that are lazy-loaded only when needed.
 | Eval scripts in `evals/` | 3 |
 | Public omics benchmark cases in `evals/` | 9 |
 
-## 1.1.0 Highlights
+## 1.1.1 Highlights
 
 - `runtime_capability_preflight.json` is the canonical runtime capability
   preflight artifact.
@@ -72,7 +72,7 @@ contracts, and scripts that are lazy-loaded only when needed.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v1.1.0 End-to-End Workflow Structure
+    accTitle: BMAT v1.1.1 End-to-End Workflow Structure
     accDescr: Full package workflow from Codex routing through command DAGs, optional team, reviewer, tool, and loop lanes, artifact bundle creation, validation gates, and final label selection.
 
     request["1. User request<br/>or explicit BMAT alias"]
@@ -288,7 +288,7 @@ python evals/validate_golden_eval_schema.py --tasks evals/golden_tasks.jsonl --o
 python evals/run_golden_eval.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl --strict --gate
 python evals/run_model_golden_eval.py --tasks evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out bmat_eval_outputs/model-sample.jsonl --sample-mode --then-score --gate
 python scripts/bmat_public_omics_benchmark_smoke.py --out bmat_eval_outputs/public-omics-benchmark --validate --force
-uvx --with jsonschema pytest tests -q
+uvx --with pytest --with jsonschema python -B -m pytest -p no:cacheprovider tests -q
 ```
 
 ## Safety Boundaries

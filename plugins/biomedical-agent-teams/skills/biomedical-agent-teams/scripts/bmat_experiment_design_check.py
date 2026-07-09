@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -22,12 +23,25 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check BMAT experiment design contract completeness.")
     parser.add_argument("--experiment-design", type=Path, required=True)
     parser.add_argument("--source-verification", type=Path)
+    parser.add_argument("--out", type=Path, help="Optional path for machine-readable experiment design check output.")
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
 
 
 def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def plugin_version() -> str:
+    version_file = Path(__file__).resolve().parents[1] / "VERSION"
+    try:
+        return version_file.read_text(encoding="utf-8-sig").strip()
+    except FileNotFoundError:
+        return "unknown"
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def has_items(value: Any) -> bool:
@@ -52,8 +66,20 @@ def main() -> int:
     if design.get("reagent_specific_claims") and args.source_verification is None:
         findings.append(Finding("ERROR", "EXPERIMENT_DESIGN_REAGENT_VERIFICATION_MISSING", "reagent-specific claims require --source-verification or unknown marking", str(args.experiment_design)))
 
+    payload = {
+        "schema_version": "1.0",
+        "check_id": f"experiment-design-check-{design.get('design_id', 'unknown')}",
+        "plugin_version": plugin_version(),
+        "workflow_run_id": str(design.get("workflow_run_id", "unknown")),
+        "checked_at": utc_now(),
+        "status": "pass" if not any(finding.level == "ERROR" for finding in findings) else "block",
+        "findings": [asdict(finding) for finding in findings],
+    }
+    if args.out:
+        args.out.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+
     if args.json:
-        print(json.dumps([asdict(finding) for finding in findings], indent=2, sort_keys=True))
+        print(json.dumps(payload, indent=2, sort_keys=True))
     else:
         for finding in findings:
             print(f"{finding.level} {finding.code}: {finding.message}")

@@ -33,7 +33,7 @@ state.
 ## 1.1 Release-Gate Artifacts
 
 For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
-outputs, keep the 1.1.0 hard-gate artifacts aligned with the narrative:
+outputs, keep the 1.1.1 hard-gate artifacts aligned with the narrative:
 
 - Use `lead_decision.json` for source-backed `standard`, `deep`, `audit`,
   team-DAG, or full-protocol runs before release; it must match the selected

@@ -1,10 +1,10 @@
 ---
 name: biomedical-agent-teams
 description: >
-  BMAT for Codex v1.1.0 router for biomedical evidence audit, public-omics
+  BMAT for Codex v1.1.1 router for biomedical evidence audit, public-omics
   analysis, hypothesis tournaments, experiment design, translational scouting,
   loop workflows, tool-use/result integration, and validator-backed artifacts.
-version: "1.1.0"
+version: "1.1.1"
 ---
 
 # Biomedical Agent Teams Router
@@ -255,7 +255,7 @@ python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat
 When test tooling is available, also run the package tests:
 
 ```bash
-uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
+uvx --with pytest --with jsonschema python -B -m pytest -p no:cacheprovider tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
 ```
 
 The package check enforces that this router remains lightweight and that command

@@ -3,7 +3,7 @@
 Codex Desktop marketplace package for the Biomedical Agent Teams (BMAT)
 plugin.
 
-Current plugin version: `1.1.0`.
+Current plugin version: `1.1.1`.
 
 ## What This Package Is
 
@@ -17,7 +17,7 @@ execution, hypothesis tournaments, experiment design, translational scouting,
 recurring loop checks, tool/result ledgers, workflow DAGs, and validator-backed
 artifact bundles.
 
-The current 1.1.0 contract layer adds `lead_decision.json`, 10x/bulk
+The current 1.1.1 contract layer adds `lead_decision.json`, 10x/bulk
 `omics_run_manifest.json` v2, `--tier compact|full`, omics `--track` subtracks,
 validator JSON `fix_hint`, privacy/security tool-ledger fields, 10x/bulk golden
 tasks, a local Codex adapter scaffold, a public-omics benchmark smoke harness,
@@ -25,7 +25,7 @@ release-mode source and claim-support gates, review artifact hashing,
 experiment-design and omics metadata check contracts, and an
 `immuno-oncology` domain pack.
 
-## Current 1.1.0 Surface
+## Current 1.1.1 Surface
 
 - Plugin metadata: `plugins/biomedical-agent-teams/.codex-plugin/plugin.json`
 - Skill router: `plugins/biomedical-agent-teams/skills/biomedical-agent-teams/SKILL.md`
@@ -91,7 +91,7 @@ biomedical-agent-teams:biomedical-agent-teams
 and the installed cache should resolve under:
 
 ```text
-~/.codex/plugins/cache/biomedical-agent-teams-marketplace/biomedical-agent-teams/1.1.0
+~/.codex/plugins/cache/biomedical-agent-teams-marketplace/biomedical-agent-teams/1.1.1
 ```
 
 ## Primary Aliases
@@ -109,7 +109,7 @@ and the installed cache should resolve under:
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v1.1.0 Workflow Structure
+    accTitle: BMAT v1.1.1 Workflow Structure
     accDescr: Full package workflow from Codex routing through command DAGs, optional team, reviewer, tool, and loop lanes, artifact bundle creation, validation gates, and final label selection.
 
     request["1. User request<br/>or explicit BMAT alias"]
@@ -250,11 +250,16 @@ and workflow DAG alias/mode/id/track consistency.
 
 Use `scripts/bmat_validate.py --release` for release gates. Release mode also
 enables strict schema dependency behavior: if `jsonschema` is not available,
-the run fails instead of silently degrading to shape-only checks. `--sample-mode`
-golden eval output is useful CI harness evidence, but it must not be cited as
-live model-in-the-loop validation evidence.
+the run fails instead of silently degrading to shape-only checks.
 
-## 1.1.0 Highlights
+Release-surface wording must stay explicit:
+
+- Sample-mode golden eval validates evaluator, schema, and gate wiring only. It is not live model performance validation.
+- Live model-in-the-loop eval requires `--adapter-command` and separately reported outputs.
+- Full protocol requires release validator gates and independent, tool-backed, or human review evidence bound to concrete artifacts.
+- Source-backed claims require source verification and claim-support mapping in release mode.
+
+## 1.1.1 Highlights
 
 - `lead_decision.json` is a validator-enforced routing artifact for
   source-backed `standard`, `deep`, `audit`, `team_level_selective_dag`, and
@@ -287,8 +292,8 @@ release-mode source/support and omics-track hardening patch:
 | Check | Result |
 | --- | --- |
 | Source vs installed cache `diff -qr` | clean |
-| `codex plugin list` | `biomedical-agent-teams` `1.1.0` installed, enabled |
-| `codex debug prompt-input` | `biomedical-agent-teams/1.1.0/.../SKILL.md` visible |
+| `codex plugin list` | `biomedical-agent-teams` `1.1.1` installed, enabled |
+| `codex debug prompt-input` | `biomedical-agent-teams/1.1.1/.../SKILL.md` visible |
 | Targeted pytest suite | `133 passed` |
 | Full pytest suite | `243 passed, 162 subtests passed` |
 | Package check, self-test, and `--release` fixture validation | passed |
@@ -300,7 +305,7 @@ release-mode source/support and omics-track hardening patch:
 
 ## Validation
 
-The 1.1.0 package is validated from the repository or marketplace root with:
+The 1.1.1 package is validated from the repository or marketplace root with:
 
 ```bash
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
@@ -309,7 +314,7 @@ python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/valida
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_model_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out /tmp/bmat-model-sample.jsonl --sample-mode --then-score --gate
 python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_public_omics_benchmark_smoke.py --out /tmp/bmat-public-omics-benchmark --validate --force
-uvx --with jsonschema pytest tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
+uvx --with pytest --with jsonschema python -B -m pytest -p no:cacheprovider tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
 ```
 
 For real model-in-the-loop evaluation, replace `--sample-mode` with an explicit

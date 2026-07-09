@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.1.1",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 38,
@@ -237,5 +237,12 @@
     "omics-metadata-check-contract-and-local-checker",
     "review-artifact-manifest-hash-bound-independent-review",
     "experiment-design-contract-and-local-checker"
+  ],
+  "new_in_v1_1_1": [
+    "release-artifact-dag-output-alignment",
+    "bmat-run-release-artifact-scaffold-placeholders",
+    "translational-scout-post-write-output-routing-fix",
+    "checker-scripts-read-package-version",
+    "previous-patch-version-residue-guard"
   ]
 }

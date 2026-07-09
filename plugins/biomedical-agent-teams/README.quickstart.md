@@ -59,7 +59,7 @@ python skills/biomedical-agent-teams/scripts/bmat_run.py --alias evidence-audit-
 `results_integration.json`, and `tool_call_ledger.json` alongside the core
 bundle. For omics runs, add `--track bulk-rnaseq`, `--track tenx-gex`,
 `--track tenx-cellplex`, `--track tenx-citeseq`, `--track tenx-vdj`, or
-`--track tenx-multiome` to generate `omics_run_manifest.json`. In 1.1.0 the
+`--track tenx-multiome` to generate `omics_run_manifest.json`. In 1.1.1 the
 generated workflow DAG is normalized to the requested alias, mode, and omics
 track before validation.
 

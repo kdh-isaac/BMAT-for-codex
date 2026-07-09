@@ -94,7 +94,7 @@ def test_release_surface_text_files_are_bom_free() -> None:
 def test_version_aligned_in_primary_metadata() -> None:
     version = (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
-    assert version == "1.1.0"
+    assert version == "1.1.1"
     assert read_json(SKILL_ROOT / "manifest.json")["version"] == version
     assert read_json(SKILL_ROOT / "manifest.json")["adapter_version"] == version
     assert read_json(SKILL_ROOT / "source-manifest.json")["version"] == version
@@ -137,7 +137,7 @@ def test_manifest_lists_release_resources() -> None:
     assert "cell-therapy" in source_manifest["domain_packs"]
     assert "immuno-oncology" in source_manifest["domain_packs"]
     release_note_keys = [key for key in source_manifest if key.startswith("new_in_v")]
-    assert release_note_keys == ["new_in_v1_0_0", "new_in_v1_1_0"]
+    assert release_note_keys == ["new_in_v1_0_0", "new_in_v1_1_0", "new_in_v1_1_1"]
     assert (
         "runtime-capability-preflight-canonical-artifact-name"
         in source_manifest["new_in_v1_0_0"]
@@ -177,6 +177,11 @@ def test_manifest_lists_release_resources() -> None:
         in source_manifest["new_in_v1_1_0"]
     )
     assert "experiment-design-contract-and-local-checker" in source_manifest["new_in_v1_1_0"]
+    assert "release-artifact-dag-output-alignment" in source_manifest["new_in_v1_1_1"]
+    assert "bmat-run-release-artifact-scaffold-placeholders" in source_manifest["new_in_v1_1_1"]
+    assert "translational-scout-post-write-output-routing-fix" in source_manifest["new_in_v1_1_1"]
+    assert "checker-scripts-read-package-version" in source_manifest["new_in_v1_1_1"]
+    assert "previous-patch-version-residue-guard" in source_manifest["new_in_v1_1_1"]
 
 
 def test_immuno_oncology_domain_pack_has_marker_and_boundary_assets() -> None:
@@ -274,7 +279,7 @@ def valid_results_integration_payload() -> dict:
     return {
         "schema_version": "1.0",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "1.1.0",
+        "plugin_version": "1.1.1",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {
@@ -443,6 +448,7 @@ def test_current_user_facing_surfaces_have_no_legacy_version_residue() -> None:
 
     forbidden_patterns = {
         "old_semver": re.compile(r"(?<![\w.])(0\.(?:3|4|8|9)\.\d+|1\.0\.0)(?![\w.])"),
+        "previous_patch_version": re.compile(r"(?<!new_in_v)1\.1\.0"),
         "old_release_gate": re.compile(r"1\.0 Release-Gate|README 35|35 agent"),
         "old_current_version": re.compile(r"Current (?:plugin )?version: `1\.0"),
         "claude_runtime_surface": re.compile(

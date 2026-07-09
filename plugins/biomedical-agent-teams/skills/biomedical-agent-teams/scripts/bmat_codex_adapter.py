@@ -86,6 +86,10 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def collect_artifacts(bundle: Path) -> list[dict[str, Any]]:
     artifacts: list[dict[str, Any]] = []
     for path in sorted(bundle.rglob("*")):
@@ -99,6 +103,7 @@ def collect_artifacts(bundle: Path) -> list[dict[str, Any]]:
                 "path": path.relative_to(bundle).as_posix(),
                 "size_bytes": stat.st_size,
                 "sha256": sha256_file(path),
+                "artifact_sha256": sha256_file(path),
             }
         )
     return artifacts
@@ -153,12 +158,18 @@ def main() -> int:
         adapter_record["command_executed"] = True
         adapter_record["command_exit"] = command_exit
         adapter_record["command_timed_out"] = command_result["timed_out"]
+        adapter_record["command_stdout_sha256"] = sha256_text(command_result["stdout"])
+        adapter_record["command_stderr_sha256"] = sha256_text(command_result["stderr"])
         (args.out / "adapter_command_stdout.md").write_text(command_result["stdout"], encoding="utf-8")
         (args.out / "adapter_command_stderr.log").write_text(command_result["stderr"], encoding="utf-8")
     elif args.codex_command and args.dry_run:
         print("Dry run: codex-command was recorded but not executed.")
-        (args.out / "adapter_command_stdout.md").write_text("Dry run: command not executed.\n", encoding="utf-8")
-        (args.out / "adapter_command_stderr.log").write_text("", encoding="utf-8")
+        command_stdout = "Dry run: command not executed.\n"
+        command_stderr = ""
+        adapter_record["command_stdout_sha256"] = sha256_text(command_stdout)
+        adapter_record["command_stderr_sha256"] = sha256_text(command_stderr)
+        (args.out / "adapter_command_stdout.md").write_text(command_stdout, encoding="utf-8")
+        (args.out / "adapter_command_stderr.log").write_text(command_stderr, encoding="utf-8")
 
     validator_result = run_capture(
         [sys.executable, str(VALIDATOR), "--bundle", str(args.out), "--check-tool-ledger"],
@@ -166,6 +177,8 @@ def main() -> int:
     )
     adapter_record["validator_exit"] = validator_result["returncode"]
     adapter_record["validator_timed_out"] = validator_result["timed_out"]
+    adapter_record["validator_stdout_sha256"] = sha256_text(validator_result["stdout"])
+    adapter_record["validator_stderr_sha256"] = sha256_text(validator_result["stderr"])
     (args.out / "adapter_validator_stdout.log").write_text(validator_result["stdout"], encoding="utf-8")
     (args.out / "adapter_validator_stderr.log").write_text(validator_result["stderr"], encoding="utf-8")
     write_json(args.out / "adapter_run.json", adapter_record)

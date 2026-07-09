@@ -34,11 +34,11 @@ def test_plugin_version_accepts_utf8_bom_prefixed_version_file(tmp_path: Path) -
     scripts.mkdir(parents=True)
     script_copy = scripts / "bmat_init_bundle.py"
     shutil.copy2(INIT_BUNDLE, script_copy)
-    (skill_root / "VERSION").write_bytes(UTF8_BOM_BYTES + b"1.1.0\n")
+    (skill_root / "VERSION").write_bytes(UTF8_BOM_BYTES + b"1.1.1\n")
 
     module = load_init_bundle_module(script_copy)
 
-    assert module.plugin_version() == "1.1.0"
+    assert module.plugin_version() == "1.1.1"
 
 
 def test_shell_family_detects_windows_powershell_from_comspec(monkeypatch) -> None:
@@ -79,7 +79,7 @@ def test_omics_run_scaffold_records_track_ambiguity_and_blocks_run_validation(tm
     lead_decision = json.loads((bundle / "lead_decision.json").read_text(encoding="utf-8"))
     assert preflight["runtime_id"] == preflight["runtime_capability_preflight_id"]
     assert preflight["codex_client"] == "codex"
-    assert preflight["plugin_version"] == "1.1.0"
+    assert preflight["plugin_version"] == "1.1.1"
     assert preflight["workflow_tier"] == "compact"
     assert preflight["requested_omics_track"] == "track_ambiguous"
     assert "omics_track_ambiguity_note" in preflight

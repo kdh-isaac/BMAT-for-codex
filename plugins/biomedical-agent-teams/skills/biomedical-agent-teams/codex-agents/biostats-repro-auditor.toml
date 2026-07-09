@@ -1,6 +1,6 @@
 name = "bmat-biostats-repro-auditor"
 agent_id = "biostats-repro-auditor"
-version = "1.1.0"
+version = "1.1.1"
 description = "Template for a Codex reviewer that audits experimental unit, statistics, multiplicity, uncertainty, and reproducibility."
 role_prompt = "../agents/biostats-repro-auditor.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"

@@ -11,9 +11,12 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
 BMAT_RUN = SKILL_ROOT / "scripts" / "bmat_run.py"
+GOLDEN_SCHEMA_VALIDATOR = SKILL_ROOT / "evals" / "validate_golden_eval_schema.py"
 SOURCE_CHECK = SKILL_ROOT / "scripts" / "bmat_source_check.py"
 OMICS_CHECK = SKILL_ROOT / "scripts" / "bmat_omics_metadata_check.py"
 EXPERIMENT_CHECK = SKILL_ROOT / "scripts" / "bmat_experiment_design_check.py"
+SCRIPTS_PYCACHE = SKILL_ROOT / "scripts" / "__pycache__"
+EVALS_PYCACHE = SKILL_ROOT / "evals" / "__pycache__"
 FIXTURES = SKILL_ROOT / "tests" / "fixtures"
 PREFLIGHT_FILE = "runtime_capability_preflight.json"
 
@@ -38,6 +41,34 @@ def read_json(path: Path) -> dict:
 
 def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def valid_experiment_design_payload() -> dict:
+    return {
+        "design_id": "exp-test",
+        "workflow_run_id": "run-exp",
+        "plugin_version": "1.1.1",
+        "hypothesis": "synthetic",
+        "experimental_objective": "synthetic",
+        "experimental_unit": {"unit_type": "donor", "justification": "biological replicate"},
+        "primary_endpoint": "endpoint",
+        "positive_controls": ["positive control"],
+        "negative_controls": ["negative control"],
+        "vehicle_or_mock_controls": ["mock control"],
+        "biological_replicates": {"planned_n": 3, "rationale": "synthetic"},
+        "technical_replicates": {"planned_n": 2, "rationale": "synthetic"},
+        "randomization": {"planned": True, "method_or_reason": "synthetic"},
+        "blinding": {"planned": False, "method_or_reason": "synthetic"},
+        "exclusion_criteria": [],
+        "confounders": [],
+        "causal_kill_tests": [],
+        "statistical_plan": {"model": "linear model", "multiplicity": "BH-FDR", "effect_size_or_decision_threshold": "delta"},
+        "go_no_go_gates": [],
+        "safety_ethics_privacy_boundary": "public synthetic",
+        "reagent_provenance_policy": "verify before use",
+        "source_ids": [],
+        "claim_ids_supported": [],
+    }
 
 
 def test_release_mode_requires_jsonschema_or_fails(tmp_path: Path) -> None:
@@ -334,6 +365,58 @@ def test_omics_run_without_track_blocks(tmp_path: Path) -> None:
     assert not (bundle / "omics_run_manifest.json").exists()
 
 
+def test_bmat_run_does_not_leave_scripts_pycache(tmp_path: Path) -> None:
+    if SCRIPTS_PYCACHE.exists():
+        shutil.rmtree(SCRIPTS_PYCACHE)
+    bundle = tmp_path / "runner-no-pycache"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(BMAT_RUN),
+            "--alias",
+            "evidence-audit-team",
+            "--mode",
+            "quick",
+            "--question",
+            "synthetic no-pycache smoke",
+            "--out",
+            str(bundle),
+            "--dry-run",
+            "--validate",
+            "--force",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, combined_output(result)
+    assert not SCRIPTS_PYCACHE.exists()
+
+
+def test_golden_schema_validator_does_not_leave_evals_pycache() -> None:
+    if EVALS_PYCACHE.exists():
+        shutil.rmtree(EVALS_PYCACHE)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(GOLDEN_SCHEMA_VALIDATOR),
+            "--tasks",
+            str(SKILL_ROOT / "evals" / "golden_tasks.jsonl"),
+            "--outputs",
+            str(SKILL_ROOT / "evals" / "sample_outputs.jsonl"),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, combined_output(result)
+    assert not EVALS_PYCACHE.exists()
+
+
 def test_omics_plan_without_track_allowed_with_ambiguity_note(tmp_path: Path) -> None:
     bundle = tmp_path / "omics-plan-no-track"
     result = subprocess.run(
@@ -395,6 +478,40 @@ def test_omics_run_with_track_aligns_all_track_fields(tmp_path: Path) -> None:
     assert read_json(bundle / "omics_run_manifest.json")["track"] == "survival"
 
 
+def test_omics_track_mismatch_fails(tmp_path: Path) -> None:
+    bundle = tmp_path / "omics-track-mismatch"
+    created = subprocess.run(
+        [
+            sys.executable,
+            str(BMAT_RUN),
+            "--alias",
+            "omics-analysis-team",
+            "--mode",
+            "run",
+            "--track",
+            "tenx-gex",
+            "--question",
+            "synthetic omics track mismatch",
+            "--dry-run",
+            "--out",
+            str(bundle),
+            "--force",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert created.returncode == 0, combined_output(created)
+    manifest = read_json(bundle / "omics_run_manifest.json")
+    manifest["track"] = "bulk-rnaseq"
+    write_json(bundle / "omics_run_manifest.json", manifest)
+
+    result = run_validator("--bundle", str(bundle))
+
+    assert result.returncode == 1
+    assert "OMICS_RUN_MANIFEST_TRACK_MISMATCH" in combined_output(result)
+
+
 def test_full_protocol_requires_review_artifact_manifest(tmp_path: Path) -> None:
     bundle = copy_valid_bundle(tmp_path)
     (bundle / "review_artifact_manifest.json").unlink()
@@ -415,6 +532,30 @@ def test_review_manifest_output_hash_mismatch_fails(tmp_path: Path) -> None:
 
     assert result.returncode == 1
     assert "REVIEW_MANIFEST_OUTPUT_HASH_MISMATCH" in combined_output(result)
+
+
+def test_review_manifest_instance_mismatch_fails(tmp_path: Path) -> None:
+    bundle = copy_valid_bundle(tmp_path)
+    manifest = read_json(bundle / "review_artifact_manifest.json")
+    manifest["review_instances"][0]["instance_id"] = "BMAT-SPAWN-OTHER"
+    write_json(bundle / "review_artifact_manifest.json", manifest)
+
+    result = run_validator("--bundle", str(bundle), "--release")
+
+    assert result.returncode == 1
+    assert "REVIEW_MANIFEST_INSTANCE_MISSING" in combined_output(result)
+
+
+def test_review_manifest_output_missing_fails(tmp_path: Path) -> None:
+    bundle = copy_valid_bundle(tmp_path)
+    manifest = read_json(bundle / "review_artifact_manifest.json")
+    manifest["review_instances"][0]["output_artifact"] = "review/missing-output.md"
+    write_json(bundle / "review_artifact_manifest.json", manifest)
+
+    result = run_validator("--bundle", str(bundle), "--release")
+
+    assert result.returncode == 1
+    assert "REVIEW_MANIFEST_OUTPUT_MISSING" in combined_output(result)
 
 
 def test_review_changed_claim_requires_results_integration(tmp_path: Path) -> None:
@@ -457,6 +598,46 @@ def test_bulk_metadata_check_missing_design_blocks(tmp_path: Path) -> None:
 
     assert result.returncode == 1
     assert "design_formula" in combined_output(result)
+
+
+def test_bulk_metadata_check_rank_unchecked_blocks_release(tmp_path: Path) -> None:
+    manifest = {
+        "workflow_run_id": "bulk-rank-unchecked",
+        "track": "bulk-rnaseq",
+        "sample_sheet": "samples.tsv",
+        "assay_metadata": {
+            "organism": "Homo sapiens",
+            "genome_build": "GRCh38",
+            "annotation_release": "GENCODE v44",
+        },
+        "biological_unit_policy": {"unit": "sample", "replicate_key": "sample_id"},
+        "contrast_or_endpoint": "treated vs control",
+        "de_strategy": {
+            "design_formula": "~ condition",
+            "count_model": "negative binomial",
+            "multiplicity_method": "BH-FDR",
+            "effect_size_report": "log2FC with CI",
+            "design_matrix_rank_checked": False,
+        },
+        "generated_artifacts": {
+            "count_matrix": "counts.tsv",
+            "design_matrix": "design.tsv",
+            "de_results_table": "de.tsv",
+        },
+    }
+    manifest_path = tmp_path / "omics_run_manifest.json"
+    write_json(manifest_path, manifest)
+    out = tmp_path / "omics_metadata_check.json"
+
+    result = subprocess.run(
+        [sys.executable, str(OMICS_CHECK), "--track", "bulk-rnaseq", "--omics-run-manifest", str(manifest_path), "--out", str(out), "--json"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "design_matrix_rank_checked" in combined_output(result)
 
 
 def test_tenx_metadata_check_missing_molecule_info_blocks(tmp_path: Path) -> None:
@@ -503,39 +684,86 @@ def test_tenx_metadata_check_missing_molecule_info_blocks(tmp_path: Path) -> Non
 
     assert result.returncode == 1
     assert "molecule_info_h5" in combined_output(result)
+    payload = read_json(out)
+    assert payload["plugin_version"] == (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+
+
+def test_tenx_pseudobulk_policy_required_for_cross_sample_de(tmp_path: Path) -> None:
+    manifest = {
+        "workflow_run_id": "tenx-missing-pseudobulk",
+        "track": "tenx-gex",
+        "sample_sheet": "samples.tsv",
+        "assay_metadata": {
+            "organism": "Homo sapiens",
+            "genome_build": "GRCh38",
+            "annotation_release": "GENCODE v44",
+            "cellranger_version": "8.0.0",
+            "cellranger_command": "count",
+        },
+        "biological_unit_policy": {"unit": "donor", "replicate_key": "donor_id"},
+        "contrast_or_endpoint": "high vs low",
+        "qc_decisions": {
+            "cell_calling_method": "Cell Ranger",
+            "ambient_rna_method": "SoupX",
+            "doublet_method": "scDblFinder",
+            "empty_droplet_method": "emptyDrops",
+        },
+        "generated_artifacts": {
+            "web_summary_html": "web_summary.html",
+            "filtered_feature_bc_matrix": "filtered",
+            "raw_feature_bc_matrix": "raw",
+            "molecule_info_h5": "molecule_info.h5",
+        },
+    }
+    manifest_path = tmp_path / "omics_run_manifest.json"
+    write_json(manifest_path, manifest)
+    out = tmp_path / "omics_metadata_check.json"
+
+    result = subprocess.run(
+        [sys.executable, str(OMICS_CHECK), "--track", "tenx-gex", "--omics-run-manifest", str(manifest_path), "--out", str(out), "--json"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "pseudobulk policy required" in combined_output(result)
+
+
+def test_omics_metadata_check_results_integration_required_when_claim_affected(tmp_path: Path) -> None:
+    bundle = copy_valid_bundle(tmp_path)
+    metadata_check = {
+        "schema_version": "1.0",
+        "check_id": "omc-test",
+        "plugin_version": "1.1.1",
+        "workflow_run_id": "run-valid-001",
+        "track": "tenx-gex",
+        "status": "pass",
+        "blocking_issues": [],
+        "warnings": [],
+        "artifact_refs": ["omics_run_manifest.json"],
+        "claim_ids_affected": ["CL-MISSING"],
+        "downgrade_recommendations": [],
+    }
+    write_json(bundle / "omics_metadata_check.json", metadata_check)
+
+    result = run_validator("--bundle", str(bundle), "--release")
+
+    assert result.returncode == 1
+    assert "OMICS_METADATA_CHECK_REQUIRES_RESULTS_INTEGRATION" in combined_output(result)
 
 
 def test_experiment_design_missing_controls_blocks_release(tmp_path: Path) -> None:
-    design = {
-        "design_id": "exp-test",
-        "workflow_run_id": "run-exp",
-        "plugin_version": "1.1.0",
-        "hypothesis": "synthetic",
-        "experimental_objective": "synthetic",
-        "experimental_unit": {"unit_type": "donor", "justification": "biological replicate"},
-        "primary_endpoint": "endpoint",
-        "positive_controls": [],
-        "negative_controls": [],
-        "vehicle_or_mock_controls": [],
-        "biological_replicates": {"planned_n": 3, "rationale": "synthetic"},
-        "technical_replicates": {"planned_n": 2, "rationale": "synthetic"},
-        "randomization": {"planned": True, "method_or_reason": "synthetic"},
-        "blinding": {"planned": False, "method_or_reason": "synthetic"},
-        "exclusion_criteria": [],
-        "confounders": [],
-        "causal_kill_tests": [],
-        "statistical_plan": {"model": "linear model", "multiplicity": "BH-FDR", "effect_size_or_decision_threshold": "delta"},
-        "go_no_go_gates": [],
-        "safety_ethics_privacy_boundary": "public synthetic",
-        "reagent_provenance_policy": "verify before use",
-        "source_ids": [],
-        "claim_ids_supported": [],
-    }
+    design = valid_experiment_design_payload()
+    design["positive_controls"] = []
+    design["negative_controls"] = []
+    design["vehicle_or_mock_controls"] = []
     design_path = tmp_path / "experiment_design.json"
+    out = tmp_path / "experiment_design_check.json"
     write_json(design_path, design)
 
     result = subprocess.run(
-        [sys.executable, str(EXPERIMENT_CHECK), "--experiment-design", str(design_path), "--json"],
+        [sys.executable, str(EXPERIMENT_CHECK), "--experiment-design", str(design_path), "--out", str(out), "--json"],
         text=True,
         capture_output=True,
         check=False,
@@ -543,6 +771,69 @@ def test_experiment_design_missing_controls_blocks_release(tmp_path: Path) -> No
 
     assert result.returncode == 1
     assert "EXPERIMENT_DESIGN_CONTROL_MISSING" in combined_output(result)
+    payload = read_json(out)
+    assert payload["status"] == "block"
+    assert payload["plugin_version"] == (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    assert any(finding["code"] == "EXPERIMENT_DESIGN_CONTROL_MISSING" for finding in payload["findings"])
+
+
+def test_experiment_design_release_requires_contract(tmp_path: Path) -> None:
+    bundle = copy_valid_bundle(tmp_path)
+    run_state = read_json(bundle / "run_state.json")
+    run_state["alias"] = "experiment-design-team"
+    run_state["mode"] = "audit"
+    write_json(bundle / "run_state.json", run_state)
+    preflight = read_json(bundle / PREFLIGHT_FILE)
+    preflight["requested_alias"] = "experiment-design-team"
+    preflight["selected_mode"] = "audit"
+    write_json(bundle / PREFLIGHT_FILE, preflight)
+    lead_decision = read_json(bundle / "lead_decision.json")
+    lead_decision["requested_alias"] = "experiment-design-team"
+    lead_decision["selected_mode"] = "audit"
+    write_json(bundle / "lead_decision.json", lead_decision)
+
+    result = run_validator("--bundle", str(bundle), "--release")
+
+    assert result.returncode == 1
+    assert "EXPERIMENT_DESIGN_REQUIRED" in combined_output(result)
+
+
+def test_experiment_design_sample_size_claim_requires_stats_plan(tmp_path: Path) -> None:
+    bundle = copy_valid_bundle(tmp_path)
+    design = valid_experiment_design_payload()
+    design["statistical_plan"] = {}
+    write_json(bundle / "experiment_design.json", design)
+
+    result = run_validator("--bundle", str(bundle), "--release")
+
+    assert result.returncode == 1
+    assert "EXPERIMENT_DESIGN_STATS_PLAN_REQUIRED" in combined_output(result)
+
+
+def test_experiment_design_reagent_specifics_require_source_verification(tmp_path: Path) -> None:
+    bundle = copy_valid_bundle(tmp_path)
+    design = valid_experiment_design_payload()
+    design["reagent_specific_claims"] = ["catalog-specific antibody claim"]
+    write_json(bundle / "experiment_design.json", design)
+    (bundle / "source_verification.json").unlink()
+
+    result = run_validator("--bundle", str(bundle), "--release")
+
+    assert result.returncode == 1
+    assert "EXPERIMENT_DESIGN_REAGENT_SPECIFICS_REQUIRE_SOURCE_VERIFICATION" in combined_output(result)
+
+
+def test_experiment_design_safety_boundary_required_for_operational_detail(tmp_path: Path) -> None:
+    bundle = copy_valid_bundle(tmp_path)
+    design = valid_experiment_design_payload()
+    design["experimental_objective"] = "synthetic dose protocol check"
+    design["safety_ethics_privacy_boundary"] = ""
+    write_json(bundle / "experiment_design.json", design)
+
+    result = run_validator("--bundle", str(bundle), "--release")
+
+    assert result.returncode == 1
+    assert "EXPERIMENT_DESIGN_SAFETY_BOUNDARY_REQUIRED" in combined_output(result)
 
 
 def test_source_check_offline_fixture_writes_verified_rows(tmp_path: Path) -> None:
@@ -571,5 +862,6 @@ def test_source_check_offline_fixture_writes_verified_rows(tmp_path: Path) -> No
 
     assert result.returncode == 0, combined_output(result)
     payload = read_json(out)
+    assert payload["plugin_version"] == (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
     assert payload["rows"][0]["identifier_status"] == "verified"
     assert payload["rows"][0]["metadata_match"] == "pass"

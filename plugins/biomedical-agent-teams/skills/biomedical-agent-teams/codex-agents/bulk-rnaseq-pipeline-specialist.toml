@@ -1,6 +1,6 @@
 name = "bmat-bulk-rnaseq-pipeline-specialist"
 agent_id = "bulk-rnaseq-pipeline-specialist"
-version = "1.1.0"
+version = "1.1.1"
 description = "Template for a Codex reviewer that audits bulk RNA-seq QC, reference provenance, design formula, and DE reporting."
 role_prompt = "../agents/bulk-rnaseq-pipeline-specialist.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"
