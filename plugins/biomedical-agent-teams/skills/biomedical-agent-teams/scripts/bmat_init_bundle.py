@@ -103,6 +103,10 @@ def is_omics_run_scaffold(workflow: str, mode: str) -> bool:
     return workflow == "omics-analysis-team" and mode == "run"
 
 
+def scaffold_omics_track(workflow: str) -> str:
+    return "track_ambiguous" if workflow == "omics-analysis-team" else "not-applicable"
+
+
 def scaffold_review_skip_reason(workflow: str, mode: str) -> str:
     if is_omics_run_scaffold(workflow, mode):
         return (
@@ -233,7 +237,12 @@ def build_payloads(
         "requested_alias": workflow,
         "selected_mode": mode,
         "workflow_tier": "compact",
-        "requested_omics_track": "single-cell-other" if workflow == "omics-analysis-team" else "not-applicable",
+        "requested_omics_track": scaffold_omics_track(workflow),
+        "omics_track_ambiguity_note": (
+            "track ambiguous; use bmat_run.py --track before omics run execution"
+            if workflow == "omics-analysis-team"
+            else "not-applicable"
+        ),
         "deliverable_type": "TODO: compact final, audit bundle, report, notebook, or generated file",
         "evidence_scope": {
             "source_types": [],
@@ -299,7 +308,7 @@ def build_payloads(
         "mode": mode,
         "plugin_version": version,
         "workflow_tier": "compact",
-        "omics_track": "single-cell-other" if workflow == "omics-analysis-team" else "not-applicable",
+        "omics_track": scaffold_omics_track(workflow),
         "execution_strategy": "inline_only",
         "nested_spawn_allowed": False,
         "spawned_review_lanes": [],
@@ -336,7 +345,7 @@ def build_payloads(
         "selected_mode": mode,
         "workflow_tier": "compact",
         "selected_playbook": PLAYBOOK_BY_WORKFLOW.get(workflow, "mechanism-review"),
-        "omics_subtrack": "single-cell-other" if workflow == "omics-analysis-team" else "not-applicable",
+        "omics_subtrack": scaffold_omics_track(workflow),
         "execution_strategy": "inline_only",
         "lead_route_required": mode in {"standard", "deep", "audit", "run"},
         "mode_rule": "scaffold default; update after the lead/router locks scope, evidence, and runtime capability",
@@ -438,8 +447,6 @@ def build_payloads(
         "final.md": final_text,
         "README.md": readme,
     }
-    if workflow == "omics-analysis-team":
-        payloads["omics_run_manifest.json"] = default_omics_manifest(run_id)
     return payloads
 
 

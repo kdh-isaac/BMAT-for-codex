@@ -21,7 +21,9 @@ The current 1.1.0 contract layer adds `lead_decision.json`, 10x/bulk
 `omics_run_manifest.json` v2, `--tier compact|full`, omics `--track` subtracks,
 validator JSON `fix_hint`, privacy/security tool-ledger fields, 10x/bulk golden
 tasks, a local Codex adapter scaffold, a public-omics benchmark smoke harness,
-and an `immuno-oncology` domain pack.
+release-mode source and claim-support gates, review artifact hashing,
+experiment-design and omics metadata check contracts, and an
+`immuno-oncology` domain pack.
 
 ## Current 1.1.0 Surface
 
@@ -36,17 +38,17 @@ Current resource counts:
 | --- | ---: |
 | Agent role prompts | 38 |
 | Command recipes | 6 |
-| Contract schemas | 18 |
-| Templates | 16 |
+| Contract schemas | 23 |
+| Templates | 21 |
 | Markdown references | 10 |
 | JSON references | 1 |
 | Loop recipes | 4 |
 | Codex reviewer TOML templates | 14 |
 | Workflow DAGs | 6 |
 | Domain packs | 3 |
-| Package scripts | 11 |
+| Package scripts | 14 |
 | Eval scripts | 3 |
-| Test modules | 10 |
+| Test modules | 13 |
 
 ## Install
 
@@ -187,7 +189,7 @@ flowchart TD
     bundle -. "independent review required by recipe or label" .-> registry
 
     bundle["7. Canonical artifact bundle<br/>run_state.json<br/>runtime_capability_preflight.json<br/>source_corpus.json<br/>claim_ledger.json<br/>stage_evaluation.json<br/>post_write_validation.json<br/>final.md"]
-    extras["Policy-checked extras<br/>lead_decision.json<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json<br/>omics_run_manifest.json"]
+    extras["Policy-checked extras<br/>lead_decision / workflow_dag<br/>results_integration / tool_call_ledger<br/>source_verification / claim_support_matrix<br/>omics_run_manifest / omics_metadata_check<br/>experiment_design / review_artifact_manifest"]
     gates{"8. Release gates"}
     postwrite["post-write-final-validator<br/>final wording and limitation check"]
     validate["bmat_validate.py<br/>bundle schema + policy gate<br/>source-backed claims, DAG consistency,<br/>independent review, final wording"]
@@ -232,12 +234,25 @@ When applicable, the bundle also includes:
 - `results_integration.json`
 - `tool_call_ledger.json`
 - `omics_run_manifest.json`
+- `source_verification.json`
+- `claim_support_matrix.json`
+- `omics_metadata_check.json`
+- `experiment_design.json`
+- `review_artifact_manifest.json`
 
 The validator checks required artifact presence, passing required stages,
 post-write verdict, independent review evidence, source-backed claim references,
 lead-decision hard gates, omics manifest v2 requirements, final wording drift,
 high-confidence S3 gates, results integration, privacy-aware tool-ledger
-honesty, and workflow DAG alias/mode/id/track consistency.
+honesty, release-mode source verification, claim-profile support,
+review-artifact hashes, experiment-design completeness, omics metadata checks,
+and workflow DAG alias/mode/id/track consistency.
+
+Use `scripts/bmat_validate.py --release` for release gates. Release mode also
+enables strict schema dependency behavior: if `jsonschema` is not available,
+the run fails instead of silently degrading to shape-only checks. `--sample-mode`
+golden eval output is useful CI harness evidence, but it must not be cited as
+live model-in-the-loop validation evidence.
 
 ## 1.1.0 Highlights
 
@@ -266,17 +281,17 @@ honesty, and workflow DAG alias/mode/id/track consistency.
 
 ## Latest Local Verification
 
-The local source and installed cache were rechecked on 2026-07-07 KST after the
-latest workflow-DAG track patch:
+The local source and installed cache were rechecked on 2026-07-09 KST after the
+release-mode source/support and omics-track hardening patch:
 
 | Check | Result |
 | --- | --- |
 | Source vs installed cache `diff -qr` | clean |
 | `codex plugin list` | `biomedical-agent-teams` `1.1.0` installed, enabled |
 | `codex debug prompt-input` | `biomedical-agent-teams/1.1.0/.../SKILL.md` visible |
-| Targeted pytest suite | `115 passed` |
-| Full pytest suite | `200 passed` |
-| Package check and self-test | passed |
+| Targeted pytest suite | `133 passed` |
+| Full pytest suite | `243 passed, 162 subtests passed` |
+| Package check, self-test, and `--release` fixture validation | passed |
 | Golden schema and strict golden gate | passed |
 | Model golden sample gate | passed |
 | Public omics benchmark smoke | 9/9 bundles passed; no raw data downloaded |

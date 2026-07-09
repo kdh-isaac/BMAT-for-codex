@@ -157,8 +157,12 @@
         "survival",
         "multi-omics",
         "other",
-        "not-applicable"
+        "not-applicable",
+        "track_ambiguous"
       ]
+    },
+    "omics_track_ambiguity_note": {
+      "type": "string"
     },
     "domain_specific_failure_modes_loaded": {
       "oneOf": [

@@ -15,21 +15,25 @@
       "id": "S1_plan",
       "agent": "omics-data-curator",
       "requires": ["S0_context_lock"],
-      "outputs": ["source_corpus", "omics_run_manifest"],
+      "outputs": ["source_corpus", "source_verification", "omics_run_manifest"],
       "blocking": true
     },
     {
       "id": "S2_execute",
       "agent": "public-omics-analyst",
       "requires": ["S1_plan"],
-      "outputs": ["analysis_artifacts", "results_integration"],
+      "outputs": ["analysis_artifacts", "results_integration", "claim_ledger"],
       "blocking": true
     },
     {
       "id": "S3_validate",
       "agent": "biostats-repro-auditor",
       "requires": ["S2_execute"],
-      "outputs": ["stage_evaluation"],
+      "outputs": [
+        "stage_evaluation",
+        "claim_support_matrix",
+        "omics_metadata_check"
+      ],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/biostats-repro-auditor.toml",
@@ -39,7 +43,7 @@
       "id": "S4_code_review",
       "agent": "omics-code-reviewer",
       "requires": ["S3_validate"],
-      "outputs": ["reviewer_output"],
+      "outputs": ["reviewer_output", "review_artifact_manifest"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/omics-code-reviewer.toml",

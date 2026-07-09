@@ -61,7 +61,8 @@
         "survival",
         "multi-omics",
         "other",
-        "not-applicable"
+        "not-applicable",
+        "track_ambiguous"
       ]
     },
     "execution_strategy": {

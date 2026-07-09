@@ -17,15 +17,15 @@ contracts, and scripts that are lazy-loaded only when needed.
 | --- | ---: |
 | Agent role prompts in `agents/` | 38 |
 | Workflow recipes in `commands/` | 6 |
-| Contract schemas in `contracts/` | 18 |
-| Templates in `templates/` | 16 |
+| Contract schemas in `contracts/` | 23 |
+| Templates in `templates/` | 21 |
 | Markdown references in `references/` | 10 |
 | JSON references in `references/` | 1 |
 | Loop recipes in `loops/` | 4 |
 | Codex reviewer TOML templates in `codex-agents/` | 14 |
 | Workflow DAGs in `workflows/` | 6 |
 | Domain packs in `domain-packs/` | 3 |
-| Package scripts in `scripts/` | 11 |
+| Package scripts in `scripts/` | 14 |
 | Eval scripts in `evals/` | 3 |
 | Public omics benchmark cases in `evals/` | 9 |
 
@@ -39,14 +39,20 @@ contracts, and scripts that are lazy-loaded only when needed.
   matrix, doublet/ambient, pseudobulk, bulk reference, design, and DE provenance.
 - `results_integration.json` maps sources, tools, reviewer outputs, omics
   outputs, and literature outputs back to claim rows.
+- `source_verification.json` records source/source-span checks, while
+  `claim_support_matrix.json` records high-confidence, tool-backed,
+  analysis-backed, and blocked-claim support decisions.
+- `omics_metadata_check.json`, `experiment_design.json`, and
+  `review_artifact_manifest.json` provide release-checkable metadata,
+  experimental design, and SHA-256-bound review artifact surfaces.
 - `tool_call_ledger.json` records successful, skipped, blocked, failed, or
   unavailable tool calls.
 - `workflow_dag.json` records alias-specific execution structure; the runner
   normalizes DAG `mode` and `workflow_id` to the requested run mode.
 - `bmat_validate.py` enforces bundle shape, source-backed claim references,
   final wording, post-write verdict, independent review evidence, S3/high
-  confidence gates, team DAG contracts, tool-ledger policy, and workflow DAG
-  alias/mode/id consistency.
+  confidence gates, team DAG contracts, tool-ledger policy, workflow DAG
+  alias/mode/id consistency, and release-mode source/support/artifact gates.
 - `bmat_run.py` creates local dry-run bundles, supports `--tier compact|full`
   and `--track bulk-rnaseq|tenx-*|single-cell-other|survival|multi-omics`,
   writes workflow DAGs, runs validator/tool-ledger checks, and can export a
@@ -146,7 +152,7 @@ flowchart TD
     bundle -. "independent review required by recipe or label" .-> registry
 
     bundle["7. Canonical artifact bundle<br/>run_state.json<br/>runtime_capability_preflight.json<br/>source_corpus.json<br/>claim_ledger.json<br/>stage_evaluation.json<br/>post_write_validation.json<br/>final.md"]
-    extras["Policy-checked extras<br/>lead_decision.json<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json<br/>omics_run_manifest.json"]
+    extras["Policy-checked extras<br/>lead_decision / workflow_dag<br/>results_integration / tool_call_ledger<br/>source_verification / claim_support_matrix<br/>omics_run_manifest / omics_metadata_check<br/>experiment_design / review_artifact_manifest"]
     gates{"8. Release gates"}
     postwrite["post-write-final-validator<br/>final wording and limitation check"]
     validate["bmat_validate.py<br/>bundle schema + policy gate<br/>source-backed claims, DAG consistency,<br/>independent review, final wording"]
@@ -206,6 +212,16 @@ Optional but policy-checked artifacts:
 - `results_integration.json`
 - `tool_call_ledger.json`
 - `omics_run_manifest.json`
+- `source_verification.json`
+- `claim_support_matrix.json`
+- `omics_metadata_check.json`
+- `experiment_design.json`
+- `review_artifact_manifest.json`
+
+Release-bound validation should use `scripts/bmat_validate.py --release`.
+Release mode fails if `jsonschema` is unavailable, high-confidence claims lack
+support rows, source-backed claims cannot be verified, review artifact hashes
+drift, or sample-mode golden eval output is presented as live model evidence.
 
 ## Included Commands
 

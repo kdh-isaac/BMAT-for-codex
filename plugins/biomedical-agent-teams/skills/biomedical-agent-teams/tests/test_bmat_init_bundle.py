@@ -53,7 +53,7 @@ def test_shell_family_detects_windows_powershell_from_comspec(monkeypatch) -> No
     assert module.shell_family() == "powershell"
 
 
-def test_omics_run_scaffold_validates_with_explicit_reviewer_downgrade(tmp_path: Path) -> None:
+def test_omics_run_scaffold_records_track_ambiguity_and_blocks_run_validation(tmp_path: Path) -> None:
     bundle = tmp_path / "bundle with spaces"
     init_result = subprocess.run(
         [
@@ -81,13 +81,15 @@ def test_omics_run_scaffold_validates_with_explicit_reviewer_downgrade(tmp_path:
     assert preflight["codex_client"] == "codex"
     assert preflight["plugin_version"] == "1.1.0"
     assert preflight["workflow_tier"] == "compact"
-    assert preflight["requested_omics_track"] == "single-cell-other"
+    assert preflight["requested_omics_track"] == "track_ambiguous"
+    assert "omics_track_ambiguity_note" in preflight
     assert lead_decision["requested_alias"] == "omics-analysis-team"
     assert lead_decision["selected_mode"] == "run"
-    assert lead_decision["omics_subtrack"] == "single-cell-other"
+    assert lead_decision["omics_subtrack"] == "track_ambiguous"
     assert preflight["python_invocation"]
     assert preflight["capabilities"]["shell_available"] == "yes"
     assert preflight["validator_cli_available"] == "yes"
+    assert not (bundle / "omics_run_manifest.json").exists()
 
     validate_result = subprocess.run(
         [sys.executable, str(VALIDATOR), "--bundle", str(bundle)],
@@ -97,8 +99,8 @@ def test_omics_run_scaffold_validates_with_explicit_reviewer_downgrade(tmp_path:
     )
     output = validate_result.stdout + validate_result.stderr
 
-    assert validate_result.returncode == 0, output
-    assert "OMICS_RUN_REVIEWER_SPAWN_SKIPPED_WITH_DOWNGRADE" in output
+    assert validate_result.returncode == 1, output
+    assert "OMICS_RUN_TRACK_REQUIRED" in output
     assert "Traceback" not in output
 
 
@@ -260,6 +262,9 @@ def test_bmat_run_dry_run_creates_dag_tool_ledger_and_workbench(tmp_path: Path) 
     assert (bundle / "workflow_dag.json").exists()
     assert (bundle / "results_integration.json").exists()
     assert (bundle / "tool_call_ledger.json").exists()
+    assert (bundle / "source_verification.json").exists()
+    assert (bundle / "claim_support_matrix.json").exists()
+    assert (bundle / "review_artifact_manifest.json").exists()
     assert list((bundle / "reports").glob("*/index.md"))
 
 
@@ -393,6 +398,10 @@ def test_bmat_run_extended_tier_and_omics_fields_validate(tmp_path: Path) -> Non
     lead_decision = json.loads((bundle / "lead_decision.json").read_text(encoding="utf-8"))
     workflow_dag = json.loads((bundle / "workflow_dag.json").read_text(encoding="utf-8"))
     omics_manifest = json.loads((bundle / "omics_run_manifest.json").read_text(encoding="utf-8"))
+    omics_metadata_check = json.loads((bundle / "omics_metadata_check.json").read_text(encoding="utf-8"))
+    source_verification = json.loads((bundle / "source_verification.json").read_text(encoding="utf-8"))
+    support_matrix = json.loads((bundle / "claim_support_matrix.json").read_text(encoding="utf-8"))
+    review_manifest = json.loads((bundle / "review_artifact_manifest.json").read_text(encoding="utf-8"))
     assert run_state["workflow_tier"] == "full"
     assert run_state["omics_track"] == "tenx-gex"
     assert preflight["workflow_tier"] == "full"
@@ -400,6 +409,10 @@ def test_bmat_run_extended_tier_and_omics_fields_validate(tmp_path: Path) -> Non
     assert lead_decision["omics_subtrack"] == "tenx-gex"
     assert workflow_dag["track"] == "tenx-gex"
     assert omics_manifest["track"] == "tenx-gex"
+    assert omics_metadata_check["track"] == "tenx-gex"
+    assert source_verification["rows"] == []
+    assert support_matrix["rows"] == []
+    assert review_manifest["review_instances"] == []
     assert omics_manifest["assay_metadata"]["cellranger_version"] == "TODO"
     assert "molecule_info_h5" in omics_manifest["generated_artifacts"]
 
@@ -506,3 +519,10 @@ def test_bmat_run_all_workflow_dags_scaffold_stages_and_validate(tmp_path: Path)
         assert blocking_node_ids <= run_stage_ids
         assert (bundle / "results_integration.json").exists()
         assert (bundle / "tool_call_ledger.json").exists()
+        assert (bundle / "source_verification.json").exists()
+        assert (bundle / "claim_support_matrix.json").exists()
+        assert (bundle / "review_artifact_manifest.json").exists()
+        if alias == "omics-analysis-team":
+            assert (bundle / "omics_metadata_check.json").exists()
+        if alias == "experiment-design-team":
+            assert (bundle / "experiment_design.json").exists()

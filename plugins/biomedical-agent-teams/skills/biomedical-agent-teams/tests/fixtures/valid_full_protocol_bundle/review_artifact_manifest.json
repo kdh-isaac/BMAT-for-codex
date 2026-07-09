@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "workflow_run_id": "run-valid-001",
+  "plugin_version": "1.1.0",
+  "review_instances": [
+    {
+      "instance_id": "BMAT-SPAWN-001",
+      "agent_id": "citation-verifier",
+      "execution_surface": "tool_backed_validator",
+      "input_scope": "synthetic claim CL-001 and source S-001",
+      "input_digest": "synthetic-input-digest",
+      "output_artifact": "post_write_validation.json",
+      "output_sha256": "c59f392522e993933ee8f217401de53180df8732c515b0b7a27ccc982464b497",
+      "checks_run": [
+        "source identity checked",
+        "claim wording checked"
+      ],
+      "ledger_handoff": "CL-001 checked against S-001",
+      "results_integration_rows": [
+        "RI-ROW-001"
+      ],
+      "changed_claim_ids": [
+        "CL-001"
+      ],
+      "limitations": "synthetic fixture for validator behavior only"
+    }
+  ]
+}

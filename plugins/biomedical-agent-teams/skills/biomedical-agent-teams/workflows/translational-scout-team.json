@@ -15,21 +15,21 @@
       "id": "S1_sources",
       "agent": "clinical-trial-operations-scout",
       "requires": ["S0_context_lock"],
-      "outputs": ["source_corpus", "results_integration"],
+      "outputs": ["source_corpus", "source_verification", "results_integration"],
       "blocking": true
     },
     {
       "id": "S2_ip_regulatory",
       "agent": "grant-ip-landscape-scout",
       "requires": ["S1_sources"],
-      "outputs": ["stage_evaluation"],
+      "outputs": ["stage_evaluation", "claim_ledger", "claim_support_matrix"],
       "blocking": true
     },
     {
       "id": "S3_safety",
       "agent": "safety-ethics-privacy-dual-use-auditor",
       "requires": ["S2_ip_regulatory"],
-      "outputs": ["post_write_validation"],
+      "outputs": ["stage_evaluation"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/safety-ethics-privacy-dual-use-auditor.toml",
@@ -39,7 +39,7 @@
       "id": "S4_post_write",
       "agent": "post-write-final-validator",
       "requires": ["S3_safety"],
-      "outputs": ["final_text"],
+      "outputs": ["post_write_validation", "review_artifact_manifest", "final_text"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/post-write-final-validator.toml",

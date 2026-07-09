@@ -51,6 +51,15 @@ outputs, keep the 1.1.0 hard-gate artifacts aligned with the narrative:
   blocked, or failed tools need an explicit downgrade reason.
 - For included source-corpus rows, record `evidence_spans[]`; when possible,
   claim-ledger `evidence_edges[]` should point back to those spans.
+- For release or full-protocol claims, maintain `source_verification.json` with
+  pass/verified rows for every source-backed claim source and
+  `claim_support_matrix.json` for high-confidence, tool-backed,
+  analysis-backed, or blocked claims.
+- Use claim-ledger `claim_profile` values only when the profile is supported by
+  matching source, tool, analysis, or block evidence. Sample-mode golden eval
+  output is CI harness evidence only, not live model validation evidence.
+- Use `review_artifact_manifest.json` for released review artifacts so every
+  reviewer or report artifact has a stable path, size, SHA-256, and claim link.
 
 ## Spawned Team Bundle Policy
 

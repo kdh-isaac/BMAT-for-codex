@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Review Artifact Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "workflow_run_id", "plugin_version", "review_instances"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "workflow_run_id": { "type": "string" },
+    "plugin_version": { "type": "string" },
+    "review_instances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["instance_id", "agent_id", "execution_surface", "input_scope", "input_digest", "output_artifact", "output_sha256", "checks_run", "ledger_handoff", "results_integration_rows", "limitations"],
+        "properties": {
+          "instance_id": { "type": "string" },
+          "agent_id": { "type": "string" },
+          "execution_surface": { "type": "string" },
+          "input_scope": { "type": "string" },
+          "input_digest": { "type": "string" },
+          "output_artifact": { "type": "string" },
+          "output_sha256": { "type": "string" },
+          "checks_run": { "type": "array", "items": { "type": "string" } },
+          "ledger_handoff": { "type": "string" },
+          "results_integration_rows": { "type": "array", "items": { "type": "string" } },
+          "changed_claim_ids": { "type": "array", "items": { "type": "string" } },
+          "limitations": { "type": "string" }
+        }
+      }
+    }
+  }
+}

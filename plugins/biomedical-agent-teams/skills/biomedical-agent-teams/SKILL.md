@@ -33,7 +33,9 @@ The current version adds lead-decision routing artifacts, 10x/bulk omics
 manifest v2 gates, `--tier`/`--track` runner wiring, validator `fix_hint`
 output, tool-ledger privacy fields, 10x/bulk golden tasks, a Codex adapter
 scaffold, a public-omics benchmark smoke harness, and an immuno-oncology domain
-pack on top of the existing golden eval and lightweight-router gates.
+pack, with release-mode source, support, omics metadata, experiment-design, and
+review-artifact gates on top of the existing golden eval and lightweight-router
+gates.
 
 ## Command Aliases
 
@@ -189,6 +191,16 @@ Use these inventory surfaces instead of expanding this router:
   selected mode/tier/playbook, lane, and team/reviewer decision contract.
 - `contracts/omics-run-manifest.schema.json`: v2 10x/bulk omics provenance,
   QC, pseudobulk/design, artifact, and review contract.
+- `contracts/source-verification.schema.json`: source identifier and metadata
+  verification contract for release-mode source-backed claims.
+- `contracts/claim-support-matrix.schema.json`: claim-level support, scope,
+  overclaim, and allowed-wording matrix contract.
+- `contracts/omics-metadata-check.schema.json`: executable omics metadata/code
+  consistency check output contract.
+- `contracts/experiment-design.schema.json`: experimental-unit, controls,
+  statistics, safety, and reagent-provenance design contract.
+- `contracts/review-artifact-manifest.schema.json`: independent review output
+  artifact path and hash binding contract.
 - `contracts/tool-call-ledger.schema.json`: successful, skipped, blocked, or
   unavailable tool-call evidence contract.
 - `contracts/workflow-dag.schema.json` and `workflows/*.json`: command-to-agent
@@ -204,6 +216,12 @@ Use these inventory surfaces instead of expanding this router:
   and lazy-load guard checks.
 - `scripts/bmat_selftest.py`: dependency-free local package smoke check.
 - `scripts/bmat_validate.py`: complete artifact bundle schema and policy gate.
+- `scripts/bmat_source_check.py`: deterministic local source-verification
+  artifact generator and checker.
+- `scripts/bmat_omics_metadata_check.py`: deterministic local omics metadata
+  and artifact consistency checker.
+- `scripts/bmat_experiment_design_check.py`: deterministic local
+  experiment-design contract checker.
 - `scripts/bmat_tool_ledger_check.py`: deterministic tool-use honesty gate.
 - `scripts/bmat_run.py`: local dry-run runner, DAG selector, validator wrapper,
   `--tier`/`--track` wiring, and Markdown workbench exporter.

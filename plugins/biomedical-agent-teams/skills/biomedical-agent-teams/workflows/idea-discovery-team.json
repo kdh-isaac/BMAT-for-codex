@@ -15,14 +15,19 @@
       "id": "S1_generate",
       "agent": "hypothesis-generator",
       "requires": ["S0_context_lock"],
-      "outputs": ["hypothesis_candidates"],
+      "outputs": ["hypothesis_candidates", "source_corpus", "source_verification"],
       "blocking": true
     },
     {
       "id": "S2_rank",
       "agent": "hypothesis-ranker",
       "requires": ["S1_generate"],
-      "outputs": ["hypothesis_tournament", "results_integration"],
+      "outputs": [
+        "hypothesis_tournament",
+        "results_integration",
+        "claim_ledger",
+        "claim_support_matrix"
+      ],
       "blocking": true
     },
     {
@@ -39,7 +44,7 @@
       "id": "S4_post_write",
       "agent": "post-write-final-validator",
       "requires": ["S3_confounds"],
-      "outputs": ["post_write_validation", "final_text"],
+      "outputs": ["post_write_validation", "review_artifact_manifest", "final_text"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/post-write-final-validator.toml",

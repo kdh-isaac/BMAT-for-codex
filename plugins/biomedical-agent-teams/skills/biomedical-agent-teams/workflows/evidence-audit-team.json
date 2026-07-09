@@ -15,7 +15,7 @@
       "id": "S1_source_corpus",
       "agent": "life-science-literature-curator",
       "requires": ["S0_context_lock"],
-      "outputs": ["source_corpus"],
+      "outputs": ["source_corpus", "source_verification"],
       "blocking": true
     },
     {
@@ -39,7 +39,7 @@
       "id": "S4_contradiction_check",
       "agent": "contradiction-red-team",
       "requires": ["S3_citation_check"],
-      "outputs": ["stage_evaluation"],
+      "outputs": ["stage_evaluation", "claim_support_matrix"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/contradiction-red-team.toml",
@@ -49,7 +49,7 @@
       "id": "S5_post_write",
       "agent": "post-write-final-validator",
       "requires": ["S4_contradiction_check"],
-      "outputs": ["post_write_validation", "final_text"],
+      "outputs": ["post_write_validation", "review_artifact_manifest", "final_text"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/post-write-final-validator.toml",

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Source Verification",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "verification_id", "plugin_version", "workflow_run_id", "checked_at", "rows"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "verification_id": { "type": "string" },
+    "plugin_version": { "type": "string" },
+    "workflow_run_id": { "type": "string" },
+    "checked_at": { "type": "string" },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "source_id",
+          "source_type",
+          "identifier",
+          "identifier_status",
+          "metadata_match",
+          "source_corpus_row_status",
+          "claim_ids_checked",
+          "verification_limitations"
+        ],
+        "properties": {
+          "source_id": { "type": "string" },
+          "source_type": {
+            "type": "string",
+            "enum": ["PMID", "DOI", "accession", "NCT", "database-record", "local-file", "analysis-artifact", "software", "other"]
+          },
+          "identifier": { "type": "string" },
+          "identifier_status": {
+            "type": "string",
+            "enum": ["verified", "not-found", "ambiguous", "not-checked", "blocked", "unavailable"]
+          },
+          "metadata_match": {
+            "type": "string",
+            "enum": ["pass", "pass-with-caveats", "mismatch", "not-checked", "unavailable"]
+          },
+          "canonical_title": { "type": "string" },
+          "canonical_name": { "type": "string" },
+          "canonical_date": { "type": "string" },
+          "version": { "type": "string" },
+          "retrieval_surface": { "type": "string" },
+          "tool_id": { "type": "string" },
+          "tool_call_id": { "type": "string" },
+          "source_corpus_row_status": { "type": "string" },
+          "claim_ids_checked": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "verification_limitations": { "type": "string" }
+        }
+      }
+    }
+  }
+}

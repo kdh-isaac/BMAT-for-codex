@@ -9,6 +9,7 @@ stage, source-corpus, final-wording, and post-write release policies.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -42,6 +43,11 @@ OPTIONAL_BUNDLE_FILES = {
     "tool_call_ledger": "tool_call_ledger.json",
     "workflow_dag": "workflow_dag.json",
     "omics_run_manifest": "omics_run_manifest.json",
+    "source_verification": "source_verification.json",
+    "claim_support_matrix": "claim_support_matrix.json",
+    "omics_metadata_check": "omics_metadata_check.json",
+    "experiment_design": "experiment_design.json",
+    "review_artifact_manifest": "review_artifact_manifest.json",
 }
 
 INTERNAL_ARTIFACT_PATHS = "_artifact_paths"
@@ -56,6 +62,11 @@ SCHEMA_FILES = {
     "tool_call_ledger": "tool-call-ledger.schema.json",
     "workflow_dag": "workflow-dag.schema.json",
     "omics_run_manifest": "omics-run-manifest.schema.json",
+    "source_verification": "source-verification.schema.json",
+    "claim_support_matrix": "claim-support-matrix.schema.json",
+    "omics_metadata_check": "omics-metadata-check.schema.json",
+    "experiment_design": "experiment-design.schema.json",
+    "review_artifact_manifest": "review-artifact-manifest.schema.json",
     "stage_evaluation": "stage-evaluation.schema.json",
     "post_write_validation": "post-write-validation.schema.json",
 }
@@ -149,7 +160,13 @@ OMICS_TRACKS = {
     "multi-omics",
     "other",
 }
+OMICS_AMBIGUOUS_TRACKS = {"", "not-applicable", "track_ambiguous", "ambiguous"}
 TENX_TRACKS = {"tenx-gex", "tenx-cellplex", "tenx-citeseq", "tenx-vdj", "tenx-multiome"}
+SOURCE_VERIFIED_STATUSES = {"verified"}
+SOURCE_PASS_STATUSES = {"pass", "pass-with-caveats"}
+CLAIM_PROFILES = {"draft", "source_backed", "tool_backed", "analysis_backed", "high_confidence", "blocked"}
+CLAIM_SUPPORT_BLOCKING_VERDICTS = {"contradicts", "irrelevant"}
+OMICS_METADATA_BLOCK_STATUSES = {"block", "blocked", "fail", "failed"}
 PRIVACY_SENSITIVE_DATA_CLASSES = {"local-private-approved", "deidentified-human", "controlled-access", "PHI"}
 PUBLIC_ONLY_DATA_CLASSES = {"public-only", "not-applicable"}
 OMICS_CORE_REVIEWERS = {"omics-code-reviewer", "omics-provenance-validator", "biostats-repro-auditor"}
@@ -222,6 +239,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tool-call-ledger", type=Path)
     parser.add_argument("--workflow-dag", type=Path)
     parser.add_argument("--omics-run-manifest", type=Path)
+    parser.add_argument("--source-verification", type=Path)
+    parser.add_argument("--claim-support-matrix", type=Path)
+    parser.add_argument("--omics-metadata-check", type=Path)
+    parser.add_argument("--experiment-design", type=Path)
+    parser.add_argument("--review-artifact-manifest", type=Path)
     parser.add_argument("--final-text", type=Path)
     parser.add_argument(
         "--require-label",
@@ -235,6 +257,16 @@ def parse_args() -> argparse.Namespace:
         "--check-tool-ledger",
         action="store_true",
         help="Require deterministic tool-call ledger checks for tool-use wording and tool-backed claims.",
+    )
+    parser.add_argument(
+        "--release",
+        action="store_true",
+        help="Apply release-grade gates for schemas, source verification, claim support, omics metadata, and review artifacts.",
+    )
+    parser.add_argument(
+        "--strict-schema",
+        action="store_true",
+        help="Fail instead of warn when jsonschema is unavailable.",
     )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON findings.")
     return parser.parse_args()
@@ -383,11 +415,16 @@ def validate_local_artifact_ref_exists(
         findings.append(Finding("ERROR", code, message, path_label))
 
 
-def validate_schemas(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+def validate_schemas(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    strict_schema: bool = False,
+) -> None:
     if jsonschema is None:
         findings.append(
             Finding(
-                "WARN",
+                "ERROR" if strict_schema else "WARN",
                 "SCHEMA_VALIDATION_SKIPPED",
                 "install jsonschema to validate contract schema shape",
             )
@@ -547,7 +584,11 @@ def claim_strength(claim: dict[str, Any]) -> str:
 
 
 def is_high_confidence_claim(claim: dict[str, Any]) -> bool:
-    return claim_strength(claim) in HIGH_CONFIDENCE_STRENGTH
+    return claim_strength(claim) in HIGH_CONFIDENCE_STRENGTH or claim_profile(claim) == "high_confidence"
+
+
+def claim_profile(claim: dict[str, Any]) -> str:
+    return normalized_text(claim.get("claim_profile", ""))
 
 
 def value_as_list(value: Any) -> list[str]:
@@ -587,7 +628,11 @@ def claim_result_ids(claim: dict[str, Any]) -> list[str]:
 
 
 def is_tool_backed_claim(claim: dict[str, Any]) -> bool:
-    return value_is_truthy(claim.get("tool_backed")) or bool(claim_tool_ids(claim) or claim_result_ids(claim))
+    return (
+        value_is_truthy(claim.get("tool_backed"))
+        or claim_profile(claim) == "tool_backed"
+        or bool(claim_tool_ids(claim) or claim_result_ids(claim))
+    )
 
 
 def source_ids_from_claim(claim: dict[str, Any]) -> list[str]:
@@ -617,7 +662,23 @@ def is_source_backed(claim: dict[str, Any]) -> bool:
     source_backed = claim.get("source_backed")
     if source_backed is True or normalized_text(source_backed) == "true":
         return True
+    if claim_profile(claim) in {"source_backed", "high_confidence"}:
+        return True
     return bool(source_ids_from_claim(claim))
+
+
+def is_analysis_backed_claim(claim: dict[str, Any]) -> bool:
+    return claim_profile(claim) == "analysis_backed" or value_is_truthy(claim.get("analysis_backed"))
+
+
+def is_blocked_claim(claim: dict[str, Any]) -> bool:
+    return claim_profile(claim) == "blocked" or normalized_text(claim.get("audit_status")) in {
+        "block",
+        "blocked",
+        "excluded",
+        "fail",
+        "failed",
+    }
 
 
 def included_sources(source_corpus: Any) -> set[str]:
@@ -740,7 +801,18 @@ def requested_omics_track(artifacts: dict[str, Any]) -> str:
     for owner, key in ((run_state, "omics_track"), (preflight, "requested_omics_track")):
         if isinstance(owner, dict):
             value = normalized_text(owner.get(key))
-            if value and value != "not-applicable":
+            if value and value not in OMICS_AMBIGUOUS_TRACKS:
+                return value
+    return ""
+
+
+def raw_requested_omics_track(artifacts: dict[str, Any]) -> str:
+    run_state = artifacts.get("run_state")
+    preflight = artifacts.get("preflight")
+    for owner, key in ((run_state, "omics_track"), (preflight, "requested_omics_track")):
+        if isinstance(owner, dict):
+            value = normalized_text(owner.get(key))
+            if value:
                 return value
     return ""
 
@@ -748,9 +820,21 @@ def requested_omics_track(artifacts: dict[str, Any]) -> str:
 def validate_omics_manifest_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
     run_state = artifacts.get("run_state")
     alias = normalized_text(run_state.get("alias")) if isinstance(run_state, dict) else ""
+    mode = normalized_text(run_state.get("mode")) if isinstance(run_state, dict) else ""
     track = requested_omics_track(artifacts)
+    raw_track = raw_requested_omics_track(artifacts)
     manifest = artifacts.get("omics_run_manifest")
-    manifest_required = alias in OMICS_ALIASES or track in OMICS_TRACKS
+    if alias in OMICS_ALIASES and mode == "run" and raw_track in OMICS_AMBIGUOUS_TRACKS:
+        findings.append(
+            Finding(
+                "ERROR",
+                "OMICS_RUN_TRACK_REQUIRED",
+                "omics-analysis-team run mode requires an explicit --track before run-mode execution",
+                "run_state.json",
+                "Use --track bulk-rnaseq, tenx-gex, tenx-cellplex, tenx-citeseq, tenx-vdj, tenx-multiome, survival, multi-omics, single-cell-other, or other; use plan mode for track ambiguity.",
+            )
+        )
+    manifest_required = (alias in OMICS_ALIASES and mode == "run" and track in OMICS_TRACKS) or track in OMICS_TRACKS
     if manifest_required and manifest is None:
         findings.append(
             Finding(
@@ -1661,6 +1745,603 @@ def validate_tool_ledger_policy(
             )
 
 
+def iter_source_verification_rows(source_verification: Any) -> list[dict[str, Any]]:
+    if isinstance(source_verification, dict) and isinstance(source_verification.get("rows"), list):
+        return [row for row in source_verification["rows"] if isinstance(row, dict)]
+    if isinstance(source_verification, list):
+        return [row for row in source_verification if isinstance(row, dict)]
+    return []
+
+
+def source_ids_in_corpus(source_corpus: Any) -> set[str]:
+    if not isinstance(source_corpus, dict):
+        return set()
+    return {
+        str(source.get("source_id", "")).strip()
+        for source in source_corpus.get("sources", [])
+        if isinstance(source, dict) and str(source.get("source_id", "")).strip()
+    }
+
+
+def source_span_refs(source_corpus: Any) -> set[str]:
+    refs: set[str] = set()
+    if not isinstance(source_corpus, dict):
+        return refs
+    for source in source_corpus.get("sources", []):
+        if not isinstance(source, dict):
+            continue
+        for span in source.get("evidence_spans", []):
+            if not isinstance(span, dict):
+                continue
+            for key in ("span_id", "evidence_span_ref"):
+                value = str(span.get(key, "")).strip()
+                if value:
+                    refs.add(value)
+    return refs
+
+
+def source_verification_by_source(source_verification: Any) -> dict[str, dict[str, Any]]:
+    rows: dict[str, dict[str, Any]] = {}
+    for row in iter_source_verification_rows(source_verification):
+        source_id = str(row.get("source_id", "")).strip()
+        if source_id:
+            rows[source_id] = row
+    return rows
+
+
+def verification_row_is_supportive(row: dict[str, Any]) -> bool:
+    return (
+        str(row.get("identifier_status", "")).strip() in SOURCE_VERIFIED_STATUSES
+        and str(row.get("metadata_match", "")).strip() in SOURCE_PASS_STATUSES
+    )
+
+
+def successful_tool_call_ids(tool_call_ledger: Any) -> set[str]:
+    return {
+        str(call.get("call_id", "")).strip()
+        for call in iter_tool_calls(tool_call_ledger)
+        if str(call.get("status", "")).strip() in TOOL_SUCCESS_STATUS and str(call.get("call_id", "")).strip()
+    }
+
+
+def validate_source_verification_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    release: bool = False,
+) -> None:
+    source_verification = artifacts.get("source_verification")
+    source_corpus = artifacts.get("source_corpus")
+    source_ids = source_ids_in_corpus(source_corpus)
+    claims = iter_claims(artifacts.get("claim_ledger"))
+    source_backed_claims = [claim for claim in claims if is_source_backed(claim)]
+
+    if release and source_backed_claims and source_verification is None:
+        findings.append(
+            Finding(
+                "ERROR",
+                "SOURCE_VERIFICATION_REQUIRED",
+                "release mode requires source_verification.json for source-backed claims",
+                OPTIONAL_BUNDLE_FILES["source_verification"],
+                "Run bmat_source_check.py or provide source_verification.json with verified source identifiers.",
+            )
+        )
+        return
+    if source_verification is None:
+        return
+    if not isinstance(source_verification, (dict, list)):
+        return
+
+    rows_by_source = source_verification_by_source(source_verification)
+    success_call_ids = successful_tool_call_ids(artifacts.get("tool_call_ledger"))
+
+    for row in iter_source_verification_rows(source_verification):
+        source_id = str(row.get("source_id", "")).strip()
+        if source_id and source_ids and source_id not in source_ids:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "SOURCE_VERIFICATION_UNKNOWN_SOURCE_ID",
+                    f"source_verification row references unknown source_id {source_id}",
+                    OPTIONAL_BUNDLE_FILES["source_verification"],
+                )
+            )
+        tool_call_id = str(row.get("tool_call_id", "")).strip()
+        tool_id = str(row.get("tool_id", "")).strip()
+        if tool_id and tool_call_id and tool_call_id not in success_call_ids:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "SOURCE_VERIFICATION_TOOL_CALL_NOT_SUCCESSFUL",
+                    f"source verification for {source_id or 'unknown'} claims tool_call_id {tool_call_id}, but no successful matching tool call exists",
+                    OPTIONAL_BUNDLE_FILES["source_verification"],
+                )
+            )
+
+    for claim in source_backed_claims:
+        cid = claim_id(claim)
+        for sid in source_ids_from_claim(claim):
+            row = rows_by_source.get(sid)
+            if row is None:
+                if release:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "SOURCE_BACKED_CLAIM_MISSING_SOURCE_VERIFICATION",
+                            f"{cid} references {sid} without a source_verification row",
+                            OPTIONAL_BUNDLE_FILES["source_verification"],
+                        )
+                    )
+                continue
+            if is_high_confidence_claim(claim) and not verification_row_is_supportive(row):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SOURCE_VERIFICATION_BLOCKS_HIGH_CONFIDENCE",
+                        f"{cid} is high-confidence but source {sid} verification is {row.get('identifier_status')}/{row.get('metadata_match')}",
+                        OPTIONAL_BUNDLE_FILES["source_verification"],
+                    )
+                )
+
+
+def iter_support_matrix_rows(claim_support_matrix: Any) -> list[dict[str, Any]]:
+    if isinstance(claim_support_matrix, dict) and isinstance(claim_support_matrix.get("rows"), list):
+        return [row for row in claim_support_matrix["rows"] if isinstance(row, dict)]
+    if isinstance(claim_support_matrix, list):
+        return [row for row in claim_support_matrix if isinstance(row, dict)]
+    return []
+
+
+def support_rows_by_claim(claim_support_matrix: Any) -> dict[str, list[dict[str, Any]]]:
+    rows_by_claim: dict[str, list[dict[str, Any]]] = {}
+    for row in iter_support_matrix_rows(claim_support_matrix):
+        claim_id_value = str(row.get("claim_id", "")).strip()
+        if claim_id_value:
+            rows_by_claim.setdefault(claim_id_value, []).append(row)
+    return rows_by_claim
+
+
+def support_row_has_scope_mismatch(row: dict[str, Any]) -> bool:
+    return scope_has_mismatch(row.get("scope_match"))
+
+
+def validate_claim_support_matrix_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    release: bool = False,
+) -> None:
+    matrix = artifacts.get("claim_support_matrix")
+    claims = iter_claims(artifacts.get("claim_ledger"))
+    high_source_claims = [
+        claim for claim in claims if is_high_confidence_claim(claim) and is_source_backed(claim)
+    ]
+    if release and high_source_claims and matrix is None:
+        findings.append(
+            Finding(
+                "ERROR",
+                "CLAIM_SUPPORT_MATRIX_REQUIRED",
+                "release mode requires claim_support_matrix.json for source-backed high-confidence claims",
+                OPTIONAL_BUNDLE_FILES["claim_support_matrix"],
+            )
+        )
+        return
+    if matrix is None:
+        return
+    rows_by_claim = support_rows_by_claim(matrix)
+    allowed_by_claim = {
+        claim_id(claim): str(claim.get("allowed_final_wording", "")).strip()
+        for claim in claims
+        if str(claim.get("allowed_final_wording", "")).strip()
+    }
+
+    for row in iter_support_matrix_rows(matrix):
+        cid = str(row.get("claim_id", "")).strip()
+        verdict = str(row.get("support_verdict", "")).strip()
+        allowed = str(row.get("allowed_final_wording", "")).strip()
+        if cid in allowed_by_claim and allowed and allowed != allowed_by_claim[cid]:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "CLAIM_SUPPORT_WORDING_CONFLICT",
+                    f"claim_support_matrix wording for {cid} conflicts with claim_ledger allowed_final_wording",
+                    OPTIONAL_BUNDLE_FILES["claim_support_matrix"],
+                )
+            )
+        if verdict in CLAIM_SUPPORT_BLOCKING_VERDICTS and row.get("allowed_in_final") is True:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "CLAIM_SUPPORT_BLOCKING_VERDICT_ALLOWED_IN_FINAL",
+                    f"{cid} has support_verdict={verdict} but allowed_in_final=true",
+                    OPTIONAL_BUNDLE_FILES["claim_support_matrix"],
+                )
+            )
+
+    for claim in high_source_claims:
+        cid = claim_id(claim)
+        rows = rows_by_claim.get(cid, [])
+        supportive_rows = [
+            row for row in rows
+            if str(row.get("support_verdict", "")).strip() == "supports"
+            and row.get("allowed_in_final") is True
+            and not support_row_has_scope_mismatch(row)
+        ]
+        if not supportive_rows:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "HIGH_CONFIDENCE_REQUIRES_SUPPORT_MATRIX_SUPPORT",
+                    f"{cid} is high-confidence but lacks a supports/no-mismatch claim_support_matrix row",
+                    OPTIONAL_BUNDLE_FILES["claim_support_matrix"],
+                )
+            )
+        weak_rows = [row for row in rows if str(row.get("support_verdict", "")).strip() == "weakly_supports"]
+        if weak_rows and not supportive_rows:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "WEAK_SUPPORT_CANNOT_BE_HIGH_CONFIDENCE",
+                    f"{cid} only has weak support and cannot be high-confidence",
+                    OPTIONAL_BUNDLE_FILES["claim_support_matrix"],
+                )
+            )
+
+
+def validate_release_claim_profile_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    final_norm = normalized_text(artifacts.get("final_text") or "")
+    spans = source_span_refs(artifacts.get("source_corpus"))
+    rows_by_claim = results_rows_by_claim(artifacts.get("results_integration"))
+    successful_by_claim = successful_tool_calls_by_claim(artifacts.get("tool_call_ledger"))
+    for claim in iter_claims(artifacts.get("claim_ledger")):
+        cid = claim_id(claim)
+        profile = claim_profile(claim)
+        if profile and profile not in CLAIM_PROFILES:
+            findings.append(Finding("ERROR", "CLAIM_PROFILE_INVALID", f"{cid} has invalid claim_profile {profile}", "claim_ledger.json"))
+        if profile in {"source_backed", "high_confidence"}:
+            required_fields = [
+                "evidence_relation",
+                "entailment_verdict",
+                "scope_match",
+                "uncertainty",
+                "audit_status",
+                "allowed_final_wording",
+            ]
+            for field in required_fields:
+                if field not in claim or claim.get(field) in ("", None, [], {}):
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "RELEASE_SOURCE_BACKED_CLAIM_FIELD_MISSING",
+                            f"{cid} profile={profile} requires {field}",
+                            "claim_ledger.json",
+                        )
+                    )
+            if not source_ids_from_claim(claim):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "RELEASE_SOURCE_BACKED_CLAIM_FIELD_MISSING",
+                        f"{cid} profile={profile} requires source_ids/evidence_items",
+                        "claim_ledger.json",
+                    )
+                )
+        if profile == "tool_backed" and (cid not in successful_by_claim or cid not in rows_by_claim):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "TOOL_BACKED_CLAIM_REQUIRES_RESULTS_AND_SUCCESSFUL_TOOL_CALL",
+                    f"{cid} profile=tool_backed requires successful tool_call_ledger evidence and results_integration mapping",
+                    "claim_ledger.json",
+                )
+            )
+        if profile == "analysis_backed" and (not claim_result_ids(claim) or cid not in rows_by_claim):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "ANALYSIS_BACKED_CLAIM_REQUIRES_RESULTS_MAPPING",
+                    f"{cid} profile=analysis_backed requires result_ids and results_integration mapping",
+                    "claim_ledger.json",
+                )
+            )
+        if profile == "high_confidence":
+            if normalized_text(claim.get("entailment_verdict")) != "supports":
+                findings.append(
+                    Finding("ERROR", "HIGH_CONFIDENCE_REQUIRES_SUPPORT_AND_SCOPE", f"{cid} requires entailment_verdict=supports", "claim_ledger.json")
+                )
+            if scope_has_mismatch(claim.get("scope_match")):
+                findings.append(
+                    Finding("ERROR", "HIGH_CONFIDENCE_REQUIRES_SUPPORT_AND_SCOPE", f"{cid} cannot have scope_match mismatch", "claim_ledger.json")
+                )
+            allowed = normalized_text(claim.get("allowed_final_wording"))
+            if allowed and allowed not in final_norm:
+                findings.append(
+                    Finding("ERROR", "HIGH_CONFIDENCE_WORDING_NOT_IN_FINAL", f"{cid} allowed_final_wording is absent from final.md", "claim_ledger.json")
+                )
+        if profile == "blocked":
+            if not str(claim.get("block_reason", claim.get("reason_excluded", ""))).strip():
+                findings.append(Finding("ERROR", "BLOCKED_CLAIM_REQUIRES_REASON", f"{cid} profile=blocked requires block_reason", "claim_ledger.json"))
+            for text_key in ("atomic_claim", "allowed_final_wording"):
+                text = normalized_text(claim.get(text_key))
+                if text and text in final_norm:
+                    findings.append(Finding("ERROR", "BLOCKED_CLAIM_IN_FINAL_TEXT", f"{cid} appears in final text despite blocked profile", "claim_ledger.json"))
+        for edge in claim.get("evidence_edges", []):
+            if not isinstance(edge, dict):
+                continue
+            span_ref = str(edge.get("evidence_span_ref", "")).strip()
+            if span_ref and span_ref not in spans:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "EVIDENCE_SPAN_REF_UNRESOLVED",
+                        f"{cid} evidence_span_ref {span_ref} does not resolve to source_corpus evidence_spans",
+                        "claim_ledger.json",
+                    )
+                )
+
+
+def validate_omics_metadata_check_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    release: bool = False,
+) -> None:
+    run_state = artifacts.get("run_state")
+    metadata_check = artifacts.get("omics_metadata_check")
+    results_integration = artifacts.get("results_integration")
+    manifest = artifacts.get("omics_run_manifest")
+    references_local_artifacts = isinstance(manifest, dict) and bool(manifest.get("generated_artifacts"))
+    if release and is_omics_run(artifacts) and references_local_artifacts and metadata_check is None:
+        findings.append(
+            Finding(
+                "ERROR",
+                "OMICS_METADATA_CHECK_REQUIRED",
+                "release omics runs with referenced local/generated artifacts require omics_metadata_check.json",
+                OPTIONAL_BUNDLE_FILES["omics_metadata_check"],
+            )
+        )
+        return
+    if not isinstance(metadata_check, dict):
+        return
+    issues = metadata_check.get("blocking_issues", [])
+    status = normalized_text(metadata_check.get("status"))
+    claim_ids_affected = value_as_list(metadata_check.get("claim_ids_affected"))
+    if status in OMICS_METADATA_BLOCK_STATUSES or (isinstance(issues, list) and issues):
+        high_claims = [claim_id(claim) for claim in iter_claims(artifacts.get("claim_ledger")) if is_high_confidence_claim(claim)]
+        affected_high = sorted(set(high_claims) & set(claim_ids_affected)) if claim_ids_affected else high_claims
+        if affected_high:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "OMICS_METADATA_CHECK_BLOCKS_HIGH_CONFIDENCE",
+                    f"omics metadata check blocks high-confidence claims: {', '.join(affected_high)}",
+                    OPTIONAL_BUNDLE_FILES["omics_metadata_check"],
+                )
+            )
+    if claim_ids_affected:
+        rows_by_claim = results_rows_by_claim(results_integration)
+        missing = [cid for cid in claim_ids_affected if cid not in rows_by_claim]
+        if missing:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "OMICS_METADATA_CHECK_REQUIRES_RESULTS_INTEGRATION",
+                    f"omics metadata check affects claims without results_integration rows: {', '.join(missing)}",
+                    OPTIONAL_BUNDLE_FILES["results_integration"],
+                )
+            )
+
+
+def experiment_design_has_operational_detail(experiment_design: Any) -> bool:
+    if not isinstance(experiment_design, dict):
+        return False
+    text = normalized_text(json.dumps(experiment_design, sort_keys=True))
+    return any(token in text for token in ("dose", "animal", "human material", "protocol", "catalog", "patent", "private"))
+
+
+def validate_experiment_design_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    release: bool = False,
+) -> None:
+    run_state = artifacts.get("run_state")
+    alias = normalized_text(run_state.get("alias")) if isinstance(run_state, dict) else ""
+    mode = normalized_text(run_state.get("mode")) if isinstance(run_state, dict) else ""
+    experiment_design = artifacts.get("experiment_design")
+    if release and alias == "experiment-design-team" and mode in {"deep", "audit"} and experiment_design is None:
+        findings.append(
+            Finding(
+                "ERROR",
+                "EXPERIMENT_DESIGN_REQUIRED",
+                "experiment-design-team deep/audit release requires experiment_design.json",
+                OPTIONAL_BUNDLE_FILES["experiment_design"],
+            )
+        )
+        return
+    if not isinstance(experiment_design, dict):
+        return
+    for field in ("positive_controls", "negative_controls", "vehicle_or_mock_controls"):
+        value = experiment_design.get(field)
+        if not isinstance(value, list) or not value:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "EXPERIMENT_DESIGN_CONTROLS_REQUIRED",
+                    f"experiment_design.{field} must contain at least one control",
+                    OPTIONAL_BUNDLE_FILES["experiment_design"],
+                )
+            )
+    stats_plan = experiment_design.get("statistical_plan")
+    biological_reps = experiment_design.get("biological_replicates")
+    if not isinstance(stats_plan, dict) or not stats_plan.get("model") or not stats_plan.get("multiplicity"):
+        findings.append(
+            Finding(
+                "ERROR",
+                "EXPERIMENT_DESIGN_STATS_PLAN_REQUIRED",
+                "experiment_design statistical_plan must include model and multiplicity",
+                OPTIONAL_BUNDLE_FILES["experiment_design"],
+            )
+        )
+    if not isinstance(biological_reps, dict) or not biological_reps.get("planned_n") or not biological_reps.get("rationale"):
+        findings.append(
+            Finding(
+                "ERROR",
+                "EXPERIMENT_DESIGN_REPLICATE_RATIONALE_REQUIRED",
+                "experiment_design biological_replicates must include planned_n and rationale",
+                OPTIONAL_BUNDLE_FILES["experiment_design"],
+            )
+        )
+    if experiment_design_has_operational_detail(experiment_design) and not str(experiment_design.get("safety_ethics_privacy_boundary", "")).strip():
+        findings.append(
+            Finding(
+                "ERROR",
+                "EXPERIMENT_DESIGN_SAFETY_BOUNDARY_REQUIRED",
+                "operational wet-lab/private/animal/human/patent-sensitive details require safety_ethics_privacy_boundary",
+                OPTIONAL_BUNDLE_FILES["experiment_design"],
+            )
+        )
+    if experiment_design.get("reagent_specific_claims") and artifacts.get("source_verification") is None:
+        findings.append(
+            Finding(
+                "ERROR",
+                "EXPERIMENT_DESIGN_REAGENT_SPECIFICS_REQUIRE_SOURCE_VERIFICATION",
+                "reagent/catalog/protocol-specific claims require source_verification.json or must be marked unknown",
+                OPTIONAL_BUNDLE_FILES["source_verification"],
+            )
+        )
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def review_manifest_rows(review_artifact_manifest: Any) -> list[dict[str, Any]]:
+    if isinstance(review_artifact_manifest, dict) and isinstance(review_artifact_manifest.get("review_instances"), list):
+        return [row for row in review_artifact_manifest["review_instances"] if isinstance(row, dict)]
+    return []
+
+
+def validate_review_artifact_manifest_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    release: bool = False,
+    required_label: str | None = None,
+) -> None:
+    if not release:
+        return
+    manifest = artifacts.get("review_artifact_manifest")
+    run_state = artifacts.get("run_state")
+    needs_manifest = release and FULL_LABEL in declared_workflow_labels(artifacts, required_label)
+    if needs_manifest and manifest is None:
+        findings.append(
+            Finding(
+                "ERROR",
+                "REVIEW_ARTIFACT_MANIFEST_REQUIRED",
+                "release Full protocol requires review_artifact_manifest.json",
+                OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+            )
+        )
+        return
+    if not isinstance(manifest, dict):
+        return
+    rows = review_manifest_rows(manifest)
+    rows_by_instance = {str(row.get("instance_id", "")).strip(): row for row in rows if str(row.get("instance_id", "")).strip()}
+    results_rows = results_rows_by_claim(artifacts.get("results_integration"))
+    base_dir = artifact_base_dir(artifacts)
+    for instance in spawned_agent_instances(run_state):
+        if instance.get("status") != "complete":
+            continue
+        instance_id = str(instance.get("instance_id", "")).strip()
+        row = rows_by_instance.get(instance_id)
+        if row is None:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "REVIEW_MANIFEST_INSTANCE_MISSING",
+                    f"complete spawned_agent_instances record {instance_id or 'unknown'} has no review_artifact_manifest row",
+                    OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                )
+            )
+            continue
+        output_artifact = str(row.get("output_artifact", "")).strip()
+        if output_artifact:
+            resolved = local_artifact_ref_path(artifacts, output_artifact)
+            if resolved is None or base_dir is None or not resolved.exists():
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "REVIEW_MANIFEST_OUTPUT_MISSING",
+                        f"review output artifact missing for {instance_id}: {output_artifact}",
+                        OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                    )
+                )
+            else:
+                expected_hash = str(row.get("output_sha256", "")).strip()
+                if expected_hash and sha256_file(resolved) != expected_hash:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "REVIEW_MANIFEST_OUTPUT_HASH_MISMATCH",
+                            f"review output sha256 mismatch for {instance_id}: {output_artifact}",
+                            OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                        )
+                    )
+        changed_claim_ids = value_as_list(row.get("changed_claim_ids"))
+        if changed_claim_ids:
+            missing = [cid for cid in changed_claim_ids if cid not in results_rows]
+            if missing:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "REVIEW_CHANGED_CLAIM_REQUIRES_RESULTS_INTEGRATION",
+                        f"review instance {instance_id} changed claims without results_integration rows: {', '.join(missing)}",
+                        OPTIONAL_BUNDLE_FILES["results_integration"],
+                    )
+                )
+
+
+def validate_sample_mode_release_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    run_state = artifacts.get("run_state")
+    final_text = normalized_text(artifacts.get("final_text") or "")
+    markers = [
+        normalized_text(run_state.get("model_validation_mode")) if isinstance(run_state, dict) else "",
+        final_text,
+    ]
+    joined = " ".join(markers)
+    if ("sample-mode" in joined or "sample mode" in joined or "sample-model" in joined) and (
+        "live model" in joined or "live codex" in joined or "model performance" in joined
+    ):
+        findings.append(
+            Finding(
+                "ERROR",
+                "SAMPLE_MODE_CANNOT_BE_LIVE_MODEL_EVIDENCE",
+                "sample-mode golden eval output must be labeled as harness/schema/gate wiring validation, not live model performance validation",
+                "run_state.json",
+            )
+        )
+
+
+def validate_release_mode_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    required_label: str | None = None,
+) -> None:
+    validate_sample_mode_release_policy(artifacts, findings)
+    validate_source_verification_policy(artifacts, findings, release=True)
+    validate_claim_support_matrix_policy(artifacts, findings, release=True)
+    validate_release_claim_profile_policy(artifacts, findings)
+    validate_omics_metadata_check_policy(artifacts, findings, release=True)
+    validate_experiment_design_policy(artifacts, findings, release=True)
+    validate_review_artifact_manifest_policy(artifacts, findings, release=True, required_label=required_label)
+
+
 def scope_has_mismatch(scope_match: Any) -> bool:
     if not isinstance(scope_match, dict):
         return False
@@ -1764,7 +2445,7 @@ def validate_workflow_dag_policy(artifacts: dict[str, Any], findings: list[Findi
             preflight.get("requested_omics_track") if isinstance(preflight, dict) else None,
             omics_manifest.get("track") if isinstance(omics_manifest, dict) else None,
         )
-        if str(value or "").strip() and str(value).strip() != "not-applicable"
+        if str(value or "").strip() and str(value).strip() not in OMICS_AMBIGUOUS_TRACKS
     ]
     if declared_omics_tracks:
         expected_track = declared_omics_tracks[0]
@@ -2287,6 +2968,7 @@ def validate_policies(
     findings: list[Finding],
     required_label: str | None = None,
     check_tool_ledger: bool = False,
+    release: bool = False,
 ) -> None:
     validate_required_label(artifacts, findings, required_label)
     validate_lead_decision_policy(artifacts, findings, required_label)
@@ -2298,12 +2980,19 @@ def validate_policies(
     validate_team_dag_policy(artifacts, findings)
     validate_workflow_dag_policy(artifacts, findings)
     validate_results_integration_policy(artifacts, findings)
-    validate_tool_ledger_policy(artifacts, findings, require_ledger=check_tool_ledger)
+    validate_tool_ledger_policy(artifacts, findings, require_ledger=check_tool_ledger or release)
     validate_s3_policy(artifacts, findings)
     validate_source_policy(artifacts, findings)
+    validate_source_verification_policy(artifacts, findings, release=False)
+    validate_claim_support_matrix_policy(artifacts, findings, release=False)
+    validate_omics_metadata_check_policy(artifacts, findings, release=False)
+    validate_experiment_design_policy(artifacts, findings, release=False)
+    validate_review_artifact_manifest_policy(artifacts, findings, release=False, required_label=required_label)
     validate_semantic_scope_policy(artifacts, findings)
     validate_final_wording(artifacts, findings)
     validate_post_write_release(artifacts, findings)
+    if release:
+        validate_release_mode_policy(artifacts, findings, required_label=required_label)
 
 
 def emit(findings: list[Finding], as_json: bool) -> None:
@@ -2326,9 +3015,9 @@ def main() -> int:
 
     findings: list[Finding] = []
     artifacts = load_artifacts(input_paths(args), findings)
-    validate_schemas(artifacts, findings)
+    validate_schemas(artifacts, findings, strict_schema=args.strict_schema or args.release)
     validate_required_artifact_fields(artifacts, findings)
-    validate_policies(artifacts, findings, args.require_label, args.check_tool_ledger)
+    validate_policies(artifacts, findings, args.require_label, args.check_tool_ledger, args.release)
     emit(findings, args.json)
     return 1 if any(finding.level == "ERROR" for finding in findings) else 0
 

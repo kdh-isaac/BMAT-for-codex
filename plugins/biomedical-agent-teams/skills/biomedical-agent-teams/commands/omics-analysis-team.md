@@ -52,6 +52,15 @@ outputs, keep the 1.1.0 hard-gate artifacts aligned with the narrative:
   blocked, or failed tools need an explicit downgrade reason.
 - For included source-corpus rows, record `evidence_spans[]`; when possible,
   claim-ledger `evidence_edges[]` should point back to those spans.
+- For release or full-protocol claims, maintain `source_verification.json` with
+  pass/verified rows for every source-backed claim source and
+  `claim_support_matrix.json` for high-confidence, tool-backed,
+  analysis-backed, or blocked claims.
+- Use claim-ledger `claim_profile` values only when the profile is supported by
+  matching source, tool, analysis, or block evidence. Sample-mode golden eval
+  output is CI harness evidence only, not live model validation evidence.
+- Use `review_artifact_manifest.json` for released review artifacts so every
+  reviewer or report artifact has a stable path, size, SHA-256, and claim link.
 
 For `run` mode, do not silently set `spawned_review_plan.allowed=false` or
 `budget=0` after S1-S3 locks. Default to `inline_first_selective_review` with a
@@ -129,6 +138,9 @@ claim-ledger handoff.
     mapping, pseudobulk policy, bulk quantifier/reference provenance, design
     formula, design-matrix rank check, count model, and multiplicity method as
     applicable.
+    For release-bound omics runs, write `omics_metadata_check.json` using
+    `contracts/omics-metadata-check.schema.json` and run
+    `scripts/bmat_omics_metadata_check.py` against the selected track.
 12. Run review gate before final reporting. In `run` mode, at least one core
    reviewer must be a spawned reviewer or tool-backed reviewer instance when
    runtime support is available, with the lane started alongside S4/S5 when
@@ -184,8 +196,10 @@ Use the matching track checklist before analysis or reporting:
 | `survival` | Cohort source/version, endpoint, event/censor definitions, follow-up time unit, inclusion/exclusion, covariates, grouping rule, event counts | Prognostic vs predictive boundary, censoring, proportional hazards, multiplicity, median survival/CI, number-at-risk feasibility |
 | `multi-omics` | Matched sample IDs, modality versions, genome build consistency, missingness, integration method, biological unit, primary endpoint | Cross-modality leakage, batch/source mixing, dimensionality reduction overclaim, validation and sensitivity analyses |
 
-If the requested track is unspecified, infer it only when the data type is clear;
-otherwise return a plan-mode ambiguity note instead of running.
+If the requested track is unspecified, infer it only when the data type is clear
+and record the reason. Otherwise, plan mode must record `track_ambiguous` and a
+track ambiguity note, while run mode is blocked with
+`OMICS_RUN_TRACK_REQUIRED`; never silently default to `single-cell-other`.
 
 ## Final Output
 

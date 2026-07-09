@@ -15,7 +15,7 @@
       "id": "S1_source_lock",
       "agent": "life-science-literature-curator",
       "requires": ["S0_context_lock"],
-      "outputs": ["source_corpus"],
+      "outputs": ["source_corpus", "source_verification"],
       "blocking": true
     },
     {
@@ -29,7 +29,7 @@
       "id": "S3_review",
       "agent": "claim-level-evidence-verifier",
       "requires": ["S2_claim_graph"],
-      "outputs": ["results_integration"],
+      "outputs": ["results_integration", "claim_support_matrix"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/claim-level-evidence-verifier.toml",
@@ -39,7 +39,7 @@
       "id": "S4_write_validate",
       "agent": "post-write-final-validator",
       "requires": ["S3_review"],
-      "outputs": ["post_write_validation", "final_text"],
+      "outputs": ["post_write_validation", "review_artifact_manifest", "final_text"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/post-write-final-validator.toml",

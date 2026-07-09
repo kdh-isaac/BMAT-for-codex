@@ -15,7 +15,12 @@
       "id": "S1_design",
       "agent": "experimental-design-planner",
       "requires": ["S0_context_lock"],
-      "outputs": ["stage_evaluation"],
+      "outputs": [
+        "experiment_design",
+        "source_corpus",
+        "source_verification",
+        "stage_evaluation"
+      ],
       "blocking": true
     },
     {
@@ -32,14 +37,14 @@
       "id": "S3_claim_lock",
       "agent": "central-claim-ledger-evidence-graph",
       "requires": ["S2_stats"],
-      "outputs": ["claim_ledger"],
+      "outputs": ["claim_ledger", "claim_support_matrix"],
       "blocking": true
     },
     {
       "id": "S4_post_write",
       "agent": "post-write-final-validator",
       "requires": ["S3_claim_lock"],
-      "outputs": ["post_write_validation", "final_text"],
+      "outputs": ["post_write_validation", "review_artifact_manifest", "final_text"],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/post-write-final-validator.toml",

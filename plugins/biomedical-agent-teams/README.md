@@ -20,15 +20,15 @@ making the selected workflow auditable.
 | --- | ---: |
 | Agent role prompts | 38 |
 | Command recipes | 6 |
-| Contract schemas | 18 |
-| Templates | 16 |
+| Contract schemas | 23 |
+| Templates | 21 |
 | Markdown references | 10 |
 | JSON references | 1 |
 | Loop recipes | 4 |
 | Codex reviewer TOML templates | 14 |
 | Workflow DAGs | 6 |
 | Domain packs | 3 |
-| Package scripts | 11 |
+| Package scripts | 14 |
 | Eval scripts | 3 |
 | Public omics benchmark cases | 9 |
 
@@ -65,13 +65,19 @@ Important files:
 - Routes substantive public-omics work through `omics-analysis-team` with code,
   provenance, and statistics reviewer floors when runtime support exists.
 - Tracks source/result/claim relationships through `results_integration.json`.
+- Tracks source/source-span verification through `source_verification.json` and
+  high-confidence/tool/analysis/blocked claim support through
+  `claim_support_matrix.json`.
 - Tracks honest tool use through `tool_call_ledger.json` and
   `bmat_tool_ledger_check.py`.
 - Validates artifact labels, source-backed claims, lead-decision hard gates,
   omics manifest v2 requirements, final wording, PMID drift, contradiction,
   overclaim, runtime mismatch, loop state, ranking semantics, workflow DAG
   alias/mode/id/track consistency, privacy-aware tool-ledger policy, and
-  independent-review evidence.
+  independent-review evidence. In `--release` mode it also hard-fails missing
+  `jsonschema`, unverifiable source-backed claims, unsupported `claim_profile`
+  rows, missing high-confidence support matrix rows, sample-mode model evidence
+  overclaims, and review artifact hash drift.
 
 ## Workflow Structure
 
@@ -157,7 +163,7 @@ flowchart TD
     bundle -. "independent review required by recipe or label" .-> registry
 
     bundle["7. Canonical artifact bundle<br/>run_state.json<br/>runtime_capability_preflight.json<br/>source_corpus.json<br/>claim_ledger.json<br/>stage_evaluation.json<br/>post_write_validation.json<br/>final.md"]
-    extras["Policy-checked extras<br/>lead_decision.json<br/>workflow_dag.json<br/>results_integration.json<br/>tool_call_ledger.json<br/>omics_run_manifest.json"]
+    extras["Policy-checked extras<br/>lead_decision / workflow_dag<br/>results_integration / tool_call_ledger<br/>source_verification / claim_support_matrix<br/>omics_run_manifest / omics_metadata_check<br/>experiment_design / review_artifact_manifest"]
     gates{"8. Release gates"}
     postwrite["post-write-final-validator<br/>final wording and limitation check"]
     validate["bmat_validate.py<br/>bundle schema + policy gate<br/>source-backed claims, DAG consistency,<br/>independent review, final wording"]
@@ -202,6 +208,11 @@ Optional but policy-checked artifacts include:
 - `results_integration.json`
 - `tool_call_ledger.json`
 - `omics_run_manifest.json`
+- `source_verification.json`
+- `claim_support_matrix.json`
+- `omics_metadata_check.json`
+- `experiment_design.json`
+- `review_artifact_manifest.json`
 
 The validator fails full-protocol claims when required artifacts are missing,
 required stages are blocked, post-write validation does not pass, independent
@@ -211,18 +222,22 @@ the ledger, lead routing is missing where required, 10x/bulk omics provenance is
 under-specified, privacy-sensitive tool calls cross an unauthorized boundary, or
 workflow DAG alias/mode/id/track fields disagree with the run state.
 
+Release-bound validation should use `skills/biomedical-agent-teams/scripts/bmat_validate.py --release`.
+`--sample-mode` golden eval output remains a CI harness and is not live
+model-in-the-loop validation evidence.
+
 ## Latest Local Verification
 
-Verified locally on 2026-07-07 KST:
+Verified locally on 2026-07-09 KST:
 
 | Check | Result |
 | --- | --- |
 | Source vs installed cache `diff -qr` | clean |
 | Installed plugin | `biomedical-agent-teams` `1.1.0`, enabled |
 | Prompt surface | `biomedical-agent-teams/1.1.0/.../SKILL.md` visible |
-| Targeted tests | `115 passed` |
-| Full tests | `200 passed` |
-| Package check / self-test / strict golden gate | passed |
+| Targeted tests | `133 passed` |
+| Full tests | `243 passed, 162 subtests passed` |
+| Package check / self-test / release fixture / strict golden gate | passed |
 | Public omics benchmark smoke | 9/9 metadata-only bundles passed |
 | Adapter dry-run smoke | validator exit 0 |
 

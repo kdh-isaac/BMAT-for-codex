@@ -39,6 +39,7 @@ OMICS_TRACKS = (
     "not-applicable",
 )
 TENX_TRACKS = {"tenx-gex", "tenx-cellplex", "tenx-citeseq", "tenx-vdj", "tenx-multiome"}
+AMBIGUOUS_OMICS_TRACKS = {"not-applicable", "track_ambiguous", "ambiguous", ""}
 
 
 def available_domain_packs() -> tuple[str, ...]:
@@ -116,11 +117,104 @@ def default_tool_call_ledger(run_id: str, version: str) -> dict[str, Any]:
     }
 
 
+def default_source_verification(run_id: str, version: str) -> dict[str, Any]:
+    return {
+        "schema_version": "1.0",
+        "verification_id": f"sv-{run_id}",
+        "plugin_version": version,
+        "workflow_run_id": run_id,
+        "checked_at": "scaffold-only",
+        "rows": [],
+    }
+
+
+def default_claim_support_matrix(run_id: str, version: str) -> dict[str, Any]:
+    return {
+        "schema_version": "1.0",
+        "support_matrix_id": f"csm-{run_id}",
+        "plugin_version": version,
+        "workflow_run_id": run_id,
+        "rows": [],
+    }
+
+
+def default_omics_metadata_check(run_id: str, version: str, track: str) -> dict[str, Any]:
+    return {
+        "schema_version": "1.0",
+        "check_id": f"omc-{run_id}",
+        "plugin_version": version,
+        "workflow_run_id": run_id,
+        "track": track,
+        "status": "block",
+        "blocking_issues": [
+            "scaffold placeholder; run bmat_omics_metadata_check.py after locking metadata and generated artifact paths"
+        ],
+        "warnings": [],
+        "artifact_refs": [],
+        "claim_ids_affected": [],
+        "downgrade_recommendations": [
+            "do not upgrade omics claims until metadata and artifact consistency checks pass"
+        ],
+    }
+
+
+def default_experiment_design(run_id: str, version: str, question: str) -> dict[str, Any]:
+    return {
+        "design_id": f"exp-{run_id}",
+        "workflow_run_id": run_id,
+        "plugin_version": version,
+        "hypothesis": question,
+        "experimental_objective": "TODO: define the bounded experimental objective before execution",
+        "experimental_unit": {
+            "unit_type": "TODO",
+            "justification": "TODO: define the biological unit and independence assumptions",
+        },
+        "primary_endpoint": "TODO",
+        "secondary_endpoints": [],
+        "positive_controls": ["TODO: specify positive control"],
+        "negative_controls": ["TODO: specify negative control"],
+        "vehicle_or_mock_controls": ["TODO: specify vehicle or mock control"],
+        "biological_replicates": {
+            "planned_n": "TODO",
+            "rationale": "TODO: justify sample size and biological replicate unit",
+        },
+        "technical_replicates": {
+            "planned_n": "TODO",
+            "rationale": "TODO: justify technical replicate handling",
+        },
+        "randomization": {"method": "TODO"},
+        "blinding": {"method": "TODO"},
+        "exclusion_criteria": ["TODO: define before execution"],
+        "confounders": ["TODO: list expected confounders and mitigation"],
+        "causal_kill_tests": ["TODO: define falsification or rescue experiment"],
+        "statistical_plan": {
+            "model": "TODO",
+            "multiplicity": "TODO",
+        },
+        "go_no_go_gates": ["TODO: define decision threshold"],
+        "safety_ethics_privacy_boundary": "TODO: document biosafety, human/animal, privacy, and external-service boundaries",
+        "reagent_provenance_policy": "TODO: source-lock reagent, catalog, and protocol-specific claims before final wording",
+        "source_ids": [],
+        "claim_ids_supported": [],
+    }
+
+
+def default_review_artifact_manifest(run_id: str, version: str) -> dict[str, Any]:
+    return {
+        "schema_version": "1.0",
+        "workflow_run_id": run_id,
+        "plugin_version": version,
+        "review_instances": [],
+    }
+
+
 def selected_omics_track(args: argparse.Namespace) -> str:
     if args.track:
         return args.track
     if args.alias == "omics-analysis-team":
-        return "single-cell-other"
+        if args.mode == "plan":
+            return "track_ambiguous"
+        return "not-applicable"
     return "not-applicable"
 
 
@@ -139,7 +233,7 @@ def default_omics_manifest(run_id: str, track: str) -> dict[str, Any]:
         "schema_version": "2.0",
         "analysis_id": f"omics-{run_id}",
         "workflow_run_id": run_id,
-        "track": track if track != "not-applicable" else "single-cell-other",
+        "track": track,
         "data_sources": [],
         "sample_sheet": "TODO: lock sample sheet path or accession sample table before analysis",
         "assay_metadata": {
@@ -297,6 +391,14 @@ def workflow_dag_for_run(alias: str, mode: str) -> dict[str, Any]:
     return workflow_dag
 
 
+def workflow_declared_outputs(workflow_dag: dict[str, Any]) -> set[str]:
+    outputs: set[str] = set()
+    for node in workflow_dag.get("nodes", []):
+        if isinstance(node, dict):
+            outputs.update(str(output) for output in node.get("outputs", []) if output)
+    return outputs
+
+
 def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Namespace) -> None:
     version = bmat_init_bundle.plugin_version()
     run_state = payloads["run_state.json"]
@@ -308,7 +410,23 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     run_id = str(run_state["run_id"])
     workflow_dag = workflow_dag_for_run(args.alias, args.mode)
     omics_track = selected_omics_track(args)
-    if args.alias == "omics-analysis-team" or omics_track != "not-applicable":
+    omics_track_locked = omics_track not in AMBIGUOUS_OMICS_TRACKS
+    if args.alias == "omics-analysis-team" and not omics_track_locked:
+        note = (
+            "omics track is ambiguous; lock --track before run-mode execution"
+            if args.mode == "run"
+            else "omics track is ambiguous in plan mode; do not treat this scaffold as run-ready"
+        )
+        preflight_note = payloads["runtime_capability_preflight.json"]
+        run_state_note = payloads["run_state.json"]
+        assert isinstance(preflight_note, dict)
+        assert isinstance(run_state_note, dict)
+        preflight_note["omics_track_ambiguity_note"] = note
+        run_state_note.setdefault("downgrade_reasons", []).append(note)
+        if args.mode == "run":
+            run_state_note["final_label"] = "Blocked"
+            run_state_note["execution_strategy"] = "blocked"
+    if omics_track_locked:
         workflow_dag["track"] = omics_track
 
     domain_pack_root = DOMAIN_PACKS_ROOT / args.domain_pack
@@ -357,7 +475,18 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     payloads["workflow_dag.json"] = workflow_dag
     payloads["results_integration.json"] = default_results_integration(run_id, version)
     payloads["tool_call_ledger.json"] = default_tool_call_ledger(run_id, version)
-    if args.alias == "omics-analysis-team" or omics_track != "not-applicable":
+    declared_outputs = workflow_declared_outputs(workflow_dag)
+    if "source_verification" in declared_outputs:
+        payloads["source_verification.json"] = default_source_verification(run_id, version)
+    if "claim_support_matrix" in declared_outputs:
+        payloads["claim_support_matrix.json"] = default_claim_support_matrix(run_id, version)
+    if "experiment_design" in declared_outputs:
+        payloads["experiment_design.json"] = default_experiment_design(run_id, version, args.question)
+    if "review_artifact_manifest" in declared_outputs:
+        payloads["review_artifact_manifest.json"] = default_review_artifact_manifest(run_id, version)
+    if "omics_metadata_check" in declared_outputs:
+        payloads["omics_metadata_check.json"] = default_omics_metadata_check(run_id, version, omics_track)
+    if omics_track_locked:
         payloads["omics_run_manifest.json"] = default_omics_manifest(run_id, omics_track)
 
 

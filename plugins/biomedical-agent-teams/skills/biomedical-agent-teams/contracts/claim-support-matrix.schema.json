@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Claim Support Matrix",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "support_matrix_id", "plugin_version", "workflow_run_id", "rows"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "support_matrix_id": { "type": "string" },
+    "plugin_version": { "type": "string" },
+    "workflow_run_id": { "type": "string" },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["claim_id", "source_id", "support_verdict", "scope_match", "overclaim_risk", "allowed_in_final", "review_surface", "independent_review_required", "limitations"],
+        "properties": {
+          "claim_id": { "type": "string" },
+          "source_id": { "type": "string" },
+          "evidence_span_ref": { "type": "string" },
+          "support_verdict": {
+            "type": "string",
+            "enum": ["supports", "weakly_supports", "contradicts", "irrelevant", "not_checked"]
+          },
+          "scope_match": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "species": { "type": "string", "enum": ["match", "partial", "mismatch", "not-applicable"] },
+              "cell_type": { "type": "string", "enum": ["match", "partial", "mismatch", "not-applicable"] },
+              "assay": { "type": "string", "enum": ["match", "partial", "mismatch", "not-applicable"] },
+              "endpoint": { "type": "string", "enum": ["match", "partial", "mismatch", "not-applicable"] }
+            }
+          },
+          "overclaim_risk": {
+            "type": "string",
+            "enum": ["low", "moderate", "high", "not-assessed"]
+          },
+          "allowed_in_final": { "type": "boolean" },
+          "allowed_final_wording": { "type": "string" },
+          "review_surface": { "type": "string" },
+          "independent_review_required": { "type": "boolean" },
+          "limitations": { "type": "string" }
+        }
+      }
+    }
+  }
+}

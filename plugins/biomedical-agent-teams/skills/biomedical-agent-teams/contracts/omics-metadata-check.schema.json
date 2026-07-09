@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Omics Metadata Check",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "check_id", "plugin_version", "workflow_run_id", "track", "status", "blocking_issues", "warnings", "artifact_refs", "claim_ids_affected", "downgrade_recommendations"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "check_id": { "type": "string" },
+    "plugin_version": { "type": "string" },
+    "workflow_run_id": { "type": "string" },
+    "track": { "type": "string" },
+    "status": { "type": "string", "enum": ["pass", "pass-with-caveats", "block"] },
+    "blocking_issues": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "artifact_refs": { "type": "array", "items": { "type": "string" } },
+    "claim_ids_affected": { "type": "array", "items": { "type": "string" } },
+    "downgrade_recommendations": { "type": "array", "items": { "type": "string" } }
+  }
+}

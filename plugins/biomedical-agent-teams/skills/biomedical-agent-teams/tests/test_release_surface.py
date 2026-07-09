@@ -58,10 +58,23 @@ def test_release_surface_files_exist() -> None:
         SKILL_ROOT / "contracts" / "lead-decision.schema.json",
         SKILL_ROOT / "contracts" / "omics-run-manifest.schema.json",
         SKILL_ROOT / "contracts" / "results-integration.schema.json",
+        SKILL_ROOT / "contracts" / "source-verification.schema.json",
+        SKILL_ROOT / "contracts" / "claim-support-matrix.schema.json",
+        SKILL_ROOT / "contracts" / "omics-metadata-check.schema.json",
+        SKILL_ROOT / "contracts" / "experiment-design.schema.json",
+        SKILL_ROOT / "contracts" / "review-artifact-manifest.schema.json",
         SKILL_ROOT / "templates" / "lead-decision-template.md",
         SKILL_ROOT / "templates" / "results-integration-template.md",
         SKILL_ROOT / "templates" / "research-overview-template.md",
+        SKILL_ROOT / "templates" / "source-verification-template.md",
+        SKILL_ROOT / "templates" / "claim-support-matrix-template.md",
+        SKILL_ROOT / "templates" / "omics-metadata-check-template.md",
+        SKILL_ROOT / "templates" / "experiment-design-template.md",
+        SKILL_ROOT / "templates" / "review-artifact-manifest-template.md",
         SKILL_ROOT / "evals" / "public_omics_benchmark_cases.jsonl",
+        SKILL_ROOT / "scripts" / "bmat_source_check.py",
+        SKILL_ROOT / "scripts" / "bmat_omics_metadata_check.py",
+        SKILL_ROOT / "scripts" / "bmat_experiment_design_check.py",
         SKILL_ROOT / "scripts" / "bmat_public_omics_benchmark_smoke.py",
         PLUGIN_ROOT / ".codex-plugin" / "biomedical-agent-teams.md",
     ]
@@ -97,15 +110,28 @@ def test_manifest_lists_release_resources() -> None:
     assert "lead-decision.schema" in source_manifest["contracts"]
     assert "omics-run-manifest.schema" in source_manifest["contracts"]
     assert "results-integration.schema" in source_manifest["contracts"]
+    assert "source-verification.schema" in source_manifest["contracts"]
+    assert "claim-support-matrix.schema" in source_manifest["contracts"]
+    assert "omics-metadata-check.schema" in source_manifest["contracts"]
+    assert "experiment-design.schema" in source_manifest["contracts"]
+    assert "review-artifact-manifest.schema" in source_manifest["contracts"]
     assert "tool-call-ledger.schema" in source_manifest["contracts"]
     assert "workflow-dag.schema" in source_manifest["contracts"]
     assert "lead-decision-template" in source_manifest["templates"]
     assert "results-integration-template" in source_manifest["templates"]
     assert "research-overview-template" in source_manifest["templates"]
     assert "research-workbench-index-template" in source_manifest["templates"]
+    assert "source-verification-template" in source_manifest["templates"]
+    assert "claim-support-matrix-template" in source_manifest["templates"]
+    assert "omics-metadata-check-template" in source_manifest["templates"]
+    assert "experiment-design-template" in source_manifest["templates"]
+    assert "review-artifact-manifest-template" in source_manifest["templates"]
     assert "bmat_tool_ledger_check" in source_manifest["scripts"]
     assert "bmat_codex_adapter" in source_manifest["scripts"]
     assert "bmat_public_omics_benchmark_smoke" in source_manifest["scripts"]
+    assert "bmat_source_check" in source_manifest["scripts"]
+    assert "bmat_omics_metadata_check" in source_manifest["scripts"]
+    assert "bmat_experiment_design_check" in source_manifest["scripts"]
     assert "bmat_run" in source_manifest["scripts"]
     assert "evidence-audit-team" in source_manifest["workflow_dags"]
     assert "cell-therapy" in source_manifest["domain_packs"]
@@ -140,6 +166,17 @@ def test_manifest_lists_release_resources() -> None:
     assert "omics-run-manifest-v2-for-tenx-and-bulk-rnaseq" in source_manifest["new_in_v1_1_0"]
     assert "public-omics-real-world-benchmark-smoke-harness" in source_manifest["new_in_v1_1_0"]
     assert "tenx-and-bulk-golden-task-expansion" in source_manifest["new_in_v1_1_0"]
+    assert (
+        "release-mode-source-verification-and-claim-support-gates"
+        in source_manifest["new_in_v1_1_0"]
+    )
+    assert "omics-track-ambiguity-blocks-run-mode" in source_manifest["new_in_v1_1_0"]
+    assert "omics-metadata-check-contract-and-local-checker" in source_manifest["new_in_v1_1_0"]
+    assert (
+        "review-artifact-manifest-hash-bound-independent-review"
+        in source_manifest["new_in_v1_1_0"]
+    )
+    assert "experiment-design-contract-and-local-checker" in source_manifest["new_in_v1_1_0"]
 
 
 def test_immuno_oncology_domain_pack_has_marker_and_boundary_assets() -> None:
@@ -351,6 +388,41 @@ def test_command_recipes_name_v1_1_release_gate_artifacts() -> None:
         assert "## 1.0 Release-Gate Artifacts" not in text
         for token in required_tokens:
             assert token in text, f"{command.name} missing {token}"
+
+
+def workflow_declared_outputs(alias: str) -> set[str]:
+    workflow = read_json(SKILL_ROOT / "workflows" / f"{alias}.json")
+    outputs: set[str] = set()
+    for node in workflow["nodes"]:
+        outputs.update(node["outputs"])
+    return outputs
+
+
+def test_workflow_dags_declare_release_gate_outputs() -> None:
+    common_outputs = {
+        "runtime_capability_preflight",
+        "workflow_run",
+        "source_corpus",
+        "source_verification",
+        "claim_ledger",
+        "claim_support_matrix",
+        "results_integration",
+        "post_write_validation",
+        "review_artifact_manifest",
+        "final_text",
+    }
+
+    for workflow_path in sorted((SKILL_ROOT / "workflows").glob("*.json")):
+        alias = workflow_path.stem
+        outputs = workflow_declared_outputs(alias)
+        missing = common_outputs - outputs
+        assert not missing, f"{alias} missing release outputs: {sorted(missing)}"
+
+    omics_outputs = workflow_declared_outputs("omics-analysis-team")
+    assert {"omics_run_manifest", "omics_metadata_check"} <= omics_outputs
+
+    design_outputs = workflow_declared_outputs("experiment-design-team")
+    assert "experiment_design" in design_outputs
 
 
 def test_current_user_facing_surfaces_have_no_legacy_version_residue() -> None:

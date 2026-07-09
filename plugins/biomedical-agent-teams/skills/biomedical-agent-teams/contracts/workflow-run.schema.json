@@ -44,7 +44,8 @@
         "survival",
         "multi-omics",
         "other",
-        "not-applicable"
+        "not-applicable",
+        "track_ambiguous"
       ]
     },
     "results_integration_required": { "type": "boolean" },
