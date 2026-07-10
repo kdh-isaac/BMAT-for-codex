@@ -1,126 +1,147 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Biomedical Agent Teams Tool Call Ledger",
+  "title": "Biomedical Agent Teams Tool Call Ledger v2",
   "type": "object",
   "additionalProperties": false,
-  "required": ["ledger_id", "plugin_version", "calls"],
+  "required": [
+    "schema_version",
+    "ledger_id",
+    "plugin_version",
+    "workflow_run_id",
+    "created_at",
+    "calls"
+  ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "ledger_id": { "type": "string" },
-    "plugin_version": { "type": "string" },
-    "workflow_run_id": { "type": "string" },
+    "schema_version": { "const": "2.0" },
+    "ledger_id": { "$ref": "#/$defs/nonEmptyString" },
+    "plugin_version": { "$ref": "#/$defs/semanticVersion" },
+    "workflow_run_id": { "$ref": "#/$defs/nonEmptyString" },
+    "created_at": { "type": "string", "format": "date-time" },
     "calls": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["call_id", "tool_id", "status", "inputs_digest", "affected_claim_ids"],
-        "properties": {
-          "call_id": { "type": "string" },
-          "tool_id": { "type": "string" },
-          "status": {
-            "type": "string",
-            "enum": ["success", "skipped", "unavailable", "blocked", "failed"]
-          },
-          "inputs_digest": { "type": "string" },
-          "query_redaction": {
-            "type": "string",
-            "enum": ["none-needed", "redacted", "not-applicable", "unknown"]
-          },
-          "query_redaction_applied": { "type": "boolean" },
-          "allowed_data_class": {
-            "type": "string",
-            "enum": [
-              "public-only",
-              "local-private-approved",
-              "deidentified-human",
-              "controlled-access",
-              "PHI",
-              "not-applicable",
-              "unknown"
-            ]
-          },
-          "actual_data_class": {
-            "type": "string",
-            "enum": [
-              "public-only",
-              "local-private-approved",
-              "deidentified-human",
-              "controlled-access",
-              "PHI",
-              "not-applicable",
-              "unknown"
-            ]
-          },
-          "approval_ref": { "type": "string" },
-          "mcp_server_name": { "type": "string" },
-          "runtime_surface": {
-            "type": "string",
-            "enum": [
-              "local_shell",
-              "local_file_read",
-              "codex_tool",
-              "mcp_connector",
-              "browser",
-              "spawned_reviewer",
-              "human_review",
-              "not-applicable",
-              "unknown"
-            ]
-          },
-          "artifact_sha256": {
-            "type": "string",
-            "pattern": "^(not-applicable|[A-Fa-f0-9]{64})$"
-          },
-          "retention_policy": {
-            "type": "string",
-            "enum": ["ephemeral", "bundle-artifact", "project-retained", "not-applicable", "unknown"]
-          },
-          "network_boundary": {
-            "type": "string",
-            "enum": ["local-only", "public-internet", "authenticated-connector", "not-applicable", "unknown"]
-          },
-          "pii_risk": {
-            "type": "string",
-            "enum": ["none", "low", "moderate", "high", "unknown"]
-          },
-          "output_ref": { "type": "string" },
-          "retrieval_date": { "type": "string" },
-          "affected_claim_ids": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "downgrade_reason": { "type": "string" },
-          "provenance": {
-            "type": "object",
-            "additionalProperties": true,
-            "properties": {
-              "source_id": { "type": "string" },
-              "url_or_accession": { "type": "string" }
-            }
-          }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/toolCall" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": ".*\\S.*"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "dataClass": {
+      "type": "string",
+      "enum": [
+        "public-only",
+        "local-private-approved",
+        "deidentified-human",
+        "controlled-access",
+        "PHI",
+        "not-applicable",
+        "unknown"
+      ]
+    },
+    "toolCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "call_id",
+        "tool_id",
+        "status",
+        "inputs_digest",
+        "affected_claim_ids"
+      ],
+      "properties": {
+        "call_id": { "$ref": "#/$defs/nonEmptyString" },
+        "tool_id": { "$ref": "#/$defs/nonEmptyString" },
+        "status": {
+          "type": "string",
+          "enum": ["success", "skipped", "unavailable", "blocked", "failed"]
         },
-        "allOf": [
-          {
-            "if": {
-              "properties": { "status": { "const": "success" } },
-              "required": ["status"]
-            },
-            "then": { "required": ["output_ref"] }
+        "inputs_digest": { "$ref": "#/$defs/nonEmptyString" },
+        "query_identifiers": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "affected_source_ids": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "affected_claim_ids": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "result_ids": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "output_ref": { "$ref": "#/$defs/nonEmptyString" },
+        "output_sha256": { "$ref": "#/$defs/sha256" },
+        "started_at": { "type": "string", "format": "date-time" },
+        "completed_at": { "type": "string", "format": "date-time" },
+        "query_redaction": {
+          "type": "string",
+          "enum": ["none-needed", "redacted", "not-applicable", "unknown"]
+        },
+        "query_redaction_applied": { "type": "boolean" },
+        "allowed_data_class": { "$ref": "#/$defs/dataClass" },
+        "actual_data_class": { "$ref": "#/$defs/dataClass" },
+        "approval_ref": { "$ref": "#/$defs/nonEmptyString" },
+        "mcp_server_name": { "$ref": "#/$defs/nonEmptyString" },
+        "runtime_surface": {
+          "type": "string",
+          "enum": [
+            "local_shell",
+            "local_file_read",
+            "codex_tool",
+            "mcp_connector",
+            "browser",
+            "spawned_reviewer",
+            "human_review",
+            "not-applicable",
+            "unknown"
+          ]
+        },
+        "retention_policy": {
+          "type": "string",
+          "enum": ["ephemeral", "bundle-artifact", "project-retained", "not-applicable", "unknown"]
+        },
+        "network_boundary": {
+          "type": "string",
+          "enum": ["local-only", "public-internet", "authenticated-connector", "not-applicable", "unknown"]
+        },
+        "pii_risk": {
+          "type": "string",
+          "enum": ["none", "low", "moderate", "high", "unknown"]
+        },
+        "downgrade_reason": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "status": { "const": "success" } },
+            "required": ["status"]
           },
-          {
-            "if": {
-              "properties": {
-                "status": {
-                  "enum": ["skipped", "unavailable", "blocked", "failed"]
-                }
-              },
-              "required": ["status"]
+          "then": { "required": ["output_ref"] }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": { "enum": ["skipped", "unavailable", "blocked", "failed"] }
             },
-            "then": { "required": ["downgrade_reason"] }
-          }
-        ]
-      }
+            "required": ["status"]
+          },
+          "then": { "required": ["downgrade_reason"] }
+        },
+        {
+          "if": {
+            "properties": { "runtime_surface": { "const": "mcp_connector" } },
+            "required": ["runtime_surface"]
+          },
+          "then": { "required": ["mcp_server_name"] }
+        }
+      ]
     }
   }
 }

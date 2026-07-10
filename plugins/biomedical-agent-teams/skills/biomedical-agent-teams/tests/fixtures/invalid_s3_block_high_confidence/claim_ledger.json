@@ -1,26 +1,48 @@
 {
+  "schema_version": "2.0",
+  "claim_ledger_id": "claim-ledger-release-fixture-001",
+  "plugin_version": "1.2.0",
+  "workflow_run_id": "release-fixture-run-001",
+  "created_at": "2026-07-10T01:03:00Z",
   "claims": [
     {
       "claim_id": "CL-001",
-      "atomic_claim": "The synthetic fixture supports a conservative audit claim.",
+      "atomic_claim": "The bundled local receipt supports the conservative validator claim under the stated synthetic scenario.",
       "claim_type": "source-backed",
-      "context": "offline validator fixture",
+      "claim_profile": "high_confidence",
+      "context": "Deterministic release-validator regression only.",
+      "source_backed": true,
+      "source_ids": [
+        "S-001"
+      ],
       "evidence_items": [
         "S-001"
       ],
-      "evidence_relation": "direct fixture support",
-      "uncertainty": "synthetic fixture only",
+      "evidence_edges": [
+        {
+          "subject": "S-001",
+          "predicate": "supports-within-bounded-scope",
+          "object": "CL-001",
+          "source_id": "S-001",
+          "evidence_span_ref": "SPAN-S-001-001"
+        }
+      ],
+      "evidence_relation": "Direct byte-identical local span support.",
+      "uncertainty": "The claim concerns only this synthetic validator scenario and must not be generalized.",
       "audit_status": "pass",
-      "allowed_final_wording": "Synthetic public fixture supports a conservative audit claim.",
+      "allowed_final_wording": "The bundled local receipt supports the conservative validator claim under the stated synthetic scenario.",
       "claim_strength": "high-confidence",
-      "source_backed": true,
       "entailment_verdict": "supports",
       "scope_match": {
-        "species": "match",
-        "cell_type": "match",
-        "assay": "match",
-        "endpoint": "match"
+        "species": "not-applicable",
+        "cell_type": "not-applicable",
+        "assay": "not-applicable",
+        "endpoint": "match",
+        "population_or_model": "not-applicable",
+        "intervention_or_exposure": "not-applicable",
+        "biological_context": "match"
       }
     }
-  ]
+  ],
+  "excluded_or_not_verified_claims": []
 }

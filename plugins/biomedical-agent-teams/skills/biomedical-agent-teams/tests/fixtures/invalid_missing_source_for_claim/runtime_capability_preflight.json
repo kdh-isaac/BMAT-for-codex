@@ -1,14 +1,27 @@
 {
-  "runtime_capability_preflight_id": "rt-valid-001",
+  "schema_version": "2.0",
+  "runtime_capability_preflight_id": "preflight-release-fixture-001",
+  "plugin_version": "1.2.0",
+  "workflow_run_id": "release-fixture-run-001",
+  "created_at": "2026-07-10T01:00:01Z",
   "requested_alias": "evidence-audit-team",
   "selected_mode": "audit",
-  "deliverable_type": "synthetic validator fixture",
+  "deliverable_type": "release-validator regression bundle",
+  "selected_domain_pack": "generic-biomedical",
+  "domain_pack_version": "0.1.0",
+  "selection_reason": "The bounded validator claim has no specialty-domain assumptions.",
+  "domain_specific_assumptions": [],
+  "workflow_tier": "full",
+  "requested_omics_track": "not-applicable",
+  "domain_specific_failure_modes_loaded": true,
+  "domain_assumptions_skipped": [],
+  "results_integration_required": true,
   "evidence_scope": {
     "source_types": [
       "local-file"
     ],
     "species_or_model": "not-applicable",
-    "date_or_version_needs": "fixture dated 2026-06-10"
+    "date_or_version_needs": "immutable bundled snapshot dated 2026-07-10"
   },
   "risk_class": "low",
   "required_role_outputs": [
@@ -17,8 +30,8 @@
   ],
   "skipped_role_outputs_with_reason": [],
   "external_tools_allowed": {
-    "allowed": false,
-    "limits": "offline synthetic fixture"
+    "allowed": true,
+    "limits": "Local deterministic validators and bundled public-safe fixture content only."
   },
   "file_write_plan": {
     "will_write_files": true,
@@ -27,12 +40,12 @@
     ]
   },
   "stop_criteria": [
-    "validator policy error"
+    "Any receipt, identity, support, or bundle-integrity error blocks release."
   ],
   "checkpoint_plan": [
     {
-      "checkpoint": "source lock",
-      "required_before": "final writing"
+      "checkpoint": "source and receipt lock",
+      "required_before": "final wording"
     }
   ],
   "execution_strategy": "inline_first_selective_review",
@@ -42,7 +55,7 @@
     "selected_roles": [
       "citation-verifier"
     ],
-    "rationale": "tool-backed validation fixture"
+    "rationale": "One deterministic external validation lane is sufficient for the bounded regression claim."
   },
   "team_spawn_plan": {
     "allowed": false,
@@ -50,15 +63,14 @@
     "selected_teams": [],
     "dependency_graph": [],
     "nested_spawn_allowed": false,
-    "rationale": "single synthetic audit axis"
+    "rationale": "No multi-team reasoning is required for a single bounded validator invariant."
   },
-  "all_role_spawn_avoidance_reason": "fixture requires one review surface only",
+  "all_role_spawn_avoidance_reason": "Only the claim-level validation role is material to this regression bundle.",
   "nested_spawn_policy": {
     "allowed": false,
     "authorization": "not requested",
-    "limits": "nested spawning disabled"
+    "limits": "Nested spawning is disabled."
   },
-  "post_team_audit_plan": "post-write validation only",
-  "source_corpus_id": "corpus-valid-001",
-  "workflow_run_id": "run-valid-001"
+  "post_team_audit_plan": "Verify receipt hashes, claim linkage, final wording, and bundle integrity.",
+  "source_corpus_id": "corpus-release-fixture-001"
 }

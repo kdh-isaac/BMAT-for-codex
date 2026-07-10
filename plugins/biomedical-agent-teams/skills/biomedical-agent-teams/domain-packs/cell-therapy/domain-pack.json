@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "cell-therapy",
+  "domain_pack_version": "0.1.0",
+  "default": false,
+  "requires_explicit_selection": true,
+  "lazy_load": true,
+  "selection_scope": "Questions explicitly about adoptive-cell products, their manufacture, phenotype, function, persistence, or translation.",
+  "domain_specific_assumptions": [
+    "Separate product-level, donor/patient-level, assay-level, and disease-context evidence.",
+    "Treat CAR-T-intrinsic, product-intrinsic, tumor-intrinsic, and TME-intrinsic mechanisms as distinct claim scopes.",
+    "Require direct product-level measurement before a product mechanism claim."
+  ],
+  "idea_discovery_axes": [
+    "target and construct specificity",
+    "trafficking",
+    "persistence and differentiation",
+    "activation and dysfunction",
+    "manufacturing and product context",
+    "on-target and off-tumor safety",
+    "expected information gain"
+  ],
+  "experiment_design_axes": [
+    "donor or patient as biological unit",
+    "product and manufacturing context",
+    "construct and target controls",
+    "direct functional readouts",
+    "persistence and phenotype timing",
+    "translation boundary"
+  ],
+  "resource_load_order": [
+    "entity-normalization-rules.json",
+    "source-preferences.json",
+    "failure-modes.md",
+    "golden-tasks.jsonl"
+  ]
+}

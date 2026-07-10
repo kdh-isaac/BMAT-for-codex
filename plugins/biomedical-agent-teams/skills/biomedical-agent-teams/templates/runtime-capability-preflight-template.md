@@ -8,7 +8,7 @@ workflow wording grants unavailable tools.
 |---|---|
 | runtime_id | RCP-YYYYMMDD-001 |
 | codex_client |  |
-| plugin_version | 1.1.1 |
+| plugin_version | 1.2.0 |
 | workspace_root |  |
 | host_os | macOS / Windows / Linux / unknown |
 | path_style | posix / windows / mixed / unknown / not-applicable |

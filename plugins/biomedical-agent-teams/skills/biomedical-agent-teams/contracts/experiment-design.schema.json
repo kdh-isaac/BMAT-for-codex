@@ -1,65 +1,500 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Biomedical Agent Teams Experiment Design",
+  "$id": "https://github.com/kdh-isaac/BMAT-for-codex/contracts/experiment-design.schema.json",
+  "title": "Biomedical Agent Teams Experiment Design v2",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": [
+    "schema_version",
     "design_id",
-    "workflow_run_id",
     "plugin_version",
+    "workflow_run_id",
+    "created_at",
+    "design_stage",
+    "recommendation_confidence",
+    "decision_authority",
     "hypothesis",
     "experimental_objective",
-    "experimental_unit",
+    "primary_estimand",
     "primary_endpoint",
+    "secondary_endpoints",
+    "expected_effect_size",
+    "variance_or_event_rate_assumption",
+    "alpha",
+    "power",
+    "sidedness",
+    "planned_n",
+    "dropout_or_failure_allowance",
     "positive_controls",
     "negative_controls",
     "vehicle_or_mock_controls",
     "biological_replicates",
     "technical_replicates",
-    "randomization",
-    "blinding",
+    "randomization_unit",
+    "analysis_unit",
+    "biological_unit",
+    "unit_mismatch_handling",
+    "randomization_plan",
+    "blocking_factors",
+    "blinding_plan",
     "exclusion_criteria",
     "confounders",
     "causal_kill_tests",
     "statistical_plan",
+    "multiplicity_plan",
+    "interim_analysis",
+    "stopping_rule",
+    "sensitivity_analyses",
+    "sample_size_method",
+    "sample_size_artifact_status",
+    "sample_size_code_ref",
+    "sample_size_output_ref",
+    "sample_size_output_sha256",
     "go_no_go_gates",
+    "design_scope",
     "safety_ethics_privacy_boundary",
     "reagent_provenance_policy",
+    "reagent_specific_claims",
     "source_ids",
-    "claim_ids_supported"
+    "claim_ids_supported",
+    "limitations"
   ],
   "properties": {
-    "design_id": { "type": "string" },
-    "workflow_run_id": { "type": "string" },
-    "plugin_version": { "type": "string" },
-    "hypothesis": { "type": "string" },
-    "experimental_objective": { "type": "string" },
-    "experimental_unit": {
-      "type": "object",
-      "required": ["unit_type", "justification"],
-      "properties": {
-        "unit_type": { "type": "string" },
-        "justification": { "type": "string" }
-      },
-      "additionalProperties": true
+    "schema_version": { "const": "2.0" },
+    "design_id": { "$ref": "#/$defs/nonEmptyString" },
+    "plugin_version": { "$ref": "#/$defs/nonEmptyString" },
+    "workflow_run_id": { "$ref": "#/$defs/nonEmptyString" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "design_stage": {
+      "type": "string",
+      "enum": ["exploratory", "confirmatory"]
     },
-    "primary_endpoint": { "type": "string" },
-    "secondary_endpoints": { "type": "array", "items": { "type": "string" } },
-    "positive_controls": { "type": "array", "items": { "type": "string" } },
-    "negative_controls": { "type": "array", "items": { "type": "string" } },
-    "vehicle_or_mock_controls": { "type": "array", "items": { "type": "string" } },
-    "biological_replicates": { "type": "object", "additionalProperties": true },
-    "technical_replicates": { "type": "object", "additionalProperties": true },
-    "randomization": { "type": "object", "additionalProperties": true },
-    "blinding": { "type": "object", "additionalProperties": true },
-    "exclusion_criteria": { "type": "array", "items": { "type": "string" } },
-    "confounders": { "type": "array", "items": { "type": "string" } },
-    "causal_kill_tests": { "type": "array", "items": { "type": "string" } },
-    "statistical_plan": { "type": "object", "additionalProperties": true },
-    "go_no_go_gates": { "type": "array", "items": { "type": "string" } },
-    "safety_ethics_privacy_boundary": { "type": "string" },
-    "reagent_provenance_policy": { "type": "string" },
-    "source_ids": { "type": "array", "items": { "type": "string" } },
-    "claim_ids_supported": { "type": "array", "items": { "type": "string" } }
+    "recommendation_confidence": {
+      "type": "string",
+      "enum": ["low", "moderate", "high"]
+    },
+    "decision_authority": { "const": "research-assistance-only" },
+    "hypothesis": { "$ref": "#/$defs/nonEmptyString" },
+    "experimental_objective": { "$ref": "#/$defs/nonEmptyString" },
+    "primary_estimand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["population_or_model", "treatment_or_exposure", "comparator", "outcome", "summary_measure"],
+      "properties": {
+        "population_or_model": { "$ref": "#/$defs/nonEmptyString" },
+        "treatment_or_exposure": { "$ref": "#/$defs/nonEmptyString" },
+        "comparator": { "$ref": "#/$defs/nonEmptyString" },
+        "outcome": { "$ref": "#/$defs/nonEmptyString" },
+        "summary_measure": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "primary_endpoint": { "$ref": "#/$defs/endpoint" },
+    "secondary_endpoints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/endpoint" },
+      "uniqueItems": true
+    },
+    "expected_effect_size": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["measure", "value", "unit", "direction", "assumption_basis", "rationale"],
+      "properties": {
+        "measure": { "$ref": "#/$defs/nonEmptyString" },
+        "value": { "type": ["number", "null"] },
+        "unit": { "$ref": "#/$defs/nonEmptyString" },
+        "direction": {
+          "type": "string",
+          "enum": ["increase", "decrease", "difference", "non-inferiority", "equivalence", "not-applicable"]
+        },
+        "assumption_basis": {
+          "type": "string",
+          "enum": ["pilot-data", "published-evidence", "simulation", "domain-conservative", "feasibility-bound"]
+        },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" },
+        "source_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "variance_or_event_rate_assumption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assumption_type", "value", "unit", "assumption_basis", "rationale"],
+      "properties": {
+        "assumption_type": {
+          "type": "string",
+          "enum": ["variance", "standard-deviation", "event-rate", "proportion", "dispersion", "other"]
+        },
+        "value": { "type": ["number", "null"], "minimum": 0 },
+        "unit": { "$ref": "#/$defs/nonEmptyString" },
+        "assumption_basis": {
+          "type": "string",
+          "enum": ["pilot-data", "published-evidence", "simulation", "domain-conservative", "feasibility-bound"]
+        },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" },
+        "source_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "assumption_type": { "enum": ["event-rate", "proportion"] } },
+            "required": ["assumption_type"]
+          },
+          "then": {
+            "properties": { "value": { "type": "number", "minimum": 0, "maximum": 1 } }
+          }
+        }
+      ]
+    },
+    "alpha": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 0.5 },
+    "power": { "type": ["number", "null"], "exclusiveMinimum": 0.5, "exclusiveMaximum": 1 },
+    "sidedness": {
+      "type": "string",
+      "enum": ["one-sided", "two-sided", "not-applicable"]
+    },
+    "planned_n": { "type": ["integer", "null"], "minimum": 1 },
+    "dropout_or_failure_allowance": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "exclusiveMaximum": 1,
+      "description": "Fraction of planned units reserved for dropout or technical failure."
+    },
+    "positive_controls": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "negative_controls": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "vehicle_or_mock_controls": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "biological_replicates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planned_n", "allocation", "rationale"],
+      "properties": {
+        "planned_n": { "type": ["integer", "null"], "minimum": 1 },
+        "allocation": { "$ref": "#/$defs/nonEmptyString" },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "technical_replicates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planned_n", "rationale"],
+      "properties": {
+        "planned_n": { "type": "integer", "minimum": 0 },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "randomization_unit": { "$ref": "#/$defs/nonEmptyString" },
+    "analysis_unit": { "$ref": "#/$defs/nonEmptyString" },
+    "biological_unit": { "$ref": "#/$defs/nonEmptyString" },
+    "unit_mismatch_handling": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["justification", "analysis_adjustment", "effective_sample_size_considered"],
+          "properties": {
+            "justification": { "$ref": "#/$defs/nonEmptyString" },
+            "analysis_adjustment": { "$ref": "#/$defs/nonEmptyString" },
+            "effective_sample_size_considered": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "randomization_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planned", "method_or_reason", "allocation_concealment_or_reason"],
+      "properties": {
+        "planned": { "type": "boolean" },
+        "method_or_reason": { "$ref": "#/$defs/nonEmptyString" },
+        "allocation_concealment_or_reason": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "blocking_factors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "blinding_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planned", "masked_roles", "method_or_reason"],
+      "properties": {
+        "planned": { "type": "boolean" },
+        "masked_roles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" },
+          "uniqueItems": true
+        },
+        "method_or_reason": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "exclusion_criteria": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "confounders": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "causal_kill_tests": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "statistical_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "covariates", "clustering_or_repeated_measures", "effect_size_reporting"],
+      "properties": {
+        "model": { "$ref": "#/$defs/nonEmptyString" },
+        "covariates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" },
+          "uniqueItems": true
+        },
+        "clustering_or_repeated_measures": { "$ref": "#/$defs/nonEmptyString" },
+        "effect_size_reporting": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "multiplicity_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "family_definition", "alpha_allocation", "rationale"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["not-assessed", "none-prespecified", "bonferroni", "holm", "holm-sidak", "BH-FDR", "hierarchical", "gatekeeping", "alpha-spending", "other"]
+        },
+        "family_definition": { "$ref": "#/$defs/nonEmptyString" },
+        "alpha_allocation": { "$ref": "#/$defs/nonEmptyString" },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "interim_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planned", "timing_or_reason", "alpha_spending_or_reason"],
+      "properties": {
+        "planned": { "type": "boolean" },
+        "timing_or_reason": { "$ref": "#/$defs/nonEmptyString" },
+        "alpha_spending_or_reason": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "stopping_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_type", "criteria", "decision_authority"],
+      "properties": {
+        "rule_type": {
+          "type": "string",
+          "enum": ["efficacy", "futility", "safety", "feasibility", "fixed-sample", "combined", "not-assessed"]
+        },
+        "criteria": { "$ref": "#/$defs/nonEmptyString" },
+        "decision_authority": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "sensitivity_analyses": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "sample_size_method": { "$ref": "#/$defs/nonEmptyString" },
+    "sample_size_artifact_status": {
+      "type": "string",
+      "enum": ["not-produced", "produced"]
+    },
+    "sample_size_code_ref": { "$ref": "#/$defs/nullableBundlePath" },
+    "sample_size_output_ref": { "$ref": "#/$defs/nullableBundlePath" },
+    "sample_size_output_sha256": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/sha256" }
+      ]
+    },
+    "go_no_go_gates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "design_scope": {
+      "type": "string",
+      "enum": ["conceptual", "computational", "wet-lab", "animal", "human-material", "human-participant", "mixed"]
+    },
+    "safety_ethics_privacy_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operational_details_included",
+        "risk_triggers",
+        "required_oversight",
+        "privacy_boundary",
+        "dual_use_boundary",
+        "patent_sensitive_boundary",
+        "limitations",
+        "bmat_role"
+      ],
+      "properties": {
+        "operational_details_included": { "type": "boolean" },
+        "risk_triggers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["none", "operational-wet-lab", "animal", "human-material", "human-participant", "private-data", "patent-sensitive", "dual-use"]
+          }
+        },
+        "required_oversight": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "privacy_boundary": { "$ref": "#/$defs/nonEmptyString" },
+        "dual_use_boundary": { "$ref": "#/$defs/nonEmptyString" },
+        "patent_sensitive_boundary": { "$ref": "#/$defs/nonEmptyString" },
+        "limitations": { "$ref": "#/$defs/nonEmptyString" },
+        "bmat_role": { "const": "research-assistance-only" }
+      }
+    },
+    "reagent_provenance_policy": { "$ref": "#/$defs/nonEmptyString" },
+    "reagent_specific_claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/reagentClaim" }
+    },
+    "source_ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "claim_ids_supported": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "sample_size_artifact_status": { "const": "produced" } },
+        "required": ["sample_size_artifact_status"]
+      },
+      "then": {
+        "properties": {
+          "sample_size_output_ref": { "$ref": "#/$defs/bundlePath" },
+          "sample_size_output_sha256": { "$ref": "#/$defs/sha256" }
+        }
+      },
+      "else": {
+        "properties": {
+          "sample_size_code_ref": { "type": "null" },
+          "sample_size_output_ref": { "type": "null" },
+          "sample_size_output_sha256": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "design_stage": { "const": "confirmatory" } },
+        "required": ["design_stage"]
+      },
+      "then": {
+        "properties": {
+          "sidedness": { "enum": ["one-sided", "two-sided"] },
+          "sensitivity_analyses": { "minItems": 1 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": ".*\\S.*"
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint_id", "name", "measurement_scale", "measurement_unit", "assessment_timepoint", "direction_of_benefit"],
+      "properties": {
+        "endpoint_id": { "$ref": "#/$defs/nonEmptyString" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "measurement_scale": { "$ref": "#/$defs/nonEmptyString" },
+        "measurement_unit": { "$ref": "#/$defs/nonEmptyString" },
+        "assessment_timepoint": { "$ref": "#/$defs/nonEmptyString" },
+        "direction_of_benefit": {
+          "type": "string",
+          "enum": ["higher", "lower", "target-range", "not-applicable"]
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "bundlePath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nullableBundlePath": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/bundlePath" }
+      ]
+    },
+    "reagentClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reagent_claim_id", "statement", "verification_status", "source_ids", "limitations"],
+      "properties": {
+        "reagent_claim_id": { "$ref": "#/$defs/nonEmptyString" },
+        "statement": { "$ref": "#/$defs/nonEmptyString" },
+        "manufacturer": { "$ref": "#/$defs/nonEmptyString" },
+        "catalog_identifier": { "$ref": "#/$defs/nonEmptyString" },
+        "verification_status": {
+          "type": "string",
+          "enum": ["verified", "unknown"]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" },
+          "uniqueItems": true
+        },
+        "limitations": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "verification_status": { "const": "verified" } },
+            "required": ["verification_status"]
+          },
+          "then": {
+            "properties": { "source_ids": { "minItems": 1 } }
+          },
+          "else": {
+            "properties": { "limitations": { "$ref": "#/$defs/nonEmptyString" } }
+          }
+        }
+      ]
+    }
   }
 }

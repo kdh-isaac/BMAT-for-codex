@@ -86,6 +86,10 @@ def sample_output_for_task(task: dict[str, Any], args: argparse.Namespace) -> di
         "python_invocation": sys.executable,
         "model_name": args.model,
         "prompt_hash": prompt_hash(prompt),
+        "evaluation_mode": "sample-mode",
+        "sample_mode": True,
+        "adapter_command_executed": False,
+        "live_model_evidence_eligible": False,
         "detected_failure_modes": expected_modes if expected_block else [],
         "blocked": expected_block,
         "downgraded": expected_block,
@@ -107,6 +111,10 @@ def base_output_for_task(task: dict[str, Any], args: argparse.Namespace) -> dict
         "python_invocation": sys.executable,
         "model_name": args.model,
         "prompt_hash": prompt_hash(prompt),
+        "evaluation_mode": "adapter-command",
+        "sample_mode": False,
+        "adapter_command_executed": True,
+        "live_model_evidence_eligible": False,
     }
 
 
@@ -127,6 +135,12 @@ def normalize_adapter_row(row: dict[str, Any], task: dict[str, Any], args: argpa
     normalized = base_output_for_task(task, args)
     normalized.update(row)
     normalized["task_id"] = str(normalized.get("task_id") or task.get("task_id"))
+    normalized["evaluation_mode"] = "adapter-command"
+    normalized["sample_mode"] = False
+    normalized["adapter_command_executed"] = True
+    # An adapter command can wrap many runtimes. The harness does not upgrade
+    # its output into live-model or independent-review evidence by assertion.
+    normalized["live_model_evidence_eligible"] = False
 
     modes = normalized.get("detected_failure_modes", [])
     if not isinstance(modes, list) or not all(isinstance(item, str) for item in modes):
@@ -141,7 +155,7 @@ def normalize_adapter_row(row: dict[str, Any], task: dict[str, Any], args: argpa
 def adapter_output_for_task(task: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
     if not args.adapter_command:
         raise SystemExit("Internal error: adapter_output_for_task called without --adapter-command")
-    command = shlex.split(args.adapter_command)
+    command = shlex.split(args.adapter_command, posix=os.name != "nt")
     if not command:
         raise SystemExit("--adapter-command must not be empty")
 

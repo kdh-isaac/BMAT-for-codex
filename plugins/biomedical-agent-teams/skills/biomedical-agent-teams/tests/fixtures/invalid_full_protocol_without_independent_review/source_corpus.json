@@ -1,25 +1,39 @@
 {
-  "corpus_id": "corpus-valid-001",
-  "created_at": "2026-06-10",
-  "query_or_origin": "offline synthetic validator fixture",
+  "schema_version": "2.0",
+  "corpus_id": "corpus-release-fixture-001",
+  "plugin_version": "1.2.0",
+  "workflow_run_id": "release-fixture-run-001",
+  "created_at": "2026-07-10T01:01:00Z",
+  "query_or_origin": "Bundled local source snapshot for deterministic release validation.",
   "sources": [
     {
       "source_id": "S-001",
       "source_type": "local-file",
-      "identifier": "synthetic-public-fixture",
-      "title_or_name": "Synthetic public fixture source",
-      "version_or_retrieval_date": "2026-06-10",
-      "query_or_origin": "local fixture",
+      "identifier": "evidence/source-S-001.txt",
+      "title_or_name": "Bounded local release-validator evidence",
+      "version_or_retrieval_date": "snapshot-2026-07-10",
+      "retrieved_at": "2026-07-10T01:01:00Z",
+      "database_version": "local-snapshot-1",
+      "query_or_origin": "Exact bytes bundled at evidence/source-S-001.txt",
       "inclusion_status": "included",
-      "claim_use": "supports CL-001 at conservative wording scope",
-      "checked_by": "tool_backed_validator",
-      "limitations": "synthetic fixture for validator behavior only",
+      "claim_use": "Supports only CL-001 at its exact allowed wording and stated synthetic scope.",
+      "checked_by": "local-bmat-validators",
+      "limitations": "This local snapshot validates provenance mechanics, not an external biomedical fact.",
       "evidence_spans": [
         {
-          "span_id": "S-001-span-001",
-          "location": "fixture:claim-support",
-          "evidence_span_ref": "fixture:claim-support",
-          "scope_note": "Synthetic fixture span supports only conservative wording for CL-001."
+          "span_id": "SPAN-S-001-001",
+          "source_id": "S-001",
+          "source_snapshot_ref": "evidence/source-S-001.txt",
+          "source_snapshot_sha256": "dff21058422ace53b7d10ea0c9fac63e222cb671a965319ca065dd0d83c766eb",
+          "locator": "line 1",
+          "section": "bounded claim",
+          "paragraph_or_table": "paragraph 1",
+          "sentence_or_cell": "sentence 1",
+          "evidence_text_sha256": "1d37609084653a3fe3fd1c9d420854a6cd694743960a3179a93d390281642ae4",
+          "short_evidence_excerpt": "The bundled local receipt supports the conservative validator claim under the stated synthetic scenario.",
+          "retrieved_at": "2026-07-10T01:01:00Z",
+          "extraction_actor": "local-bmat-validators",
+          "limitations": "The span is intentionally limited to a deterministic provenance regression claim."
         }
       ]
     }

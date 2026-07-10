@@ -9,7 +9,7 @@ enough to paste into a final answer or save as a local artifact.
 | run_id | BMAT-RUN-YYYYMMDD-001 |
 | alias | biomedical-research-council / idea-discovery-team / omics-analysis-team / evidence-audit-team / experiment-design-team / translational-scout-team |
 | mode | quick / standard / deep / audit / plan / run |
-| plugin_version | 1.1.1 |
+| plugin_version | 1.2.0 |
 | artifacts_root |  |
 | resume_pointer |  |
 | execution_strategy | inline_only / inline_first_selective_review / team_level_selective_dag / user_requested_full_spawn / blocked |
@@ -50,19 +50,21 @@ team artifact IDs.
 
 ## Spawned Agent Instances
 
-Use this table for actual spawned reviewers or tool-backed validators. The
-`spawned_review_lanes` table records intent; this table records reviewer or
-validator instances that actually ran. Command-level team bundles are recorded
-separately in `team_output_artifacts`.
+Use this table for execution routing and actual instance status. The table is
+not the review receipt. Every complete reviewer must also have a matching v2
+`review_artifact_manifest.json` row containing input/prompt/output/runtime
+SHA-256 receipts. `execution_surface=spawned_subagent` does not establish
+independence.
 
-For a `complete` reviewer lane, record a matching `complete` instance with an
-independent `execution_surface` and non-empty `input_scope`, `output_artifact`,
-`checks_run`, and `ledger_handoff`. A planned or complete lane without that
-instance is not release evidence.
+Only `separate-model`, `external-tool`, or `human` can set
+`independent_review_eligible=true`. `same-model-separate-context` is
+supplementary; `same-model-self-review` is not independent. If runtime
+provider/model/session metadata is unavailable, record `unavailable` and
+downgrade rather than guessing.
 
-| instance_id | agent_id | execution_surface | spawn_tool | thread_or_task_id | status | input_scope | output_artifact | checks_run | ledger_handoff | failure_or_downgrade_reason |
-|---|---|---|---|---|---|---|---|---|---|---|
-| BMAT-SPAWN-001 | citation-verifier | spawned_subagent / tool_backed_validator / external_verifier / human_reviewer | multi_agent / cli / human |  | planned / running / complete / skipped / blocked / failed |  |  |  |  |  |
+| instance_id | agent_id | execution_surface | status | reviewer provider/model/version/session | authoring provider/model/version/session | spawn_event_id | independence_class | independent_review_eligible | input_scope | review_manifest_row | ledger_handoff | failure_or_downgrade_reason |
+|---|---|---|---|---|---|---|---|---:|---|---|---|---|
+| BMAT-REVIEW-001 | citation-verifier | same_model_pass / spawned_subagent / tool_backed_validator / external_verifier / human_reviewer | planned / running / complete / skipped / blocked / failed | runtime values / unavailable | runtime values / unavailable |  | same-model-self-review / same-model-separate-context / separate-model / external-tool / human | true / false |  | review_artifact_manifest.json#BMAT-REVIEW-001 |  |  |
 
 ## Stage DAG
 

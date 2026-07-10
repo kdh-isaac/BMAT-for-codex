@@ -1,6 +1,7 @@
 import json
 import importlib.util
 import re
+import sys
 import unittest
 from pathlib import Path
 
@@ -15,6 +16,21 @@ RESOURCE_REF_RE = re.compile(
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def payload_from_test_factory(filename: str, factory_name: str) -> dict:
+    path = SKILL_ROOT / "tests" / filename
+    module_name = f"bmat_schema_sample_{path.stem}"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise AssertionError(f"cannot load schema sample factory from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    payload = getattr(module, factory_name)()
+    if not isinstance(payload, dict):
+        raise AssertionError(f"{factory_name} in {path} did not return a JSON object")
+    return payload
 
 
 class BmatPackageTest(unittest.TestCase):
@@ -832,6 +848,117 @@ class BmatPackageTest(unittest.TestCase):
                 "privacy_boundary": "public-only schema smoke sample",
             },
         }
+
+        release_fixture = (
+            SKILL_ROOT / "tests" / "fixtures" / "valid_full_protocol_bundle"
+        )
+        fixture_schema_files = {
+            "preflight-contract.schema.json": "runtime_capability_preflight.json",
+            "lead-decision.schema.json": "lead_decision.json",
+            "workflow-run.schema.json": "run_state.json",
+            "source-corpus.schema.json": "source_corpus.json",
+            "claim-ledger.schema.json": "claim_ledger.json",
+            "tool-call-ledger.schema.json": "tool_call_ledger.json",
+            "post-write-validation.schema.json": "post_write_validation.json",
+            "results-integration.schema.json": "results_integration.json",
+            "source-verification.schema.json": "source_verification.json",
+            "claim-support-matrix.schema.json": "claim_support_matrix.json",
+            "review-artifact-manifest.schema.json": "review_artifact_manifest.json",
+            "review-runtime-receipt.schema.json": "review/review-runtime-receipt.json",
+            "stage-evaluation.schema.json": "stage_evaluation.json",
+            "bundle-manifest.schema.json": "bundle_manifest.json",
+        }
+        for schema_name, fixture_name in fixture_schema_files.items():
+            samples[schema_name] = load_json(release_fixture / fixture_name)
+
+        review_row = samples["review-artifact-manifest.schema.json"][
+            "review_instances"
+        ][0]
+        samples["spawned-agent-output.schema.json"] = {
+            "schema_version": "2.0",
+            "workflow_run_id": "release-fixture-run-001",
+            "plugin_version": version,
+            **{
+                key: review_row[key]
+                for key in (
+                    "instance_id",
+                    "agent_id",
+                    "actor_type",
+                    "provider",
+                    "model",
+                    "model_version",
+                    "authoring_provider",
+                    "authoring_model",
+                    "authoring_model_version",
+                    "authoring_execution_session_id",
+                    "authoring_identity_available",
+                    "execution_surface",
+                    "execution_session_id",
+                    "spawn_event_id",
+                    "input_scope",
+                    "input_artifact_refs",
+                    "input_artifact_sha256",
+                    "prompt_template_ref",
+                    "prompt_template_sha256",
+                    "output_artifact",
+                    "output_sha256",
+                    "changed_claim_ids",
+                    "ledger_handoff",
+                    "independence_class",
+                    "independent_review_eligible",
+                    "fixture_only",
+                    "authoring_context_shared",
+                    "started_at",
+                    "completed_at",
+                    "runtime_receipt_ref",
+                    "runtime_receipt_sha256",
+                    "limitations",
+                )
+            },
+            "objective": "Perform a deterministic claim-support review.",
+            "assigned_scope": "Review one bounded claim and its exact source span.",
+            "inputs_checked": ["claim ledger", "source corpus", "source verification"],
+            "tools_skills_commands_or_databases_used": ["bmat_claim_support_check.py"],
+            "key_findings": ["The bounded wording is contract-consistent."],
+            "contradictions_or_risks": [],
+            "confidence": "high",
+            "files_changed_or_none": "none",
+            "checks_run": review_row["checks_run"],
+            "checks_run_or_skipped": review_row["checks_run"],
+            "recommended_handoff": "Integrate RI-REVIEW-001.",
+            "affected_claim_ids": ["CL-001"],
+            "verdict": "pass",
+        }
+
+        samples["experiment-design.schema.json"] = payload_from_test_factory(
+            "test_bmat_experiment_design_v2.py", "valid_design"
+        )
+        samples["hypothesis-tournament.schema.json"] = payload_from_test_factory(
+            "test_bmat_tournament_v2.py", "valid_tournament"
+        )
+        samples["agent-registry.schema.json"] = load_json(
+            SKILL_ROOT / "agent-registry.json"
+        )
+        samples["workflow-dag.schema.json"].update(
+            {
+                "schema_version": "2.0",
+                "plugin_version": version,
+                "workflow_run_id": "BMAT-RUN-20260610-001",
+                "created_at": "2026-07-10T00:00:00Z",
+            }
+        )
+        samples["omics-run-manifest.schema.json"].update(
+            {
+                "plugin_version": version,
+                "created_at": "2026-07-10T00:00:00Z",
+            }
+        )
+        samples["omics-metadata-check.schema.json"].update(
+            {
+                "schema_version": "2.0",
+                "checked_at": "2026-07-10T00:00:00Z",
+            }
+        )
 
         self.assertEqual(
             set(samples),

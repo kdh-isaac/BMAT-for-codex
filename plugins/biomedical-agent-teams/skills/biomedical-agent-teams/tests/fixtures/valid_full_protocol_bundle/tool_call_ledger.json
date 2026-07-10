@@ -1,23 +1,39 @@
 {
-  "schema_version": "1.0",
-  "ledger_id": "TCL-FIXTURE-001",
-  "plugin_version": "1.1.1",
-  "workflow_run_id": "run-valid-001",
+  "schema_version": "2.0",
+  "ledger_id": "tool-ledger-release-fixture-001",
+  "plugin_version": "1.2.0",
+  "workflow_run_id": "release-fixture-run-001",
+  "created_at": "2026-07-10T01:02:01Z",
   "calls": [
     {
-      "call_id": "TC-001",
-      "tool_id": "spawned-reviewer-lane",
+      "call_id": "TC-LOCAL-001",
+      "tool_id": "local-bmat-validators",
       "status": "success",
-      "inputs_digest": "synthetic spawned reviewer fixture for CL-001",
-      "output_ref": "results_integration:RI-ROW-001",
-      "retrieval_date": "not-applicable",
+      "inputs_digest": "sha256:evidence/source-S-001.txt",
+      "query_identifiers": [
+        "evidence/source-S-001.txt"
+      ],
+      "affected_source_ids": [
+        "S-001"
+      ],
       "affected_claim_ids": [
         "CL-001"
       ],
-      "provenance": {
-        "source_id": "S-001",
-        "url_or_accession": "synthetic-fixture"
-      }
+      "result_ids": [
+        "RI-SOURCE-001"
+      ],
+      "output_ref": "evidence/source-S-001.txt",
+      "output_sha256": "dff21058422ace53b7d10ea0c9fac63e222cb671a965319ca065dd0d83c766eb",
+      "started_at": "2026-07-10T01:01:58Z",
+      "completed_at": "2026-07-10T01:02:00Z",
+      "query_redaction": "none-needed",
+      "query_redaction_applied": false,
+      "allowed_data_class": "public-only",
+      "actual_data_class": "public-only",
+      "runtime_surface": "local_file_read",
+      "retention_policy": "bundle-artifact",
+      "network_boundary": "local-only",
+      "pii_risk": "none"
     }
   ]
 }

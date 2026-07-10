@@ -3,9 +3,13 @@
   "title": "Biomedical Agent Teams Stage Evaluation",
   "type": "object",
   "additionalProperties": false,
-  "required": ["evaluation_id", "workflow_alias", "stages", "overall_verdict"],
+  "required": ["schema_version", "evaluation_id", "plugin_version", "workflow_run_id", "created_at", "workflow_alias", "stages", "overall_verdict"],
   "properties": {
+    "schema_version": { "const": "2.0" },
     "evaluation_id": { "type": "string" },
+    "plugin_version": { "type": "string", "minLength": 1 },
+    "workflow_run_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
     "workflow_alias": { "type": "string" },
     "stages": {
       "type": "array",

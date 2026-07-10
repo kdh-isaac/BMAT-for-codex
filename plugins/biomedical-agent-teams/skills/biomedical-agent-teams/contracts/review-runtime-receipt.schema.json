@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Biomedical Agent Teams Review Runtime Receipt v2",
+  "description": "Runtime-native, tool, human-attestation, or fixture metadata bound to one review instance. This receipt is evidence of execution metadata, not scientific correctness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "workflow_run_id",
+    "plugin_version",
+    "instance_id",
+    "actor_type",
+    "provider",
+    "model",
+    "model_version",
+    "authoring_provider",
+    "authoring_model",
+    "authoring_model_version",
+    "authoring_execution_session_id",
+    "authoring_identity_available",
+    "execution_surface",
+    "execution_session_id",
+    "spawn_event_id",
+    "authoring_context_shared",
+    "status",
+    "fixture_only",
+    "receipt_source",
+    "runtime_metadata_available",
+    "started_at",
+    "completed_at",
+    "captured_at",
+    "capture_method",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": { "const": "2.0" },
+    "receipt_id": { "$ref": "#/$defs/nonEmptyString" },
+    "workflow_run_id": { "$ref": "#/$defs/nonEmptyString" },
+    "plugin_version": { "$ref": "#/$defs/semanticVersion" },
+    "instance_id": { "$ref": "#/$defs/nonEmptyString" },
+    "actor_type": {
+      "type": "string",
+      "enum": ["model", "external-tool", "human"]
+    },
+    "provider": { "$ref": "#/$defs/nonEmptyString" },
+    "model": { "$ref": "#/$defs/nonEmptyString" },
+    "model_version": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_provider": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_model": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_model_version": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_execution_session_id": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_identity_available": { "type": "boolean" },
+    "execution_surface": {
+      "type": "string",
+      "enum": [
+        "same_model_pass",
+        "spawned_subagent",
+        "tool_backed_validator",
+        "external_verifier",
+        "human_reviewer"
+      ]
+    },
+    "execution_session_id": { "$ref": "#/$defs/nonEmptyString" },
+    "spawn_event_id": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_context_shared": { "type": "boolean" },
+    "status": {
+      "type": "string",
+      "enum": ["success", "failed", "blocked"]
+    },
+    "fixture_only": { "type": "boolean" },
+    "receipt_source": {
+      "type": "string",
+      "enum": ["runtime-native", "runtime-unavailable", "external-tool", "human-attestation", "local-test-fixture"]
+    },
+    "runtime_metadata_available": { "type": "boolean" },
+    "started_at": { "$ref": "#/$defs/dateTime" },
+    "completed_at": { "$ref": "#/$defs/dateTime" },
+    "captured_at": { "$ref": "#/$defs/dateTime" },
+    "capture_method": {
+      "type": "string",
+      "enum": ["runtime-api", "unavailable-metadata-record", "tool-receipt", "signed-human-attestation", "local-fixture"]
+    },
+    "limitations": { "$ref": "#/$defs/nonEmptyString" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "authoring_identity_available": { "const": false } },
+        "required": ["authoring_identity_available"]
+      },
+      "then": {
+        "properties": {
+          "authoring_provider": { "const": "unavailable" },
+          "authoring_model": { "const": "unavailable" },
+          "authoring_model_version": { "const": "unavailable" },
+          "authoring_execution_session_id": { "const": "unavailable" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "authoring_identity_available": { "const": true } },
+        "required": ["authoring_identity_available"]
+      },
+      "then": {
+        "properties": {
+          "authoring_provider": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "authoring_model": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "authoring_model_version": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "authoring_execution_session_id": { "not": { "enum": ["unavailable", "not-applicable"] } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "receipt_source": { "const": "runtime-unavailable" } },
+        "required": ["receipt_source"]
+      },
+      "then": {
+        "properties": {
+          "runtime_metadata_available": { "const": false },
+          "fixture_only": { "const": false },
+          "capture_method": { "const": "unavailable-metadata-record" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "runtime_metadata_available": { "const": false } },
+        "required": ["runtime_metadata_available"]
+      },
+      "then": {
+        "properties": {
+          "provider": { "const": "unavailable" },
+          "model": { "const": "unavailable" },
+          "model_version": { "const": "unavailable" },
+          "execution_session_id": { "const": "unavailable" },
+          "spawn_event_id": { "const": "unavailable" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "receipt_source": { "const": "runtime-native" } },
+        "required": ["receipt_source"]
+      },
+      "then": {
+        "properties": {
+          "actor_type": { "const": "model" },
+          "runtime_metadata_available": { "const": true },
+          "capture_method": { "const": "runtime-api" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "receipt_source": { "const": "external-tool" } },
+        "required": ["receipt_source"]
+      },
+      "then": {
+        "properties": {
+          "actor_type": { "const": "external-tool" },
+          "runtime_metadata_available": { "const": true },
+          "capture_method": { "const": "tool-receipt" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "receipt_source": { "const": "human-attestation" } },
+        "required": ["receipt_source"]
+      },
+      "then": {
+        "properties": {
+          "actor_type": { "const": "human" },
+          "runtime_metadata_available": { "const": true },
+          "model": { "const": "not-applicable" },
+          "model_version": { "const": "not-applicable" },
+          "capture_method": { "const": "signed-human-attestation" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "receipt_source": { "const": "local-test-fixture" } },
+        "required": ["receipt_source"]
+      },
+      "then": {
+        "properties": {
+          "fixture_only": { "const": true },
+          "capture_method": { "const": "local-fixture" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "fixture_only": { "const": true } },
+        "required": ["fixture_only"]
+      },
+      "then": {
+        "properties": { "receipt_source": { "const": "local-test-fixture" } }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "runtime_metadata_available": { "const": true },
+          "actor_type": { "enum": ["model", "external-tool"] }
+        },
+        "required": ["runtime_metadata_available", "actor_type"]
+      },
+      "then": {
+        "properties": {
+          "provider": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "model": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "model_version": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "execution_session_id": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "spawn_event_id": { "not": { "enum": ["unavailable", "not-applicable"] } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "runtime_metadata_available": { "const": true },
+          "actor_type": { "const": "human" }
+        },
+        "required": ["runtime_metadata_available", "actor_type"]
+      },
+      "then": {
+        "properties": {
+          "provider": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "execution_session_id": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "spawn_event_id": { "not": { "enum": ["unavailable", "not-applicable"] } }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

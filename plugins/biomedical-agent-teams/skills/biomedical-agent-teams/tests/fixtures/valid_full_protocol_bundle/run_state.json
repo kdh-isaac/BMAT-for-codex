@@ -1,37 +1,60 @@
 {
-  "run_id": "run-valid-001",
+  "schema_version": "2.0",
+  "run_id": "release-fixture-run-001",
+  "created_at": "2026-07-10T01:00:00Z",
   "alias": "evidence-audit-team",
   "mode": "audit",
-  "plugin_version": "1.1.1",
+  "plugin_version": "1.2.0",
+  "selected_domain_pack": "generic-biomedical",
+  "domain_pack_version": "0.1.0",
+  "domain_pack_selection_reason": "The bounded validator claim has no specialty-domain assumptions.",
+  "domain_specific_assumptions": [],
+  "workflow_tier": "full",
+  "results_integration_required": true,
+  "tool_calls_used": [
+    "TC-LOCAL-001"
+  ],
+  "external_tools_used": [
+    "local-bmat-validators"
+  ],
+  "tool_backed_claim_ids": [],
+  "result_backed_claim_ids": [
+    "CL-001"
+  ],
   "execution_strategy": "inline_first_selective_review",
   "nested_spawn_allowed": false,
   "spawned_review_lanes": [
     {
       "role": "citation-verifier",
       "status": "complete",
-      "rationale": "tool_backed_validator checked the synthetic source identity",
-      "ledger_handoff": "CL-001 checked against S-001"
+      "rationale": "A hash-bound external validator reviewed the exact source, claim, and verification artifacts.",
+      "ledger_handoff": "RI-REVIEW-001 records the bounded wording accepted for CL-001."
     }
   ],
   "team_spawn_lanes": [],
   "spawned_agent_instances": [
     {
-      "instance_id": "BMAT-SPAWN-001",
+      "instance_id": "REVIEW-EXT-001",
       "agent_id": "citation-verifier",
-      "execution_surface": "tool_backed_validator",
-      "spawn_tool": "offline-fixture",
-      "thread_or_task_id": "fixture-citation-check",
-      "parent_run_id": "run-valid-001",
+      "execution_surface": "external_verifier",
+      "spawn_tool": "local-bmat-validators",
+      "thread_or_task_id": "validator-session-20260710-001",
+      "parent_run_id": "release-fixture-run-001",
       "status": "complete",
-      "started_at": "2026-06-10T00:00:00Z",
-      "completed_at": "2026-06-10T00:00:01Z",
-      "input_scope": "synthetic claim CL-001 and source S-001",
-      "output_artifact": "post_write_validation.json",
+      "started_at": "2026-07-10T01:06:00Z",
+      "completed_at": "2026-07-10T01:06:02Z",
+      "input_scope": "CL-001, S-001, SPAN-S-001-001, and their bundled receipts",
+      "output_artifact": "review/external-tool-review.md",
       "checks_run": [
-        "source identity checked",
-        "claim wording checked"
+        "source snapshot hash",
+        "claim-to-source linkage",
+        "seven-axis scope",
+        "allowed final wording"
       ],
-      "ledger_handoff": "CL-001 checked against S-001"
+      "ledger_handoff": "RI-REVIEW-001 records the accepted bounded wording for CL-001.",
+      "independence_class": "external-tool",
+      "independent_review_eligible": true,
+      "fixture_only": false
     }
   ],
   "stages": [
@@ -39,19 +62,19 @@
       "id": "S0",
       "required": true,
       "status": "pass",
-      "evidence": "runtime lock recorded"
+      "evidence": "Runtime and domain-pack lock recorded."
     },
     {
       "id": "S1",
       "required": true,
       "status": "pass",
-      "evidence": "source lock recorded"
+      "evidence": "The bundled local source snapshot is hash-bound and release eligible."
     },
     {
       "id": "S3",
       "required": true,
       "status": "pass",
-      "evidence": "validation passed"
+      "evidence": "The independent external-tool receipt and claim-support matrix pass."
     }
   ],
   "final_label": "Full protocol followed",

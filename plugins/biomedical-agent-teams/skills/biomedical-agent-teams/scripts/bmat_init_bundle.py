@@ -77,6 +77,14 @@ def plugin_version() -> str:
         return "unknown"
 
 
+def generic_domain_pack() -> dict[str, Any]:
+    path = Path(__file__).resolve().parents[1] / "domain-packs" / "generic-biomedical" / "domain-pack.json"
+    payload = json.loads(read_text_file(path))
+    if not isinstance(payload, dict) or payload.get("pack_id") != "generic-biomedical":
+        raise ValueError(f"invalid generic domain pack: {path}")
+    return payload
+
+
 def shell_family() -> str:
     for value in (os.environ.get("SHELL"), os.environ.get("COMSPEC")):
         if not value:
@@ -116,6 +124,18 @@ def scaffold_review_skip_reason(workflow: str, mode: str) -> str:
     return "scaffold default; fill during workflow execution"
 
 
+def scaffold_review_skip_record(workflow: str, mode: str, recorded_at: str) -> dict[str, Any]:
+    role = "omics-code-reviewer" if is_omics_run_scaffold(workflow, mode) else "reviewer-role-not-selected"
+    return {
+        "reason_code": "RUNTIME_NO_SPAWN_SUPPORT",
+        "reason_detail": scaffold_review_skip_reason(workflow, mode),
+        "affected_roles": [role],
+        "downgrade_label": "Partial workflow; formal gates skipped",
+        "approved_by": "not-applicable",
+        "recorded_at": recorded_at,
+    }
+
+
 def utc_now() -> tuple[str, str]:
     now = datetime.now(timezone.utc).replace(microsecond=0)
     return now.isoformat().replace("+00:00", "Z"), now.date().isoformat()
@@ -124,20 +144,26 @@ def utc_now() -> tuple[str, str]:
 def write_json(path: Path, payload: dict[str, Any], force: bool) -> None:
     if path.exists() and not force:
         raise FileExistsError(f"{path} exists; use --force to overwrite scaffold files")
-    path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    temporary.replace(path)
 
 
 def write_text(path: Path, text: str, force: bool) -> None:
     if path.exists() and not force:
         raise FileExistsError(f"{path} exists; use --force to overwrite scaffold files")
-    path.write_text(text, encoding="utf-8")
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(text, encoding="utf-8")
+    temporary.replace(path)
 
 
-def default_omics_manifest(run_id: str) -> dict[str, Any]:
+def default_omics_manifest(run_id: str, version: str, created_at: str) -> dict[str, Any]:
     return {
         "schema_version": "2.0",
         "analysis_id": f"omics-{run_id}",
         "workflow_run_id": run_id,
+        "plugin_version": version,
+        "created_at": created_at,
         "track": "single-cell-other",
         "data_sources": [],
         "sample_sheet": "TODO: lock sample sheet path or accession sample table before analysis",
@@ -180,9 +206,13 @@ def build_payloads(
 ) -> dict[str, dict[str, Any] | str]:
     timestamp, date = utc_now()
     version = plugin_version()
+    domain_pack = generic_domain_pack()
+    domain_version = str(domain_pack.get("domain_pack_version", "unknown"))
+    domain_assumptions = list(domain_pack.get("domain_specific_assumptions", []))
     run_id = f"bmat-{workflow}-{mode}-{timestamp.replace(':', '').replace('-', '')}"
     corpus_id = f"corpus-{run_id}"
     review_skip_reason = scaffold_review_skip_reason(workflow, mode)
+    review_skip_record = scaffold_review_skip_record(workflow, mode, timestamp)
     validator_path = Path(__file__).resolve().parent / "bmat_validate.py"
     skill_root = Path(__file__).resolve().parents[1]
     bundle_path = output_path.resolve() if output_path is not None else Path("<this-directory>")
@@ -190,10 +220,12 @@ def build_payloads(
     runtime_id = f"rt-{run_id}"
 
     preflight = {
+        "schema_version": "2.0",
         "runtime_capability_preflight_id": runtime_id,
         "runtime_id": runtime_id,
         "codex_client": "codex",
         "plugin_version": version,
+        "created_at": timestamp,
         "workspace_root": str(bundle_path),
         "host_os": platform.system() or "unknown",
         "path_style": "windows" if os.name == "nt" else "posix",
@@ -236,6 +268,10 @@ def build_payloads(
         ),
         "requested_alias": workflow,
         "selected_mode": mode,
+        "selected_domain_pack": "generic-biomedical",
+        "domain_pack_version": domain_version,
+        "selection_reason": "domain-neutral scaffold default; select a specialty pack explicitly when justified",
+        "domain_specific_assumptions": domain_assumptions,
         "workflow_tier": "compact",
         "requested_omics_track": scaffold_omics_track(workflow),
         "omics_track_ambiguity_note": (
@@ -252,10 +288,7 @@ def build_payloads(
         "risk_class": "low",
         "required_role_outputs": [],
         "skipped_role_outputs_with_reason": [
-            {
-                "role": "omics-code-reviewer" if is_omics_run_scaffold(workflow, mode) else "TODO",
-                "reason": review_skip_reason,
-            }
+            review_skip_record
         ],
         "external_tools_allowed": {
             "allowed": False,
@@ -303,10 +336,16 @@ def build_payloads(
     }
 
     run_state = {
+        "schema_version": "2.0",
         "run_id": run_id,
+        "created_at": timestamp,
         "alias": workflow,
         "mode": mode,
         "plugin_version": version,
+        "selected_domain_pack": "generic-biomedical",
+        "domain_pack_version": domain_version,
+        "domain_pack_selection_reason": "domain-neutral scaffold default",
+        "domain_specific_assumptions": domain_assumptions,
         "workflow_tier": "compact",
         "omics_track": scaffold_omics_track(workflow),
         "execution_strategy": "inline_only",
@@ -334,12 +373,19 @@ def build_payloads(
             "scaffold created before evidence collection, review, and validation",
             review_skip_reason,
         ],
+        "review_skip_reasons": [review_skip_record],
     }
 
     lead_decision = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "decision_id": f"lead-{run_id}",
         "workflow_run_id": run_id,
+        "plugin_version": version,
+        "created_at": timestamp,
+        "selected_domain_pack": "generic-biomedical",
+        "domain_pack_version": domain_version,
+        "domain_pack_selection_reason": "domain-neutral scaffold default",
+        "domain_specific_assumptions": domain_assumptions,
         "lead_scientist_agent_id": "life-science-lead-scientist",
         "requested_alias": workflow,
         "selected_mode": mode,
@@ -363,13 +409,21 @@ def build_payloads(
     }
 
     source_corpus = {
+        "schema_version": "2.0",
         "corpus_id": corpus_id,
-        "created_at": date,
+        "plugin_version": version,
+        "workflow_run_id": run_id,
+        "created_at": timestamp,
         "query_or_origin": topic,
         "sources": [],
     }
 
     claim_ledger = {
+        "schema_version": "2.0",
+        "claim_ledger_id": f"claims-{run_id}",
+        "plugin_version": version,
+        "workflow_run_id": run_id,
+        "created_at": timestamp,
         "claims": [],
         "excluded_or_not_verified_claims": [
             {
@@ -382,7 +436,11 @@ def build_payloads(
     }
 
     stage_evaluation = {
+        "schema_version": "2.0",
         "evaluation_id": f"stage-{run_id}",
+        "plugin_version": version,
+        "workflow_run_id": run_id,
+        "created_at": timestamp,
         "workflow_alias": workflow,
         "stages": [
             {
@@ -399,6 +457,11 @@ def build_payloads(
     }
 
     post_write_validation = {
+        "schema_version": "2.0",
+        "validation_id": f"post-{run_id}",
+        "plugin_version": version,
+        "workflow_run_id": run_id,
+        "checked_at": timestamp,
         "final_validator_verdict": "block",
         "unsupported_final_claims": [],
         "citation_or_provenance_mismatches": [],
@@ -412,7 +475,7 @@ def build_payloads(
     }
 
     final_text = (
-        "Workflow label: Partial workflow; formal gates skipped\n\n"
+        "Final workflow label: Partial workflow; formal gates skipped\n\n"
         f"Scaffold for `{workflow}` in `{mode}` mode.\n\n"
         f"Topic: {topic}\n\n"
         "Do not replace this with source-backed final wording until the claim ledger, "

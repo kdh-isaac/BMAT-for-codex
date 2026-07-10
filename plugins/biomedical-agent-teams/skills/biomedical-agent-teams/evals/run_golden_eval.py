@@ -17,7 +17,16 @@ from typing import Any
 
 TASK_ID_RE = re.compile(r"^GT-\d{3}$")
 MIN_DEFAULT_TASKS = 10
-MAX_DEFAULT_TASKS = 48
+MAX_DEFAULT_TASKS = 64
+ADVERSARIAL_GATE_TAGS = (
+    "source_identity",
+    "claim_entailment",
+    "artifact_integrity",
+    "review_independence",
+    "experiment_design",
+    "omics_statistics",
+    "domain_pack",
+)
 GATE_TAGS = (
     "pmid_drift",
     "contradiction",
@@ -26,6 +35,7 @@ GATE_TAGS = (
     "tournament_ranking",
     "codex_runtime",
     "semantic_scope",
+    *ADVERSARIAL_GATE_TAGS,
 )
 CATEGORY_TERMS = {
     "unsupported": ("unsupported",),
@@ -44,9 +54,72 @@ CATEGORY_TERMS = {
     "pmid_drift": ("pmid", "citation_drift", "fabricated_identifier"),
     "contradiction": ("contradiction", "negative_evidence"),
     "tournament_loop": ("iteration_budget_violation", "missing_meta_review_feedback", "tournament_loop"),
-    "tournament_ranking": ("ranking_interpretation_overclaim", "elo_as_evidence_strength", "tournament_ranking"),
-    "codex_runtime": ("codex_runtime_mismatch", "non_codex_runtime_assumption", "codex_runtime"),
-    "semantic_scope": ("semantic_scope_mismatch", "species_scope_overclaim", "assay_scope_overclaim", "cell_type_scope_overclaim"),
+    "tournament_ranking": (
+        "ranking_interpretation_overclaim",
+        "elo_as_evidence_strength",
+        "novelty_only_winner",
+        "ranking_objective_missing",
+        "order_sensitivity_unchecked",
+        "tournament_unsupported_high_confidence",
+        "wrong_domain_pack_selected",
+        "tournament_ranking",
+    ),
+    "codex_runtime": (
+        "codex_runtime_mismatch",
+        "non_codex_runtime_assumption",
+        "sample_mode_as_live_evidence",
+        "codex_runtime",
+    ),
+    "semantic_scope": (
+        "semantic_scope_mismatch",
+        "species_scope_overclaim",
+        "assay_scope_overclaim",
+        "cell_type_scope_overclaim",
+        "species_scope_mismatch",
+        "cell_type_scope_mismatch",
+        "assay_scope_mismatch",
+        "endpoint_scope_mismatch",
+        "prognostic_to_predictive",
+    ),
+    "source_identity": (
+        "doi_wrong_paper",
+        "accession_drift",
+        "source_identity",
+        "retracted_source",
+        "preprint_only",
+        "fixture_verification",
+        "tool_receipt_linkage_mismatch",
+    ),
+    "claim_entailment": (
+        "claim_unsupported",
+        "claim_entailment",
+        "scope_mismatch",
+        "prognostic_to_predictive",
+        "association_to_causality",
+        "abstract_only",
+    ),
+    "artifact_integrity": (
+        "stale_artifact",
+        "unrelated_tool_call",
+        "hash_drift",
+        "artifact_reuse",
+    ),
+    "review_independence": (
+        "sample_mode_as_live_evidence",
+        "same_model_as_independent_review",
+        "review_independence",
+    ),
+    "experiment_design": (
+        "experiment_placeholder",
+        "sample_size_placeholder",
+        "experiment_design",
+    ),
+    "omics_statistics": (
+        "biological_unit",
+        "pseudoreplication",
+        "omics_statistics",
+    ),
+    "domain_pack": ("domain_pack",),
 }
 UTF8_BOM = "\ufeff"
 
@@ -329,6 +402,13 @@ def score(tasks: list[dict[str, Any]], outputs: list[dict[str, Any]]) -> dict[st
         "tournament_ranking_detection_rate": tag_rates["tournament_ranking"],
         "codex_runtime_detection_rate": tag_rates["codex_runtime"],
         "semantic_scope_detection_rate": tag_rates["semantic_scope"],
+        "source_identity_detection_rate": tag_rates["source_identity"],
+        "claim_entailment_detection_rate": tag_rates["claim_entailment"],
+        "artifact_integrity_detection_rate": tag_rates["artifact_integrity"],
+        "review_independence_detection_rate": tag_rates["review_independence"],
+        "experiment_design_detection_rate": tag_rates["experiment_design"],
+        "omics_statistics_detection_rate": tag_rates["omics_statistics"],
+        "domain_pack_detection_rate": tag_rates["domain_pack"],
         "expected_block_action_rate": rate(counts["expected_block_num"], counts["expected_block_den"]),
         "tag_detection_rates": tag_rates,
         "false_positive_block_rate": rate(counts["false_block_num"], counts["false_block_den"]),
@@ -356,6 +436,7 @@ def evaluate_gate(
     min_tournament_ranking_rate: float,
     min_codex_runtime_rate: float,
     min_semantic_scope_rate: float,
+    min_adversarial_tag_rate: float,
     min_expected_block_action_rate: float,
     max_false_positive_block_rate: float,
 ) -> dict[str, Any]:
@@ -381,6 +462,11 @@ def evaluate_gate(
         failures.append("codex_runtime_detection_rate below threshold")
     if _rate_below(result.get("semantic_scope_detection_rate"), min_semantic_scope_rate):
         failures.append("semantic_scope_detection_rate below threshold")
+    tag_rates = result.get("tag_detection_rates", {})
+    for tag in ADVERSARIAL_GATE_TAGS:
+        value = tag_rates.get(tag) if isinstance(tag_rates, dict) else None
+        if _rate_below(value, min_adversarial_tag_rate):
+            failures.append(f"{tag}_detection_rate below threshold")
     if _rate_below(result.get("expected_block_action_rate"), min_expected_block_action_rate):
         failures.append("expected_block_action_rate below threshold")
 
@@ -403,6 +489,7 @@ def evaluate_gate(
             "min_tournament_ranking_detection_rate": min_tournament_ranking_rate,
             "min_codex_runtime_detection_rate": min_codex_runtime_rate,
             "min_semantic_scope_detection_rate": min_semantic_scope_rate,
+            "min_adversarial_tag_detection_rate": min_adversarial_tag_rate,
             "min_expected_block_action_rate": min_expected_block_action_rate,
             "max_false_positive_block_rate": max_false_positive_block_rate,
         },
@@ -432,6 +519,12 @@ def main() -> int:
     parser.add_argument("--min-tournament-ranking-rate", type=float, default=1.0)
     parser.add_argument("--min-codex-runtime-rate", type=float, default=1.0)
     parser.add_argument("--min-semantic-scope-rate", type=float, default=1.0)
+    parser.add_argument(
+        "--min-adversarial-tag-rate",
+        type=float,
+        default=1.0,
+        help="Minimum detection rate for each v1.2 source, claim, integrity, review, design, omics, and domain-pack adversarial tag.",
+    )
     parser.add_argument("--min-expected-block-action-rate", type=float, default=1.0)
     parser.add_argument("--max-false-positive-block-rate", type=float, default=0.0)
     args = parser.parse_args()
@@ -455,6 +548,7 @@ def main() -> int:
             min_tournament_ranking_rate=args.min_tournament_ranking_rate,
             min_codex_runtime_rate=args.min_codex_runtime_rate,
             min_semantic_scope_rate=args.min_semantic_scope_rate,
+            min_adversarial_tag_rate=args.min_adversarial_tag_rate,
             min_expected_block_action_rate=args.min_expected_block_action_rate,
             max_false_positive_block_rate=args.max_false_positive_block_rate,
         )

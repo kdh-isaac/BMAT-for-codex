@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import shutil
@@ -44,31 +45,17 @@ def write_json(path: Path, payload: dict) -> None:
 
 
 def valid_experiment_design_payload() -> dict:
-    return {
-        "design_id": "exp-test",
-        "workflow_run_id": "run-exp",
-        "plugin_version": "1.1.1",
-        "hypothesis": "synthetic",
-        "experimental_objective": "synthetic",
-        "experimental_unit": {"unit_type": "donor", "justification": "biological replicate"},
-        "primary_endpoint": "endpoint",
-        "positive_controls": ["positive control"],
-        "negative_controls": ["negative control"],
-        "vehicle_or_mock_controls": ["mock control"],
-        "biological_replicates": {"planned_n": 3, "rationale": "synthetic"},
-        "technical_replicates": {"planned_n": 2, "rationale": "synthetic"},
-        "randomization": {"planned": True, "method_or_reason": "synthetic"},
-        "blinding": {"planned": False, "method_or_reason": "synthetic"},
-        "exclusion_criteria": [],
-        "confounders": [],
-        "causal_kill_tests": [],
-        "statistical_plan": {"model": "linear model", "multiplicity": "BH-FDR", "effect_size_or_decision_threshold": "delta"},
-        "go_no_go_gates": [],
-        "safety_ethics_privacy_boundary": "public synthetic",
-        "reagent_provenance_policy": "verify before use",
-        "source_ids": [],
-        "claim_ids_supported": [],
-    }
+    helper_path = SKILL_ROOT / "tests" / "test_bmat_experiment_design_v2.py"
+    module_name = "bmat_goal_hardening_experiment_sample"
+    spec = importlib.util.spec_from_file_location(module_name, helper_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    payload = module.valid_design()
+    assert isinstance(payload, dict)
+    payload["workflow_run_id"] = "release-fixture-run-001"
+    return payload
 
 
 def test_release_mode_requires_jsonschema_or_fails(tmp_path: Path) -> None:
@@ -181,7 +168,22 @@ def test_source_verification_not_found_blocks_high_confidence(tmp_path: Path) ->
 def test_tool_backed_source_verification_requires_successful_tool_call(tmp_path: Path) -> None:
     bundle = copy_valid_bundle(tmp_path)
     verification = read_json(bundle / "source_verification.json")
-    verification["rows"][0]["tool_call_id"] = "TC-MISSING"
+    row = verification["rows"][0]
+    row.update(
+        {
+            "verification_mode": "live-tool",
+            "retrieval_surface": "local_bmat_validator",
+            "resolver": "BMAT local validator recorded output",
+            "tool_id": "local-bmat-validators",
+            "tool_call_id": "TC-MISSING",
+            "retrieved_at": row["checked_at"],
+            "output_ref": row["local_snapshot_ref"],
+            "output_sha256": row["local_snapshot_sha256"],
+        }
+    )
+    row.pop("local_snapshot_ref")
+    row.pop("local_snapshot_sha256")
+    row.pop("local_snapshot_size_bytes")
     write_json(bundle / "source_verification.json", verification)
 
     result = run_validator("--bundle", str(bundle), "--release")
@@ -531,7 +533,7 @@ def test_review_manifest_output_hash_mismatch_fails(tmp_path: Path) -> None:
     result = run_validator("--bundle", str(bundle), "--release")
 
     assert result.returncode == 1
-    assert "REVIEW_MANIFEST_OUTPUT_HASH_MISMATCH" in combined_output(result)
+    assert "REVIEW_OUTPUT_ARTIFACT_HASH_MISMATCH" in combined_output(result)
 
 
 def test_review_manifest_instance_mismatch_fails(tmp_path: Path) -> None:
@@ -555,7 +557,7 @@ def test_review_manifest_output_missing_fails(tmp_path: Path) -> None:
     result = run_validator("--bundle", str(bundle), "--release")
 
     assert result.returncode == 1
-    assert "REVIEW_MANIFEST_OUTPUT_MISSING" in combined_output(result)
+    assert "REVIEW_OUTPUT_ARTIFACT_MISSING" in combined_output(result)
 
 
 def test_review_changed_claim_requires_results_integration(tmp_path: Path) -> None:
@@ -801,42 +803,51 @@ def test_experiment_design_release_requires_contract(tmp_path: Path) -> None:
 def test_experiment_design_sample_size_claim_requires_stats_plan(tmp_path: Path) -> None:
     bundle = copy_valid_bundle(tmp_path)
     design = valid_experiment_design_payload()
-    design["statistical_plan"] = {}
+    design.pop("statistical_plan")
     write_json(bundle / "experiment_design.json", design)
 
     result = run_validator("--bundle", str(bundle), "--release")
 
     assert result.returncode == 1
-    assert "EXPERIMENT_DESIGN_STATS_PLAN_REQUIRED" in combined_output(result)
+    assert "EXPERIMENT_DESIGN_STATS_PLAN_MISSING" in combined_output(result)
 
 
 def test_experiment_design_reagent_specifics_require_source_verification(tmp_path: Path) -> None:
     bundle = copy_valid_bundle(tmp_path)
     design = valid_experiment_design_payload()
-    design["reagent_specific_claims"] = ["catalog-specific antibody claim"]
+    design["source_ids"] = ["S-001"]
+    design["reagent_specific_claims"] = [
+        {
+            "reagent_claim_id": "RG-001",
+            "statement": "Catalog-specific antibody claim.",
+            "verification_status": "verified",
+            "source_ids": ["S-001"],
+            "limitations": "",
+        }
+    ]
     write_json(bundle / "experiment_design.json", design)
     (bundle / "source_verification.json").unlink()
 
     result = run_validator("--bundle", str(bundle), "--release")
 
     assert result.returncode == 1
-    assert "EXPERIMENT_DESIGN_REAGENT_SPECIFICS_REQUIRE_SOURCE_VERIFICATION" in combined_output(result)
+    assert "EXPERIMENT_DESIGN_REAGENT_VERIFICATION_MISSING" in combined_output(result)
 
 
 def test_experiment_design_safety_boundary_required_for_operational_detail(tmp_path: Path) -> None:
     bundle = copy_valid_bundle(tmp_path)
     design = valid_experiment_design_payload()
     design["experimental_objective"] = "synthetic dose protocol check"
-    design["safety_ethics_privacy_boundary"] = ""
+    design["safety_ethics_privacy_boundary"] = None
     write_json(bundle / "experiment_design.json", design)
 
     result = run_validator("--bundle", str(bundle), "--release")
 
     assert result.returncode == 1
-    assert "EXPERIMENT_DESIGN_SAFETY_BOUNDARY_REQUIRED" in combined_output(result)
+    assert "EXPERIMENT_DESIGN_SAFETY_BOUNDARY_MISSING" in combined_output(result)
 
 
-def test_source_check_offline_fixture_writes_verified_rows(tmp_path: Path) -> None:
+def test_source_check_offline_fixture_writes_non_release_rows(tmp_path: Path) -> None:
     bundle = copy_valid_bundle(tmp_path)
     out = tmp_path / "source_verification.json"
 
@@ -863,5 +874,10 @@ def test_source_check_offline_fixture_writes_verified_rows(tmp_path: Path) -> No
     assert result.returncode == 0, combined_output(result)
     payload = read_json(out)
     assert payload["plugin_version"] == (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    assert payload["rows"][0]["identifier_status"] == "verified"
-    assert payload["rows"][0]["metadata_match"] == "pass"
+    row = payload["rows"][0]
+    assert row["identifier_status"] == "not-checked"
+    assert row["metadata_match"] == "not-checked"
+    assert row["verification_mode"] == "fixture"
+    assert row["fixture_only"] is True
+    assert row["release_eligible"] is False
+    assert "tool_call_id" not in row

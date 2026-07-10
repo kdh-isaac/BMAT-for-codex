@@ -11,6 +11,7 @@ jsonschema = pytest.importorskip("jsonschema")
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = SKILL_ROOT.parents[1]
+REPO_ROOT = SKILL_ROOT.parents[3]
 BOM_SIGNATURES = (
     (b"\xff\xfe\x00\x00", "UTF-32 LE BOM"),
     (b"\x00\x00\xfe\xff", "UTF-32 BE BOM"),
@@ -63,6 +64,8 @@ def test_release_surface_files_exist() -> None:
         SKILL_ROOT / "contracts" / "omics-metadata-check.schema.json",
         SKILL_ROOT / "contracts" / "experiment-design.schema.json",
         SKILL_ROOT / "contracts" / "review-artifact-manifest.schema.json",
+        SKILL_ROOT / "contracts" / "review-runtime-receipt.schema.json",
+        SKILL_ROOT / "contracts" / "bundle-manifest.schema.json",
         SKILL_ROOT / "templates" / "lead-decision-template.md",
         SKILL_ROOT / "templates" / "results-integration-template.md",
         SKILL_ROOT / "templates" / "research-overview-template.md",
@@ -75,6 +78,10 @@ def test_release_surface_files_exist() -> None:
         SKILL_ROOT / "scripts" / "bmat_source_check.py",
         SKILL_ROOT / "scripts" / "bmat_omics_metadata_check.py",
         SKILL_ROOT / "scripts" / "bmat_experiment_design_check.py",
+        SKILL_ROOT / "scripts" / "bmat_bundle_manifest.py",
+        SKILL_ROOT / "scripts" / "bmat_claim_support_check.py",
+        SKILL_ROOT / "scripts" / "bmat_migrate_bundle.py",
+        SKILL_ROOT / "scripts" / "bmat_tournament_check.py",
         SKILL_ROOT / "scripts" / "bmat_public_omics_benchmark_smoke.py",
         PLUGIN_ROOT / ".codex-plugin" / "biomedical-agent-teams.md",
     ]
@@ -94,12 +101,33 @@ def test_release_surface_text_files_are_bom_free() -> None:
 def test_version_aligned_in_primary_metadata() -> None:
     version = (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
-    assert version == "1.1.1"
+    assert version == "1.2.0"
     assert read_json(SKILL_ROOT / "manifest.json")["version"] == version
     assert read_json(SKILL_ROOT / "manifest.json")["adapter_version"] == version
     assert read_json(SKILL_ROOT / "source-manifest.json")["version"] == version
     assert read_json(SKILL_ROOT / "agent-registry.json")["version"] == version
     assert read_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")["version"] == version
+
+
+def test_marketplace_entry_resolves_versioned_plugin_metadata() -> None:
+    marketplace = read_json(REPO_ROOT / ".agents" / "plugins" / "marketplace.json")
+    entries = {entry["name"]: entry for entry in marketplace["plugins"]}
+    entry = entries["biomedical-agent-teams"]
+
+    assert entry["source"] == {
+        "source": "local",
+        "path": "./plugins/biomedical-agent-teams",
+    }
+    assert read_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")["version"] == "1.2.0"
+
+
+def test_plugin_default_prompts_are_bounded_and_domain_neutral_by_default() -> None:
+    plugin = read_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")
+    prompts = plugin["interface"]["defaultPrompt"]
+
+    assert 1 <= len(prompts) <= 3
+    assert all(1 <= len(prompt) <= 128 for prompt in prompts)
+    assert "--domain-pack generic-biomedical" in prompts[0]
 
 
 def test_manifest_lists_release_resources() -> None:
@@ -115,6 +143,8 @@ def test_manifest_lists_release_resources() -> None:
     assert "omics-metadata-check.schema" in source_manifest["contracts"]
     assert "experiment-design.schema" in source_manifest["contracts"]
     assert "review-artifact-manifest.schema" in source_manifest["contracts"]
+    assert "review-runtime-receipt.schema" in source_manifest["contracts"]
+    assert "bundle-manifest.schema" in source_manifest["contracts"]
     assert "tool-call-ledger.schema" in source_manifest["contracts"]
     assert "workflow-dag.schema" in source_manifest["contracts"]
     assert "lead-decision-template" in source_manifest["templates"]
@@ -132,12 +162,21 @@ def test_manifest_lists_release_resources() -> None:
     assert "bmat_source_check" in source_manifest["scripts"]
     assert "bmat_omics_metadata_check" in source_manifest["scripts"]
     assert "bmat_experiment_design_check" in source_manifest["scripts"]
+    assert "bmat_bundle_manifest" in source_manifest["scripts"]
+    assert "bmat_claim_support_check" in source_manifest["scripts"]
+    assert "bmat_migrate_bundle" in source_manifest["scripts"]
+    assert "bmat_tournament_check" in source_manifest["scripts"]
     assert "bmat_run" in source_manifest["scripts"]
     assert "evidence-audit-team" in source_manifest["workflow_dags"]
     assert "cell-therapy" in source_manifest["domain_packs"]
     assert "immuno-oncology" in source_manifest["domain_packs"]
     release_note_keys = [key for key in source_manifest if key.startswith("new_in_v")]
-    assert release_note_keys == ["new_in_v1_0_0", "new_in_v1_1_0", "new_in_v1_1_1"]
+    assert release_note_keys == [
+        "new_in_v1_0_0",
+        "new_in_v1_1_0",
+        "new_in_v1_1_1",
+        "new_in_v1_2_0",
+    ]
     assert (
         "runtime-capability-preflight-canonical-artifact-name"
         in source_manifest["new_in_v1_0_0"]
@@ -182,6 +221,18 @@ def test_manifest_lists_release_resources() -> None:
     assert "translational-scout-post-write-output-routing-fix" in source_manifest["new_in_v1_1_1"]
     assert "checker-scripts-read-package-version" in source_manifest["new_in_v1_1_1"]
     assert "previous-patch-version-residue-guard" in source_manifest["new_in_v1_1_1"]
+    assert (
+        "source-verification-v2-receipt-and-release-eligibility-gates"
+        in source_manifest["new_in_v1_2_0"]
+    )
+    assert (
+        "bundle-manifest-hash-size-and-artifact-identity-validation"
+        in source_manifest["new_in_v1_2_0"]
+    )
+    assert (
+        "non-promoting-v1-to-v2-bundle-migration-utility"
+        in source_manifest["new_in_v1_2_0"]
+    )
 
 
 def test_immuno_oncology_domain_pack_has_marker_and_boundary_assets() -> None:
@@ -219,7 +270,7 @@ def test_tool_registry_blocks_unlogged_tool_claims() -> None:
 
 def test_tool_call_ledger_schema_has_execution_governance_fields() -> None:
     schema = read_json(SKILL_ROOT / "contracts" / "tool-call-ledger.schema.json")
-    call_properties = schema["properties"]["calls"]["items"]["properties"]
+    call_properties = schema["$defs"]["toolCall"]["properties"]
 
     for field in (
         "allowed_data_class",
@@ -229,7 +280,7 @@ def test_tool_call_ledger_schema_has_execution_governance_fields() -> None:
         "approval_ref",
         "runtime_surface",
         "mcp_server_name",
-        "artifact_sha256",
+        "output_sha256",
         "retention_policy",
         "network_boundary",
         "pii_risk",
@@ -277,9 +328,11 @@ def test_results_integration_schema_classifies_result_status() -> None:
 
 def valid_results_integration_payload() -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "1.1.1",
+        "plugin_version": "1.2.0",
+        "workflow_run_id": "run-test-v2",
+        "created_at": "2026-07-10T00:00:00Z",
         "source_corpus_lock": "locked",
         "tool_use_log": [
             {
@@ -340,8 +393,12 @@ def test_results_integration_schema_requires_downgrade_reason_for_unused_tool() 
 def test_source_corpus_requires_evidence_spans_for_included_sources() -> None:
     schema = read_json(SKILL_ROOT / "contracts" / "source-corpus.schema.json")
     payload = {
+        "schema_version": "2.0",
         "corpus_id": "corpus-test",
-        "created_at": "2026-07-06",
+        "plugin_version": "1.2.0",
+        "workflow_run_id": "run-test-v2",
+        "created_at": "2026-07-10T00:00:00Z",
+        "query_or_origin": "synthetic schema regression fixture",
         "sources": [
             {
                 "source_id": "S-001",
@@ -362,8 +419,18 @@ def test_source_corpus_requires_evidence_spans_for_included_sources() -> None:
     payload["sources"][0]["evidence_spans"] = [
         {
             "span_id": "S-001-span-001",
-            "location": "abstract:sent1",
-            "scope_note": "synthetic evidence span with bounded scope",
+            "source_id": "S-001",
+            "source_snapshot_ref": "evidence/source-001.txt",
+            "source_snapshot_sha256": "0" * 64,
+            "locator": "abstract:sent1",
+            "section": "abstract",
+            "paragraph_or_table": "paragraph 1",
+            "sentence_or_cell": "sentence 1",
+            "evidence_text_sha256": "1" * 64,
+            "short_evidence_excerpt": "Synthetic bounded evidence excerpt.",
+            "retrieved_at": "2026-07-10T00:00:00Z",
+            "extraction_actor": "citation-verifier",
+            "limitations": "Synthetic schema-only regression fixture.",
         }
     ]
     jsonschema.validate(payload, schema)
@@ -378,19 +445,24 @@ def test_research_overview_template_is_ledger_bound() -> None:
     assert "workflow label" in text
 
 
-def test_command_recipes_name_v1_1_release_gate_artifacts() -> None:
+def test_command_recipes_name_v1_2_release_gate_artifacts() -> None:
     required_tokens = (
-        "## 1.1 Release-Gate Artifacts",
+        "## 1.2 Release-Gate Artifacts",
         "lead_decision.json",
         "workflow_dag.json",
         "results_integration.json",
         "tool_call_ledger.json",
         "evidence_spans[]",
+        "source_verification.json",
+        "claim_support_matrix.json",
+        "review_artifact_manifest.json",
+        "bundle_manifest.json",
     )
 
     for command in sorted((SKILL_ROOT / "commands").glob("*.md")):
         text = command.read_text(encoding="utf-8")
         assert "## 1.0 Release-Gate Artifacts" not in text
+        assert "## 1.1 Release-Gate Artifacts" not in text
         for token in required_tokens:
             assert token in text, f"{command.name} missing {token}"
 
@@ -448,7 +520,7 @@ def test_current_user_facing_surfaces_have_no_legacy_version_residue() -> None:
 
     forbidden_patterns = {
         "old_semver": re.compile(r"(?<![\w.])(0\.(?:3|4|8|9)\.\d+|1\.0\.0)(?![\w.])"),
-        "previous_patch_version": re.compile(r"(?<!new_in_v)1\.1\.0"),
+        "previous_release_version": re.compile(r"(?<!new_in_v)1\.1\.(?:0|1)"),
         "old_release_gate": re.compile(r"1\.0 Release-Gate|README 35|35 agent"),
         "old_current_version": re.compile(r"Current (?:plugin )?version: `1\.0"),
         "claude_runtime_surface": re.compile(

@@ -3,9 +3,13 @@
   "title": "Biomedical Agent Teams Workflow DAG",
   "type": "object",
   "additionalProperties": false,
-  "required": ["workflow_id", "runtime", "alias", "mode", "nodes", "release_gates"],
+  "required": ["schema_version", "workflow_id", "workflow_run_id", "plugin_version", "created_at", "runtime", "alias", "mode", "nodes", "release_gates"],
   "properties": {
+    "schema_version": { "const": "2.0" },
     "workflow_id": { "type": "string" },
+    "workflow_run_id": { "type": "string", "minLength": 1 },
+    "plugin_version": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
     "runtime": {
       "type": "string",
       "enum": ["codex"]

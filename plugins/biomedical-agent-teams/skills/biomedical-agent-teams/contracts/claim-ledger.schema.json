@@ -2,8 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Biomedical Agent Teams Claim Ledger",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
+  "required": ["schema_version", "claim_ledger_id", "plugin_version", "workflow_run_id", "created_at", "claims"],
   "properties": {
+    "schema_version": { "const": "2.0" },
+    "claim_ledger_id": { "type": "string", "minLength": 1 },
+    "plugin_version": { "type": "string", "minLength": 1 },
+    "workflow_run_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
     "claims": {
       "type": "array",
       "items": { "$ref": "#/$defs/claim" }
@@ -24,7 +30,7 @@
   "$defs": {
     "scopeVerdict": {
       "type": "string",
-      "enum": ["match", "partial", "mismatch", "not-applicable"]
+      "enum": ["match", "partial", "mismatch", "not-applicable", "not-assessed"]
     },
     "claim": {
       "type": "object",
@@ -97,16 +103,20 @@
         "scope_match": {
           "type": "object",
           "additionalProperties": false,
+          "required": ["species", "cell_type", "assay", "endpoint", "population_or_model", "intervention_or_exposure", "biological_context"],
           "properties": {
             "species": { "$ref": "#/$defs/scopeVerdict" },
             "cell_type": { "$ref": "#/$defs/scopeVerdict" },
             "assay": { "$ref": "#/$defs/scopeVerdict" },
-            "endpoint": { "$ref": "#/$defs/scopeVerdict" }
+            "endpoint": { "$ref": "#/$defs/scopeVerdict" },
+            "population_or_model": { "$ref": "#/$defs/scopeVerdict" },
+            "intervention_or_exposure": { "$ref": "#/$defs/scopeVerdict" },
+            "biological_context": { "$ref": "#/$defs/scopeVerdict" }
           }
         },
         "entailment_verdict": {
           "type": "string",
-          "enum": ["supports", "weakly_supports", "contradicts", "irrelevant", "not_checked"]
+          "enum": ["supports", "weakly-supports", "contradicts", "irrelevant", "not-checked"]
         }
       }
     }

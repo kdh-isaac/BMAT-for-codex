@@ -1,3 +1,5 @@
-Workflow label: Full protocol followed
+Final workflow label: Full protocol followed
 
-Synthetic public fixture supports a conservative audit claim.
+The bundled local receipt supports the conservative validator claim under the stated synthetic scenario.
+
+Limitation: this release fixture verifies provenance and policy mechanics; it does not assert an external biomedical fact.

@@ -1,10 +1,10 @@
 # Biomedical Agent Teams for Codex
 
-BMAT for Codex v1.1.1 is a skill-routed biomedical workflow plugin. The live
+BMAT for Codex v1.2.0 is a skill-routed biomedical workflow plugin. The live
 router is `skills/biomedical-agent-teams/SKILL.md`; this file keeps the hidden
 plugin metadata surface aligned with the user-facing workflow contract.
 
-## v1.1.1 Runtime Contract
+## v1.2.0 Runtime Contract
 
 - Use `--tier compact|full` to make the expected bundle depth explicit.
 - Use `--track bulk-rnaseq|tenx-gex|tenx-cellplex|tenx-citeseq|tenx-vdj|tenx-multiome|single-cell-other|survival|multi-omics|other` for omics runs.
@@ -17,6 +17,12 @@ plugin metadata surface aligned with the user-facing workflow contract.
 - Route tool, connector, reviewer, and omics outputs through
   `results_integration.json`, `tool_call_ledger.json`, and `claim_ledger.json`
   before final writing.
+- Bind release-eligible sources to live-tool, human, or local-file receipts;
+  fixture and not-checked rows cannot become release evidence.
+- Bind claim support to included sources, local evidence spans, strict scope,
+  and hash-verified review artifacts.
+- Validate `bundle_manifest.json` hashes and a qualifying independent-review
+  runtime receipt before using the Full-protocol label from `run_state.json`.
 
 ## Local Smoke Commands
 

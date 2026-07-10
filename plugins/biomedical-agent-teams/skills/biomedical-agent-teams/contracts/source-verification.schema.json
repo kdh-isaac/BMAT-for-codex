@@ -1,60 +1,284 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Biomedical Agent Teams Source Verification",
+  "title": "Biomedical Agent Teams Source Verification v2",
   "type": "object",
-  "additionalProperties": true,
-  "required": ["schema_version", "verification_id", "plugin_version", "workflow_run_id", "checked_at", "rows"],
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "verification_id",
+    "plugin_version",
+    "workflow_run_id",
+    "checked_at",
+    "rows"
+  ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "verification_id": { "type": "string" },
-    "plugin_version": { "type": "string" },
-    "workflow_run_id": { "type": "string" },
-    "checked_at": { "type": "string" },
+    "schema_version": { "const": "2.0" },
+    "verification_id": { "$ref": "#/$defs/nonEmptyString" },
+    "plugin_version": { "$ref": "#/$defs/semanticVersion" },
+    "workflow_run_id": { "$ref": "#/$defs/nonEmptyString" },
+    "checked_at": { "type": "string", "format": "date-time" },
     "rows": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": true,
-        "required": [
-          "source_id",
-          "source_type",
-          "identifier",
-          "identifier_status",
-          "metadata_match",
-          "source_corpus_row_status",
-          "claim_ids_checked",
-          "verification_limitations"
-        ],
-        "properties": {
-          "source_id": { "type": "string" },
-          "source_type": {
-            "type": "string",
-            "enum": ["PMID", "DOI", "accession", "NCT", "database-record", "local-file", "analysis-artifact", "software", "other"]
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/verificationRow" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": ".*\\S.*"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "sourceType": {
+      "type": "string",
+      "enum": [
+        "PMID",
+        "DOI",
+        "accession",
+        "NCT",
+        "database-record",
+        "local-file",
+        "analysis-artifact",
+        "software",
+        "other"
+      ]
+    },
+    "verificationRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_type",
+        "identifier",
+        "canonical_identifier",
+        "identifier_status",
+        "metadata_match",
+        "verification_mode",
+        "release_eligible",
+        "fixture_only",
+        "checked_at",
+        "retrieval_surface",
+        "claim_ids_checked",
+        "verification_limitations",
+        "integrity_status",
+        "version_status"
+      ],
+      "properties": {
+        "source_id": { "$ref": "#/$defs/nonEmptyString" },
+        "source_type": { "$ref": "#/$defs/sourceType" },
+        "identifier": { "$ref": "#/$defs/nonEmptyString" },
+        "canonical_identifier": { "$ref": "#/$defs/nonEmptyString" },
+        "identifier_status": {
+          "type": "string",
+          "enum": ["verified", "not-found", "ambiguous", "not-checked", "blocked", "unavailable"]
+        },
+        "metadata_match": {
+          "type": "string",
+          "enum": ["pass", "pass-with-caveats", "mismatch", "not-checked", "unavailable"]
+        },
+        "verification_mode": {
+          "type": "string",
+          "enum": ["live-tool", "human", "local-file", "fixture", "not-checked"]
+        },
+        "release_eligible": { "type": "boolean" },
+        "fixture_only": { "type": "boolean" },
+        "checked_at": { "type": "string", "format": "date-time" },
+        "retrieved_at": { "type": "string", "format": "date-time" },
+        "retrieval_surface": { "$ref": "#/$defs/nonEmptyString" },
+        "claim_ids_checked": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "verification_limitations": { "$ref": "#/$defs/nonEmptyString" },
+        "integrity_status": {
+          "type": "string",
+          "enum": [
+            "current",
+            "corrected",
+            "expression-of-concern",
+            "retracted",
+            "withdrawn",
+            "unknown",
+            "not-applicable"
+          ]
+        },
+        "version_status": {
+          "type": "string",
+          "enum": [
+            "version-of-record",
+            "corrected-version",
+            "preprint",
+            "dataset-record",
+            "registry-record",
+            "software-release",
+            "local-snapshot",
+            "unknown",
+            "not-applicable"
+          ]
+        },
+        "canonical_title": { "$ref": "#/$defs/nonEmptyString" },
+        "canonical_name": { "$ref": "#/$defs/nonEmptyString" },
+        "canonical_date": { "$ref": "#/$defs/nonEmptyString" },
+        "version": { "$ref": "#/$defs/nonEmptyString" },
+        "resolver": { "$ref": "#/$defs/nonEmptyString" },
+        "tool_id": { "$ref": "#/$defs/nonEmptyString" },
+        "tool_call_id": { "$ref": "#/$defs/nonEmptyString" },
+        "output_ref": { "$ref": "#/$defs/nonEmptyString" },
+        "output_sha256": { "$ref": "#/$defs/sha256" },
+        "verification_actor": { "$ref": "#/$defs/nonEmptyString" },
+        "actor_id": { "$ref": "#/$defs/nonEmptyString" },
+        "actor_role": { "$ref": "#/$defs/nonEmptyString" },
+        "review_artifact_ref": { "$ref": "#/$defs/nonEmptyString" },
+        "review_artifact_sha256": { "$ref": "#/$defs/sha256" },
+        "local_snapshot_ref": { "$ref": "#/$defs/nonEmptyString" },
+        "local_snapshot_sha256": { "$ref": "#/$defs/sha256" },
+        "local_snapshot_size_bytes": { "type": "integer", "minimum": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "verification_mode": { "const": "fixture" } },
+            "required": ["verification_mode"]
           },
-          "identifier": { "type": "string" },
-          "identifier_status": {
-            "type": "string",
-            "enum": ["verified", "not-found", "ambiguous", "not-checked", "blocked", "unavailable"]
+          "then": {
+            "properties": {
+              "fixture_only": { "const": true },
+              "release_eligible": { "const": false },
+              "identifier_status": { "const": "not-checked" },
+              "metadata_match": { "const": "not-checked" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "verification_mode": { "const": "not-checked" } },
+            "required": ["verification_mode"]
           },
-          "metadata_match": {
-            "type": "string",
-            "enum": ["pass", "pass-with-caveats", "mismatch", "not-checked", "unavailable"]
+          "then": {
+            "properties": {
+              "fixture_only": { "const": false },
+              "release_eligible": { "const": false },
+              "identifier_status": { "const": "not-checked" },
+              "metadata_match": { "const": "not-checked" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "verification_mode": { "const": "live-tool" } },
+            "required": ["verification_mode"],
+            "anyOf": [
+              {
+                "properties": { "identifier_status": { "const": "verified" } },
+                "required": ["identifier_status"]
+              },
+              {
+                "properties": { "release_eligible": { "const": true } },
+                "required": ["release_eligible"]
+              }
+            ]
           },
-          "canonical_title": { "type": "string" },
-          "canonical_name": { "type": "string" },
-          "canonical_date": { "type": "string" },
-          "version": { "type": "string" },
-          "retrieval_surface": { "type": "string" },
-          "tool_id": { "type": "string" },
-          "tool_call_id": { "type": "string" },
-          "source_corpus_row_status": { "type": "string" },
-          "claim_ids_checked": {
-            "type": "array",
-            "items": { "type": "string" }
+          "then": {
+            "required": [
+              "resolver",
+              "tool_id",
+              "tool_call_id",
+              "retrieved_at",
+              "output_ref",
+              "output_sha256"
+            ],
+            "anyOf": [
+              { "required": ["canonical_title"] },
+              { "required": ["canonical_name"] }
+            ],
+            "properties": {
+              "fixture_only": { "const": false }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "verification_mode": { "const": "human" } },
+            "required": ["verification_mode"]
           },
-          "verification_limitations": { "type": "string" }
+          "then": {
+            "required": [
+              "verification_actor",
+              "actor_id",
+              "actor_role",
+              "review_artifact_ref",
+              "review_artifact_sha256"
+            ],
+            "properties": { "fixture_only": { "const": false } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "verification_mode": { "const": "local-file" } },
+            "required": ["verification_mode"]
+          },
+          "then": {
+            "required": [
+              "local_snapshot_ref",
+              "local_snapshot_sha256",
+              "local_snapshot_size_bytes"
+            ],
+            "properties": { "fixture_only": { "const": false } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "release_eligible": { "const": true } },
+            "required": ["release_eligible"]
+          },
+          "then": {
+            "properties": {
+              "fixture_only": { "const": false },
+              "identifier_status": { "const": "verified" },
+              "metadata_match": { "enum": ["pass", "pass-with-caveats"] },
+              "verification_mode": { "enum": ["live-tool", "human", "local-file"] },
+              "canonical_identifier": { "not": { "enum": ["not-checked", "unknown", "unavailable"] } },
+              "integrity_status": { "enum": ["current", "corrected", "not-applicable"] },
+              "version_status": { "not": { "enum": ["preprint", "unknown"] } }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "integrity_status": { "enum": ["retracted", "withdrawn"] }
+            },
+            "required": ["integrity_status"]
+          },
+          "then": {
+            "properties": { "release_eligible": { "const": false } }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "retrieval_surface": { "enum": ["offline-fixture", "test-fixture"] }
+            },
+            "required": ["retrieval_surface"]
+          },
+          "then": {
+            "properties": {
+              "verification_mode": { "const": "fixture" },
+              "fixture_only": { "const": true },
+              "release_eligible": { "const": false }
+            }
+          }
         }
-      }
+      ]
     }
   }
 }

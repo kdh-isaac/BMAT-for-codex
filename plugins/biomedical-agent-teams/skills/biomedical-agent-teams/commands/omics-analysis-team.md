@@ -33,10 +33,10 @@ be run because shell/code execution is unavailable, record
 reasons, and final skipped gates. Do not claim `Full protocol followed` in that
 state.
 
-## 1.1 Release-Gate Artifacts
+## 1.2 Release-Gate Artifacts
 
 For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
-outputs, keep the 1.1.1 hard-gate artifacts aligned with the narrative:
+outputs, keep the 1.2.0 hard-gate artifacts aligned with the narrative:
 
 - Use `lead_decision.json` for source-backed `standard`, `deep`, `audit`,
   team-DAG, or full-protocol runs before release; it must match the selected
@@ -61,6 +61,8 @@ outputs, keep the 1.1.1 hard-gate artifacts aligned with the narrative:
   output is CI harness evidence only, not live model validation evidence.
 - Use `review_artifact_manifest.json` for released review artifacts so every
   reviewer or report artifact has a stable path, size, SHA-256, and claim link.
+- Regenerate `bundle_manifest.json` last so release-critical bytes are bound to
+  the current workflow run and plugin version.
 
 For `run` mode, do not silently set `spawned_review_plan.allowed=false` or
 `budget=0` after S1-S3 locks. Default to `inline_first_selective_review` with a

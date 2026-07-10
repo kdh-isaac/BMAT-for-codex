@@ -1,49 +1,143 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Biomedical Agent Teams Claim Support Matrix",
+  "title": "Biomedical Agent Teams Claim Support Matrix v2",
   "type": "object",
-  "additionalProperties": true,
-  "required": ["schema_version", "support_matrix_id", "plugin_version", "workflow_run_id", "rows"],
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "support_matrix_id",
+    "plugin_version",
+    "workflow_run_id",
+    "created_at",
+    "rows"
+  ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "support_matrix_id": { "type": "string" },
-    "plugin_version": { "type": "string" },
-    "workflow_run_id": { "type": "string" },
+    "schema_version": { "const": "2.0" },
+    "support_matrix_id": { "$ref": "#/$defs/nonEmptyString" },
+    "plugin_version": { "$ref": "#/$defs/semanticVersion" },
+    "workflow_run_id": { "$ref": "#/$defs/nonEmptyString" },
+    "created_at": { "type": "string", "format": "date-time" },
     "rows": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": true,
-        "required": ["claim_id", "source_id", "support_verdict", "scope_match", "overclaim_risk", "allowed_in_final", "review_surface", "independent_review_required", "limitations"],
-        "properties": {
-          "claim_id": { "type": "string" },
-          "source_id": { "type": "string" },
-          "evidence_span_ref": { "type": "string" },
-          "support_verdict": {
-            "type": "string",
-            "enum": ["supports", "weakly_supports", "contradicts", "irrelevant", "not_checked"]
-          },
-          "scope_match": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "species": { "type": "string", "enum": ["match", "partial", "mismatch", "not-applicable"] },
-              "cell_type": { "type": "string", "enum": ["match", "partial", "mismatch", "not-applicable"] },
-              "assay": { "type": "string", "enum": ["match", "partial", "mismatch", "not-applicable"] },
-              "endpoint": { "type": "string", "enum": ["match", "partial", "mismatch", "not-applicable"] }
-            }
-          },
-          "overclaim_risk": {
-            "type": "string",
-            "enum": ["low", "moderate", "high", "not-assessed"]
-          },
-          "allowed_in_final": { "type": "boolean" },
-          "allowed_final_wording": { "type": "string" },
-          "review_surface": { "type": "string" },
-          "independent_review_required": { "type": "boolean" },
-          "limitations": { "type": "string" }
-        }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/supportRow" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": ".*\\S.*"
+    },
+    "sha256OrNotApplicable": {
+      "type": "string",
+      "pattern": "^(?:not-applicable|[A-Fa-f0-9]{64})$"
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "scopeVerdict": {
+      "type": "string",
+      "enum": ["match", "partial", "mismatch", "not-applicable", "not-assessed"]
+    },
+    "scopeMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "species",
+        "cell_type",
+        "assay",
+        "endpoint",
+        "population_or_model",
+        "intervention_or_exposure",
+        "biological_context"
+      ],
+      "properties": {
+        "species": { "$ref": "#/$defs/scopeVerdict" },
+        "cell_type": { "$ref": "#/$defs/scopeVerdict" },
+        "assay": { "$ref": "#/$defs/scopeVerdict" },
+        "endpoint": { "$ref": "#/$defs/scopeVerdict" },
+        "population_or_model": { "$ref": "#/$defs/scopeVerdict" },
+        "intervention_or_exposure": { "$ref": "#/$defs/scopeVerdict" },
+        "biological_context": { "$ref": "#/$defs/scopeVerdict" }
       }
+    },
+    "supportRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "source_id",
+        "evidence_span_ref",
+        "support_verdict",
+        "scope_match",
+        "overclaim_risk",
+        "allowed_in_final",
+        "allowed_final_wording",
+        "review_surface",
+        "review_actor_id",
+        "review_instance_id",
+        "review_artifact_ref",
+        "review_artifact_sha256",
+        "independent_review_required",
+        "release_eligible",
+        "limitations"
+      ],
+      "properties": {
+        "claim_id": { "$ref": "#/$defs/nonEmptyString" },
+        "source_id": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_span_ref": { "$ref": "#/$defs/nonEmptyString" },
+        "support_verdict": {
+          "type": "string",
+          "enum": ["supports", "weakly-supports", "contradicts", "irrelevant", "not-checked"]
+        },
+        "scope_match": { "$ref": "#/$defs/scopeMatch" },
+        "overclaim_risk": {
+          "type": "string",
+          "enum": ["low", "moderate", "high", "not-assessed"]
+        },
+        "allowed_in_final": { "type": "boolean" },
+        "allowed_final_wording": { "$ref": "#/$defs/nonEmptyString" },
+        "review_surface": { "$ref": "#/$defs/nonEmptyString" },
+        "review_actor_id": { "$ref": "#/$defs/nonEmptyString" },
+        "review_instance_id": { "$ref": "#/$defs/nonEmptyString" },
+        "review_artifact_ref": { "$ref": "#/$defs/nonEmptyString" },
+        "review_artifact_sha256": { "$ref": "#/$defs/sha256OrNotApplicable" },
+        "independent_review_required": { "type": "boolean" },
+        "release_eligible": { "type": "boolean" },
+        "limitations": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "support_verdict": { "enum": ["contradicts", "irrelevant", "not-checked"] }
+            },
+            "required": ["support_verdict"]
+          },
+          "then": {
+            "properties": {
+              "allowed_in_final": { "const": false },
+              "release_eligible": { "const": false }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "independent_review_required": { "const": true } },
+            "required": ["independent_review_required"]
+          },
+          "then": {
+            "properties": {
+              "review_actor_id": { "not": { "const": "not-applicable" } },
+              "review_instance_id": { "not": { "const": "not-applicable" } },
+              "review_artifact_ref": { "not": { "const": "not-applicable" } },
+              "review_artifact_sha256": { "pattern": "^[A-Fa-f0-9]{64}$" }
+            }
+          }
+        }
+      ]
     }
   }
 }

@@ -4,16 +4,145 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "schema_version",
     "tournament_id",
+    "plugin_version",
+    "workflow_run_id",
+    "created_at",
+    "selected_domain_pack",
     "context_lock",
+    "candidate_order_randomization",
+    "judge_scores",
+    "aggregate_scores",
+    "judge_disagreement",
+    "order_sensitivity_check",
+    "ranking_uncertainty",
+    "same_model_correlated_judgment_limitation",
+    "winner_interpretation_boundary",
+    "iteration_budget",
+    "compute_budget_status",
     "candidates",
     "rounds",
+    "ranking_model",
+    "qualitative_ranking",
+    "model_based_ranking",
     "final_ranking"
   ],
   "properties": {
-    "schema_version": { "type": "string" },
+    "schema_version": { "const": "2.0" },
     "tournament_id": { "type": "string" },
+    "plugin_version": { "type": "string", "minLength": 1 },
+    "workflow_run_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "selected_domain_pack": { "type": "string", "enum": ["generic-biomedical", "cell-therapy", "immuno-oncology"] },
     "context_lock": { "type": "string" },
+    "candidate_order_randomization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "seed", "randomized_order"],
+      "properties": {
+        "method": { "type": "string", "minLength": 1 },
+        "seed": { "type": "integer" },
+        "randomized_order": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "judge_scores": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "judgment_id",
+          "judge_id",
+          "independence_class",
+          "blinded_candidate_id",
+          "presentation_order",
+          "novelty",
+          "evidence_strength",
+          "mechanistic_specificity",
+          "assayability",
+          "feasibility",
+          "safety",
+          "expected_information_gain",
+          "execution_priority",
+          "rationale"
+        ],
+        "properties": {
+          "judgment_id": { "type": "string", "minLength": 1 },
+          "judge_id": { "type": "string", "minLength": 1 },
+          "independence_class": {
+            "type": "string",
+            "enum": ["same-model-self-review", "same-model-separate-context", "separate-model", "external-tool", "human"]
+          },
+          "blinded_candidate_id": { "type": "string", "minLength": 1 },
+          "presentation_order": { "type": "integer", "minimum": 1 },
+          "novelty": { "type": "number", "minimum": 0, "maximum": 1 },
+          "evidence_strength": { "type": "number", "minimum": 0, "maximum": 1 },
+          "mechanistic_specificity": { "type": "number", "minimum": 0, "maximum": 1 },
+          "assayability": { "type": "number", "minimum": 0, "maximum": 1 },
+          "feasibility": { "type": "number", "minimum": 0, "maximum": 1 },
+          "safety": { "type": "number", "minimum": 0, "maximum": 1 },
+          "expected_information_gain": { "type": "number", "minimum": 0, "maximum": 1 },
+          "execution_priority": { "type": "number", "minimum": 0, "maximum": 1 },
+          "rationale": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "aggregate_scores": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["blinded_candidate_id", "aggregate_score", "evidence_strength", "execution_priority"],
+        "properties": {
+          "blinded_candidate_id": { "type": "string", "minLength": 1 },
+          "aggregate_score": { "type": "number" },
+          "evidence_strength": { "type": "number", "minimum": 0, "maximum": 1 },
+          "execution_priority": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "judge_disagreement": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["blinded_candidate_id", "method", "evidence_strength_dispersion", "execution_priority_dispersion"],
+        "properties": {
+          "blinded_candidate_id": { "type": "string", "minLength": 1 },
+          "method": { "type": "string", "minLength": 1 },
+          "evidence_strength_dispersion": { "type": "number", "minimum": 0 },
+          "execution_priority_dispersion": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "order_sensitivity_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["performed", "alternate_seed", "rank_stability", "limitations"],
+      "properties": {
+        "performed": { "const": true },
+        "alternate_seed": { "type": "integer" },
+        "rank_stability": { "type": "number", "minimum": 0, "maximum": 1 },
+        "limitations": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ranking_uncertainty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "summary", "limitations"],
+      "properties": {
+        "method": { "type": "string", "enum": ["bootstrap", "permutation", "qualitative", "not-run"] },
+        "resamples": { "type": ["integer", "null"], "minimum": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "limitations": { "type": "string", "minLength": 1 }
+      }
+    },
+    "same_model_correlated_judgment_limitation": { "type": "string", "minLength": 1 },
+    "winner_interpretation_boundary": { "type": "string", "minLength": 1 },
     "iteration_budget": { "type": "integer", "minimum": 1 },
     "compute_budget_status": {
       "type": "string",
@@ -21,19 +150,22 @@
     },
     "candidates": {
       "type": "array",
+      "minItems": 2,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["hypothesis_id", "hypothesis", "status"],
+        "required": ["hypothesis_id", "blinded_candidate_id", "hypothesis", "status"],
         "properties": {
           "hypothesis_id": { "type": "string" },
+          "blinded_candidate_id": { "type": "string", "minLength": 1 },
           "hypothesis": { "type": "string" },
           "cluster_id": { "type": "string" },
           "status": {
             "type": "string",
             "enum": ["active", "merged", "held", "discarded", "winner"]
           },
-          "notes": { "type": "string" }
+          "notes": { "type": "string" },
+          "duplicate_collapse_rationale": { "type": "string" }
         }
       }
     },
@@ -55,6 +187,7 @@
     },
     "rounds": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -105,6 +238,8 @@
       "type": "string",
       "enum": ["qualitative", "elo", "bradley-terry", "bayesian-qualitative", "not-applicable"]
     },
+    "qualitative_ranking": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "model_based_ranking": { "type": "array", "items": { "type": "string" } },
     "rating_table": {
       "type": "array",
       "items": {
@@ -184,10 +319,11 @@
     },
     "final_ranking": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["rank", "hypothesis_id", "verdict", "rationale"],
+        "required": ["rank", "hypothesis_id", "verdict", "rationale", "evidence_strength", "execution_priority"],
         "properties": {
           "rank": { "type": "integer", "minimum": 1 },
           "hypothesis_id": { "type": "string" },
@@ -195,6 +331,8 @@
           "rationale": { "type": "string" },
           "rating": { "type": "number" },
           "rating_interpretation": { "type": "string" },
+          "evidence_strength": { "type": "string", "enum": ["low", "moderate", "high", "not-assessed"] },
+          "execution_priority": { "type": "string", "enum": ["low", "moderate", "high", "not-assessed"] },
           "expected_information_gain": { "type": "string" }
         }
       }

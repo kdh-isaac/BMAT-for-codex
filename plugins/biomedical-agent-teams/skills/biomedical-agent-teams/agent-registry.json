@@ -1,6 +1,30 @@
 {
-  "version": "1.1.1",
+  "version": "1.2.0",
   "runtime": "codex",
+  "review_contract": {
+    "schema_version": "2.0",
+    "policy_ref": "references/independent-review-policy.md",
+    "manifest_schema": "contracts/review-artifact-manifest.schema.json",
+    "spawned_output_schema": "contracts/spawned-agent-output.schema.json",
+    "runtime_receipt_schema": "contracts/review-runtime-receipt.schema.json",
+    "independence_class_source": "runtime_receipt",
+    "eligibility_field": "independent_review_eligible",
+    "full_protocol_eligible_classes": [
+      "separate-model",
+      "external-tool",
+      "human"
+    ],
+    "supplementary_review_classes": [
+      "same-model-separate-context"
+    ],
+    "non_independent_review_classes": [
+      "same-model-self-review"
+    ],
+    "spawn_event_is_independence_proof": false,
+    "input_output_runtime_hashes_required": true,
+    "authoring_identity_comparison_required": true,
+    "unknown_runtime_metadata_policy": "downgrade-not-fabricate"
+  },
   "agents": [
     {
       "agent_id": "bayesian-decision-modeler",

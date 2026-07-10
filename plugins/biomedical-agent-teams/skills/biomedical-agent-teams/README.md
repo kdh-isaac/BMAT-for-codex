@@ -1,303 +1,148 @@
-# Biomedical Agent Teams
+# Biomedical Agent Teams skill
 
-Current version: `1.1.1`.
+BMAT v1.2.0 is a Codex-native biomedical workflow router. `SKILL.md` selects
+one command recipe; the recipe loads only its required agents, references,
+contracts, templates, scripts, domain pack, and workflow DAG.
 
-Codex biomedical agent-team bundle with a lightweight router, protocol and
-runtime lock, source corpus, central claim ledger, results integration,
-tool-ledger honesty checks, workflow DAGs, loop-state resources, post-write
-validation, and deterministic release gates.
+## Package map
 
-Codex uses `SKILL.md` as the router and treats `agents/*.md` as role prompts.
-Long governance instructions live in command recipes, references, templates,
-contracts, and scripts that are lazy-loaded only when needed.
+| Path | Purpose |
+| --- | --- |
+| `commands/` | Six top-level workflow recipes |
+| `agents/` | Specialist role instructions |
+| `codex-agents/` | Spawnable reviewer templates |
+| `contracts/` | JSON Schema Draft 2020-12 artifact contracts |
+| `workflows/` | Alias-specific DAGs and release outputs |
+| `domain-packs/` | Generic biomedical, cell-therapy, and immuno-oncology overlays |
+| `templates/` | Human-readable artifact templates |
+| `scripts/` | Dependency-light runners, generators, and validators |
+| `evals/` | Offline golden tasks and metadata-only public-omics cases |
+| `tests/` | Unit, policy, fixture, migration, and release-surface regression tests |
 
-## 1.1.1 Resource Surface
+Use `source-manifest.json` as the canonical inventory. `manifest.json` carries
+machine-checked counts; README counts are intentionally not authoritative.
 
-| Resource | Count |
-| --- | ---: |
-| Agent role prompts in `agents/` | 38 |
-| Workflow recipes in `commands/` | 6 |
-| Contract schemas in `contracts/` | 23 |
-| Templates in `templates/` | 21 |
-| Markdown references in `references/` | 10 |
-| JSON references in `references/` | 1 |
-| Loop recipes in `loops/` | 4 |
-| Codex reviewer TOML templates in `codex-agents/` | 14 |
-| Workflow DAGs in `workflows/` | 6 |
-| Domain packs in `domain-packs/` | 3 |
-| Package scripts in `scripts/` | 14 |
-| Eval scripts in `evals/` | 3 |
-| Public omics benchmark cases in `evals/` | 9 |
-
-## 1.1.1 Highlights
-
-- `runtime_capability_preflight.json` is the canonical runtime capability
-  preflight artifact.
-- `lead_decision.json` is the auditable lead-scientist routing artifact for
-  source-backed `standard`, `deep`, `audit`, team-DAG, and full-protocol runs.
-- `omics_run_manifest.json` uses the v2 10x/bulk contract for Cell Ranger,
-  matrix, doublet/ambient, pseudobulk, bulk reference, design, and DE provenance.
-- `results_integration.json` maps sources, tools, reviewer outputs, omics
-  outputs, and literature outputs back to claim rows.
-- `source_verification.json` records source/source-span checks, while
-  `claim_support_matrix.json` records high-confidence, tool-backed,
-  analysis-backed, and blocked-claim support decisions.
-- `omics_metadata_check.json`, `experiment_design.json`, and
-  `review_artifact_manifest.json` provide release-checkable metadata,
-  experimental design, and SHA-256-bound review artifact surfaces.
-- `tool_call_ledger.json` records successful, skipped, blocked, failed, or
-  unavailable tool calls.
-- `workflow_dag.json` records alias-specific execution structure; the runner
-  normalizes DAG `mode` and `workflow_id` to the requested run mode.
-- `bmat_validate.py` enforces bundle shape, source-backed claim references,
-  final wording, post-write verdict, independent review evidence, S3/high
-  confidence gates, team DAG contracts, tool-ledger policy, workflow DAG
-  alias/mode/id consistency, and release-mode source/support/artifact gates.
-- `bmat_run.py` creates local dry-run bundles, supports `--tier compact|full`
-  and `--track bulk-rnaseq|tenx-*|single-cell-other|survival|multi-omics`,
-  writes workflow DAGs, runs validator/tool-ledger checks, and can export a
-  Markdown workbench.
-- `bmat_codex_adapter.py` scaffolds a local Codex orchestration bundle and
-  validates collected artifacts.
-- `bmat_public_omics_benchmark_smoke.py` runs metadata-only public benchmark
-  smokes for 10x PBMC, GEO single-cell/CellPlex, bulk RNA-seq, CITE-seq,
-  V(D)J, and multiome cases without downloading raw data.
-- Golden eval gates cover PMID drift, contradiction, overclaim,
-  tournament-loop, tournament-ranking, Codex-runtime, semantic-scope, 10x/bulk
-  omics provenance, privacy/runtime, and expected-block behavior.
-- Runtime documentation keeps only the current release surface; older release
-  archaeology belongs in git history.
-
-## Workflow Structure
+## Runtime flow
 
 ```mermaid
-flowchart TD
-    accTitle: BMAT v1.1.1 End-to-End Workflow Structure
-    accDescr: Full package workflow from Codex routing through command DAGs, optional team, reviewer, tool, and loop lanes, artifact bundle creation, validation gates, and final label selection.
-
-    request["1. User request<br/>or explicit BMAT alias"]
-    router["2. SKILL.md lightweight router<br/>selects one command recipe"]
-    recipe["3. Command recipe<br/>loads only required agents,<br/>references, templates, contracts, scripts"]
-    preflight["4. Runtime capability preflight<br/>mode, scope, source needs,<br/>tools, file/write, web, spawn support"]
-    strategy{"5. Execution strategy"}
-
-    request --> router --> recipe --> preflight --> strategy
-
-    strategy --> inline["inline_first_selective_review<br/>default lead-controlled workflow"]
-    strategy -. "only for broad independent axes" .-> team_lane
-    strategy -. "only for watch / inbox / recurrence" .-> loop_lane
-
-    inline --> dag_select{"6. Alias-specific workflow DAG"}
-
-    subgraph dag_catalog["Canonical command DAGs in workflows/*.json"]
-        direction TB
-        brc["biomedical-research-council<br/>S0 context lock<br/>S1 source lock<br/>S2 claim graph<br/>S3 evidence review<br/>S4 write + validate"]
-        idea["idea-discovery-team<br/>S0 context lock<br/>S1 generate hypotheses<br/>S2 rank hypotheses<br/>S3 confounder critique<br/>S4 post-write validate"]
-        omics["omics-analysis-team<br/>S0 context lock<br/>S1 plan / curate data<br/>S2 execute analysis<br/>S3 stats validation<br/>S4 code review<br/>S5 post-write validate"]
-        audit["evidence-audit-team<br/>S0 context lock<br/>S1 source corpus<br/>S2 claim ledger<br/>S3 citation check<br/>S4 contradiction check<br/>S5 post-write validate"]
-        design["experiment-design-team<br/>S0 context lock<br/>S1 design plan<br/>S2 statistics plan<br/>S3 claim lock<br/>S4 post-write validate"]
-        scout["translational-scout-team<br/>S0 context lock<br/>S1 clinical / trial sources<br/>S2 IP + regulatory<br/>S3 safety review<br/>S4 post-write validate"]
-    end
-
-    dag_select --> brc
-    dag_select --> idea
-    dag_select --> omics
-    dag_select --> audit
-    dag_select --> design
-    dag_select --> scout
-
-    subgraph team_lane["Optional team-level DAG lane"]
-        direction TB
-        team_plan["team_spawn_plan<br/>dependency-aware lane selection"]
-        team_outputs["team_output_artifacts<br/>artifact path, checks, dependencies"]
-        team_record["run_state team_spawn_lanes<br/>and stage handoff"]
-        team_plan --> team_outputs --> team_record
-    end
-
-    subgraph reviewer_lane["Optional spawned reviewer lane"]
-        direction TB
-        registry["agent-registry.json<br/>codex-agents/*.toml"]
-        spawned["spawned_agent_instances<br/>role, task, status, output_artifact"]
-        review_contract["spawned-agent-output contract<br/>findings, confidence, checks"]
-        review_handoff["accepted findings<br/>merged back into claim ledger"]
-        registry --> spawned --> review_contract --> review_handoff
-    end
-
-    subgraph tool_lane["Tool and result honesty lane"]
-        direction TB
-        tool_calls["tool_call_ledger.json<br/>success / skipped / unavailable / blocked / failed"]
-        result_map["results_integration.json<br/>source -> result -> claim mapping"]
-        tool_check["bmat_tool_ledger_check.py<br/>registered tools and downgrade reasons"]
-        tool_calls --> result_map --> tool_check
-    end
-
-    subgraph loop_lane["Optional recurring loop lane"]
-        direction TB
-        loop_recipe["loops/*.md recipe"]
-        loop_state["loop_state.json"]
-        loop_check["bmat_loop_check.py<br/>freshness, connector, objection,<br/>release-artifact policy"]
-        loop_recipe --> loop_state --> loop_check
-    end
-
-    brc --> bundle
-    idea --> bundle
-    omics --> bundle
-    audit --> bundle
-    design --> bundle
-    scout --> bundle
-    team_record --> bundle
-    review_handoff --> bundle
-    tool_check --> bundle
-    loop_check --> bundle
-    bundle -. "independent review required by recipe or label" .-> registry
-
-    bundle["7. Canonical artifact bundle<br/>run_state.json<br/>runtime_capability_preflight.json<br/>source_corpus.json<br/>claim_ledger.json<br/>stage_evaluation.json<br/>post_write_validation.json<br/>final.md"]
-    extras["Policy-checked extras<br/>lead_decision / workflow_dag<br/>results_integration / tool_call_ledger<br/>source_verification / claim_support_matrix<br/>omics_run_manifest / omics_metadata_check<br/>experiment_design / review_artifact_manifest"]
-    gates{"8. Release gates"}
-    postwrite["post-write-final-validator<br/>final wording and limitation check"]
-    validate["bmat_validate.py<br/>bundle schema + policy gate<br/>source-backed claims, DAG consistency,<br/>independent review, final wording"]
-    label{"9. Strongest allowed final label"}
-
-    bundle --> extras --> gates
-    gates --> postwrite --> validate --> label
-
-    label --> full["Full protocol followed"]
-    label --> contract["Contract-shaped artifact bundle"]
-    label --> compact["Compact standard workflow"]
-    label --> narrative["BMAT-informed narrative review"]
-    label --> limited["Limited capability-downgraded workflow"]
-    label --> partial["Partial workflow; formal gates skipped"]
-    label --> blocked["Blocked"]
+flowchart LR
+    request["Bounded user request"] --> router["SKILL.md router"]
+    router --> recipe["One command recipe"]
+    recipe --> preflight["Runtime, scope, source, domain-pack lock"]
+    preflight --> dag["Inline or selective team DAG"]
+    dag --> artifacts["v2 workflow artifacts"]
+    artifacts --> checks["Source, claim, design, tournament, review checks"]
+    checks --> manifest["Hash-bound bundle manifest"]
+    manifest --> validator["bmat_validate.py --release"]
+    validator --> label["Ledger-derived final label"]
 ```
 
-The main workflow progresses from router selection to a validator-backed label.
-The lead owns the router decision, runtime preflight, selected command DAG,
-central claim ledger, artifact bundle, and final synthesis. Team, reviewer,
-tool/result, and recurring-loop lanes run only when the selected recipe,
-execution strategy, risk class, or requested label requires them. Team outputs
-are proven by `team_output_artifacts`, reviewer execution is proven by
-`spawned_agent_instances`, tool/result claims are reconciled through
-`tool_call_ledger.json` and `results_integration.json`, and recurring loops are
-checked by `bmat_loop_check.py`.
+The six aliases are `biomedical-research-council`, `evidence-audit-team`,
+`omics-analysis-team`, `idea-discovery-team`, `experiment-design-team`, and
+`translational-scout-team`.
 
-## Full Protocol Structure
+## v2 evidence and review spine
 
-```mermaid
-flowchart TD
-  A["Declared label: Full protocol followed"] --> B["Required bundle artifacts exist"]
-  B --> C["Required stages pass"]
-  C --> D["Source-backed claims resolve to included source_corpus rows"]
-  D --> E["Results and tool-backed claims are reconciled"]
-  E --> F["Independent review surface exists"]
-  F --> G["Complete spawned_agent_instances record exists when required"]
-  G --> H["post_write_validation verdict passes"]
-  H --> I["final.md uses ledger-allowed wording"]
-  I --> J["bmat_validate.py passes"]
-```
+Release-bound source-backed claims require all of the following:
 
-Required full-protocol artifacts:
+1. an included source-corpus row with a source-owned evidence span;
+2. a source-verification row that records the exact verification mode,
+   identity, version/integrity state, and receipt or local snapshot hash;
+3. a claim-ledger row bound to that source;
+4. a claim-support row bound to the evidence span with species, cell type,
+   assay, endpoint, population/model, intervention/exposure, and biological
+   context scope judgments;
+5. results/tool integration when an execution surface produced or changed the
+   claim; and
+6. eligible review receipts when the risk class or full-protocol label requires
+   independence.
 
-- `run_state.json`
-- `runtime_capability_preflight.json`
-- `lead_decision.json`
-- `source_corpus.json`
-- `claim_ledger.json`
-- `stage_evaluation.json`
-- `post_write_validation.json`
-- `final.md`
+`fixture` and `not-checked` verification are always release-ineligible. A tool
+success establishes execution, not entailment. Source identity and claim
+support are separate checks.
 
-Optional but policy-checked artifacts:
+Review classes are `same-model-self-review`,
+`same-model-separate-context`, `separate-model`, `external-tool`, and `human`.
+Only the last three can be independent-review eligible, and only with a valid
+runtime receipt plus exact input, prompt, output, and receipt hashes. A role
+name, new task, or spawn event alone does not establish independence.
 
-- `workflow_dag.json`
-- `results_integration.json`
-- `tool_call_ledger.json`
-- `omics_run_manifest.json`
-- `source_verification.json`
-- `claim_support_matrix.json`
-- `omics_metadata_check.json`
-- `experiment_design.json`
-- `review_artifact_manifest.json`
+## Process-versus-truth boundary
 
-Release-bound validation should use `scripts/bmat_validate.py --release`.
-Release mode fails if `jsonschema` is unavailable, high-confidence claims lack
-support rows, source-backed claims cannot be verified, review artifact hashes
-drift, or sample-mode golden eval output is presented as live model evidence.
+The release validator checks implemented process invariants: schema shape,
+cross-artifact identity, local path confinement, file hashes, structured skip
+reasons, source/support linkage, review eligibility, workflow policy, and final
+label consistency. It does not certify scientific truth, experimental
+reproducibility, causal validity, clinical utility, or regulatory compliance.
 
-## Included Commands
+Report these layers separately:
 
-- `biomedical-research-council`: broad mechanism, evidence, omics, design, and
-  writing coordination.
-- `idea-discovery-team`: hypothesis generation, tournament ranking, red-team
-  critique, and experimental planning.
-- `omics-analysis-team`: public-omics dataset curation, analysis planning or
-  execution, review gates, and provenance reporting.
-- `evidence-audit-team`: claim-level evidence, citation, provenance,
-  statistics, contradiction, and safer wording audit.
-- `experiment-design-team`: mechanistic validation, controls, sample-size
-  logic, protocol logistics, and decision gates.
-- `translational-scout-team`: trial landscape, operational feasibility,
-  safety/regulatory flags, IP, and competitive positioning.
+- process/contract status;
+- source-identity status;
+- claim-entailment and scope status;
+- independent-review class and receipt status; and
+- unresolved scientific uncertainty.
 
-## Included Agents
+Sample-mode golden evaluation is deterministic evaluator plumbing, not live
+model performance. Public-omics smoke cases are metadata-only and download no
+raw data. Checked-in fixtures prove regression wiring, not real evidence.
 
-- `life-science-lead-scientist`
-- `protocol-context-locker`
-- `entity-normalizer`
-- `central-claim-ledger-evidence-graph`
-- `life-science-literature-curator`
-- `scientific-literature-researcher`
-- `public-omics-analyst`
-- `immunology-mechanism-critic`
-- `hypothesis-generator`
-- `hypothesis-ranker`
-- `meta-review-synthesizer`
-- `contradiction-red-team`
-- `experimental-design-planner`
-- `citation-verifier`
-- `scientific-writer-citation-agent`
-- `omics-data-curator`
-- `omics-code-reviewer`
-- `bulk-deg-analyst`
-- `scrna-qc-specialist`
-- `pathway-interpreter`
-- `biostats-repro-auditor`
-- `omics-provenance-validator`
-- `omics-reporter`
-- `scenario-playbook-router`
-- `claim-level-evidence-verifier`
-- `causal-inference-confounder-analyst`
-- `risk-of-bias-study-quality-auditor`
-- `safety-ethics-privacy-dual-use-auditor`
-- `bayesian-decision-modeler`
-- `clinical-trial-operations-scout`
-- `grant-ip-landscape-scout`
-- `protocol-reagent-logistics-planner`
-- `provenance-traceability-architect`
-- `figure-schematic-director`
-- `model-card-dataset-card-writer`
-- `post-write-final-validator`
+## Core CLI surfaces
 
-## Validation
-
-From `skills/biomedical-agent-teams/`:
+Initialize or run a conservative scaffold:
 
 ```bash
-python scripts/bmat_package_check.py --root ../..
-python scripts/bmat_selftest.py --root ../..
-python evals/validate_golden_eval_schema.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl
-python evals/run_golden_eval.py --tasks evals/golden_tasks.jsonl --outputs evals/sample_outputs.jsonl --strict --gate
-python evals/run_model_golden_eval.py --tasks evals/golden_tasks.jsonl --alias evidence-audit-team --runtime codex --model sample-model --out bmat_eval_outputs/model-sample.jsonl --sample-mode --then-score --gate
-python scripts/bmat_public_omics_benchmark_smoke.py --out bmat_eval_outputs/public-omics-benchmark --validate --force
-uvx --with pytest --with jsonschema python -B -m pytest -p no:cacheprovider tests -q
+python scripts/bmat_run.py --alias evidence-audit-team --mode standard --tier compact --question "Audit this claim" --out outputs/bmat-audit --domain-pack generic-biomedical --dry-run
 ```
 
-## Safety Boundaries
+Validate explicit source receipts and claim support:
 
-- Treat raw data as read-only.
-- Do not upload private data, PHI/PII, unpublished project text, or
-  patent-sensitive details.
-- Do not fabricate PMIDs, DOIs, accessions, reagent details, database records,
-  tool use, reviewer use, or validation results.
-- Separate evidence, inference, hypothesis, and speculation.
-- Keep public-omics proxy evidence separate from CAR-T-intrinsic mechanism
-  claims unless the design supports that inference.
+```bash
+python scripts/bmat_source_check.py --source-corpus outputs/bmat-audit/source_corpus.json --claim-ledger outputs/bmat-audit/claim_ledger.json --tool-call-ledger outputs/bmat-audit/tool_call_ledger.json --verification-input outputs/bmat-audit/source_verification.json --bundle-root outputs/bmat-audit --out outputs/bmat-audit/source_verification.json
+python scripts/bmat_claim_support_check.py --bundle outputs/bmat-audit --release
+```
+
+Close and validate a completed release bundle:
+
+```bash
+python scripts/bmat_bundle_manifest.py --bundle outputs/bmat-audit
+python scripts/bmat_validate.py --bundle outputs/bmat-audit --release
+```
+
+Migrate a legacy bundle without changing it:
+
+```bash
+python scripts/bmat_migrate_bundle.py --source examples/bundle-v1 --out outputs/bundle-v2
+```
+
+Migration is structural only. Missing or fixture verification stays
+not-checked/release-ineligible, unavailable reviewer identity stays
+non-independent, and unresolved evidence is emitted for re-verification.
+
+## Package validation
+
+From the repository root:
+
+```bash
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
+python plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_public_omics_benchmark_smoke.py --out outputs/bmat-public-omics --validate --force
+python -B -m pytest -p no:cacheprovider tests plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests -q
+```
+
+Supported release Python versions are 3.10-3.13. CI uses only offline/synthetic
+test content after installing dependencies; live source resolution, live model
+execution, raw-data download, and private-data transmission are out of scope.
+
+See the repository-level validation boundaries, v1-to-v2 migration guide, and
+clean-checkout release checklist under `docs/`.
+
+## Safety
+
+- Keep raw and controlled data read-only and local unless explicitly approved.
+- Never fabricate identifiers, source checks, tool calls, reviewer identity,
+  hashes, or validation results.
+- Preserve contradictions, negative findings, exclusions, and limitations.
+- Treat clinical outputs as research support requiring clinician review.

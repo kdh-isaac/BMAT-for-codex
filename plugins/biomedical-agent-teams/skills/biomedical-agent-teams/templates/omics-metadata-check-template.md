@@ -6,7 +6,7 @@ Use `omics_metadata_check.json` for executable local checks from `bmat_omics_met
 {
   "schema_version": "1.0",
   "check_id": "omc-<workflow_run_id>",
-  "plugin_version": "1.1.1",
+  "plugin_version": "1.2.0",
   "workflow_run_id": "<workflow_run_id>",
   "track": "tenx-gex",
   "status": "pass-with-caveats",

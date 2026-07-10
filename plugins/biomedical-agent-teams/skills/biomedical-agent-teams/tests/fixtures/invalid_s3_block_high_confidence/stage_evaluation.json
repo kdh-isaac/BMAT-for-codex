@@ -1,5 +1,9 @@
 {
-  "evaluation_id": "stage-valid-001",
+  "schema_version": "2.0",
+  "evaluation_id": "stage-evaluation-release-fixture-001",
+  "plugin_version": "1.2.0",
+  "workflow_run_id": "release-fixture-run-001",
+  "created_at": "2026-07-10T01:08:00Z",
   "workflow_alias": "evidence-audit-team",
   "stages": [
     {
@@ -7,12 +11,12 @@
       "stage_name": "Validate",
       "status": "block",
       "score": 0.0,
-      "evidence": "sample metadata mismatch",
+      "evidence": "Intentional S3 blocker for release-policy regression.",
       "blocking_issues": [
-        "sample IDs do not align"
+        "Synthetic S3 blocker"
       ]
     }
   ],
   "overall_verdict": "block",
-  "downgrade_rule_applied": "S3 failed, so high-confidence S4/S5 claims are blocked"
+  "downgrade_rule_applied": "High-confidence wording is prohibited when S3 blocks."
 }

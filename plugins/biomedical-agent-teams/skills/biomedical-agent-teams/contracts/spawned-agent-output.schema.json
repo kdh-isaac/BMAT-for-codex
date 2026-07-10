@@ -1,60 +1,359 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Biomedical Agent Teams Spawned Agent Output",
+  "title": "Biomedical Agent Teams Spawned Agent Output v2",
+  "description": "Reviewer handoff plus a hash-bound execution receipt. The referenced output artifact and runtime receipt are separate files, avoiding self-referential hashes.",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": [
+    "schema_version",
+    "workflow_run_id",
+    "plugin_version",
+    "instance_id",
+    "agent_id",
+    "actor_type",
+    "provider",
+    "model",
+    "model_version",
+    "authoring_provider",
+    "authoring_model",
+    "authoring_model_version",
+    "authoring_execution_session_id",
+    "authoring_identity_available",
+    "execution_surface",
+    "execution_session_id",
+    "spawn_event_id",
     "objective",
     "assigned_scope",
+    "input_scope",
+    "input_artifact_refs",
+    "input_artifact_sha256",
     "inputs_checked",
+    "prompt_template_ref",
+    "prompt_template_sha256",
+    "output_artifact",
+    "output_sha256",
     "tools_skills_commands_or_databases_used",
     "key_findings",
     "contradictions_or_risks",
     "confidence",
     "files_changed_or_none",
+    "checks_run",
     "checks_run_or_skipped",
     "recommended_handoff",
     "affected_claim_ids",
+    "changed_claim_ids",
     "verdict",
-    "ledger_handoff"
+    "ledger_handoff",
+    "independence_class",
+    "independent_review_eligible",
+    "fixture_only",
+    "authoring_context_shared",
+    "started_at",
+    "completed_at",
+    "runtime_receipt_ref",
+    "runtime_receipt_sha256",
+    "limitations"
   ],
   "properties": {
-    "objective": { "type": "string" },
-    "assigned_scope": { "type": "string" },
-    "inputs_checked": {
-      "type": "array",
-      "items": { "type": "string" }
+    "schema_version": { "const": "2.0" },
+    "workflow_run_id": { "$ref": "#/$defs/nonEmptyString" },
+    "plugin_version": { "$ref": "#/$defs/semanticVersion" },
+    "instance_id": { "$ref": "#/$defs/nonEmptyString" },
+    "agent_id": { "$ref": "#/$defs/nonEmptyString" },
+    "actor_type": {
+      "type": "string",
+      "enum": ["model", "external-tool", "human"]
     },
-    "tools_skills_commands_or_databases_used": {
-      "type": "array",
-      "items": { "type": "string" }
+    "provider": { "$ref": "#/$defs/nonEmptyString" },
+    "model": { "$ref": "#/$defs/nonEmptyString" },
+    "model_version": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_provider": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_model": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_model_version": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_execution_session_id": { "$ref": "#/$defs/nonEmptyString" },
+    "authoring_identity_available": { "type": "boolean" },
+    "execution_surface": {
+      "type": "string",
+      "enum": [
+        "same_model_pass",
+        "spawned_subagent",
+        "tool_backed_validator",
+        "external_verifier",
+        "human_reviewer"
+      ]
     },
-    "key_findings": {
-      "type": "array",
-      "items": { "type": "string" }
+    "execution_session_id": { "$ref": "#/$defs/nonEmptyString" },
+    "spawn_event_id": { "$ref": "#/$defs/nonEmptyString" },
+    "objective": { "$ref": "#/$defs/nonEmptyString" },
+    "assigned_scope": {
+      "allOf": [{ "$ref": "#/$defs/nonEmptyString" }],
+      "description": "Dispatch boundary assigned before review; this is distinct from the exact hash-bound input_scope snapshot."
     },
-    "contradictions_or_risks": {
-      "type": "array",
-      "items": { "type": "string" }
+    "input_scope": {
+      "allOf": [{ "$ref": "#/$defs/nonEmptyString" }],
+      "description": "Exact scope represented by input_artifact_refs and input_artifact_sha256."
     },
+    "input_artifact_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/localArtifactRef" },
+      "uniqueItems": true
+    },
+    "input_artifact_sha256": { "$ref": "#/$defs/inputHashMap" },
+    "inputs_checked": { "$ref": "#/$defs/nonEmptyStringList" },
+    "prompt_template_ref": { "$ref": "#/$defs/localArtifactRef" },
+    "prompt_template_sha256": { "$ref": "#/$defs/sha256" },
+    "output_artifact": { "$ref": "#/$defs/localArtifactRef" },
+    "output_sha256": { "$ref": "#/$defs/sha256" },
+    "tools_skills_commands_or_databases_used": { "$ref": "#/$defs/nonEmptyStringList" },
+    "key_findings": { "$ref": "#/$defs/stringList" },
+    "contradictions_or_risks": { "$ref": "#/$defs/stringList" },
     "confidence": {
       "type": "string",
       "enum": ["low", "medium", "high", "not-assessable"]
     },
-    "files_changed_or_none": { "type": "string" },
-    "checks_run_or_skipped": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "recommended_handoff": { "type": "string" },
-    "affected_claim_ids": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
+    "files_changed_or_none": { "$ref": "#/$defs/nonEmptyString" },
+    "checks_run": { "$ref": "#/$defs/nonEmptyStringList" },
+    "checks_run_or_skipped": { "$ref": "#/$defs/nonEmptyStringList" },
+    "recommended_handoff": { "$ref": "#/$defs/nonEmptyString" },
+    "affected_claim_ids": { "$ref": "#/$defs/stringList" },
+    "changed_claim_ids": { "$ref": "#/$defs/stringList" },
     "verdict": {
       "type": "string",
       "enum": ["pass", "pass-with-caveats", "pass-with-revisions", "block", "not-assessable"]
     },
-    "ledger_handoff": { "type": "string" }
+    "ledger_handoff": { "$ref": "#/$defs/nonEmptyString" },
+    "independence_class": {
+      "type": "string",
+      "enum": [
+        "same-model-self-review",
+        "same-model-separate-context",
+        "separate-model",
+        "external-tool",
+        "human"
+      ]
+    },
+    "independent_review_eligible": { "type": "boolean" },
+    "fixture_only": { "type": "boolean" },
+    "authoring_context_shared": { "type": "boolean" },
+    "started_at": { "$ref": "#/$defs/dateTime" },
+    "completed_at": { "$ref": "#/$defs/dateTime" },
+    "runtime_receipt_ref": { "$ref": "#/$defs/localArtifactRef" },
+    "runtime_receipt_sha256": { "$ref": "#/$defs/sha256" },
+    "limitations": { "$ref": "#/$defs/nonEmptyString" },
+    "statistical_design_findings": { "$ref": "#/$defs/findingValue" },
+    "reproducibility_findings": { "$ref": "#/$defs/findingValue" },
+    "minimum_fix": { "$ref": "#/$defs/findingValue" },
+    "count_provenance_findings": { "$ref": "#/$defs/findingValue" },
+    "qc_and_multiqc_findings": { "$ref": "#/$defs/findingValue" },
+    "design_formula_findings": { "$ref": "#/$defs/findingValue" },
+    "de_model_and_multiplicity_findings": { "$ref": "#/$defs/findingValue" },
+    "causal_language_findings": { "$ref": "#/$defs/findingValue" },
+    "confounder_and_bias_findings": { "$ref": "#/$defs/findingValue" },
+    "recommended_claim_downgrades": { "$ref": "#/$defs/findingValue" },
+    "citation_findings": { "$ref": "#/$defs/findingValue" },
+    "claim_support_findings": { "$ref": "#/$defs/findingValue" },
+    "unsupported_or_overstated_claims": { "$ref": "#/$defs/findingValue" },
+    "contradictions": { "$ref": "#/$defs/findingValue" },
+    "downgrade_recommendations": { "$ref": "#/$defs/findingValue" },
+    "recurring_weakness_patterns": { "$ref": "#/$defs/findingValue" },
+    "unsupported_claim_patterns": { "$ref": "#/$defs/findingValue" },
+    "novelty_vs_feasibility_tension": { "$ref": "#/$defs/findingValue" },
+    "contradiction_or_safety_patterns": { "$ref": "#/$defs/findingValue" },
+    "generation_guidance_for_next_round": { "$ref": "#/$defs/findingValue" },
+    "ranking_sensitivity_notes": { "$ref": "#/$defs/findingValue" },
+    "research_overview": { "$ref": "#/$defs/findingValue" },
+    "stop_or_continue_recommendation": { "$ref": "#/$defs/findingValue" },
+    "code_reproducibility_findings": { "$ref": "#/$defs/findingValue" },
+    "leakage_or_design_findings": { "$ref": "#/$defs/findingValue" },
+    "metadata_and_design_findings": { "$ref": "#/$defs/findingValue" },
+    "provenance_gaps": { "$ref": "#/$defs/findingValue" },
+    "claim_proportionality_findings": { "$ref": "#/$defs/findingValue" },
+    "final_wording_findings": { "$ref": "#/$defs/findingValue" },
+    "unsupported_claims": { "$ref": "#/$defs/findingValue" },
+    "required_corrections": { "$ref": "#/$defs/findingValue" },
+    "provenance_findings": { "$ref": "#/$defs/findingValue" },
+    "traceability_gaps": { "$ref": "#/$defs/findingValue" },
+    "artifact_or_checksum_findings": { "$ref": "#/$defs/findingValue" },
+    "risk_of_bias_findings": { "$ref": "#/$defs/findingValue" },
+    "study_quality_findings": { "$ref": "#/$defs/findingValue" },
+    "evidence_strength_adjustments": { "$ref": "#/$defs/findingValue" },
+    "safety_privacy_findings": { "$ref": "#/$defs/findingValue" },
+    "external_tool_boundary_findings": { "$ref": "#/$defs/findingValue" },
+    "required_mitigations": { "$ref": "#/$defs/findingValue" },
+    "cellranger_provenance_findings": { "$ref": "#/$defs/findingValue" },
+    "matrix_artifact_findings": { "$ref": "#/$defs/findingValue" },
+    "ambient_doublet_qc_findings": { "$ref": "#/$defs/findingValue" },
+    "pseudobulk_biological_unit_findings": { "$ref": "#/$defs/findingValue" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "authoring_identity_available": { "const": false } },
+        "required": ["authoring_identity_available"]
+      },
+      "then": {
+        "properties": {
+          "authoring_provider": { "const": "unavailable" },
+          "authoring_model": { "const": "unavailable" },
+          "authoring_model_version": { "const": "unavailable" },
+          "authoring_execution_session_id": { "const": "unavailable" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "authoring_identity_available": { "const": true } },
+        "required": ["authoring_identity_available"]
+      },
+      "then": {
+        "properties": {
+          "authoring_provider": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "authoring_model": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "authoring_model_version": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "authoring_execution_session_id": { "not": { "enum": ["unavailable", "not-applicable"] } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "fixture_only": { "const": true } },
+        "required": ["fixture_only"]
+      },
+      "then": {
+        "properties": { "independent_review_eligible": { "const": false } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "independence_class": { "const": "same-model-self-review" } },
+        "required": ["independence_class"]
+      },
+      "then": {
+        "properties": {
+          "actor_type": { "const": "model" },
+          "execution_surface": { "const": "same_model_pass" },
+          "independent_review_eligible": { "const": false },
+          "authoring_context_shared": { "const": true }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "independence_class": { "const": "same-model-separate-context" } },
+        "required": ["independence_class"]
+      },
+      "then": {
+        "properties": {
+          "actor_type": { "const": "model" },
+          "execution_surface": { "enum": ["same_model_pass", "spawned_subagent"] },
+          "independent_review_eligible": { "const": false },
+          "authoring_context_shared": { "const": false },
+          "authoring_identity_available": { "const": true }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "independence_class": { "const": "separate-model" } },
+        "required": ["independence_class"]
+      },
+      "then": {
+        "properties": {
+          "actor_type": { "const": "model" },
+          "execution_surface": { "enum": ["spawned_subagent", "external_verifier"] },
+          "independent_review_eligible": { "const": true },
+          "authoring_context_shared": { "const": false },
+          "authoring_identity_available": { "const": true },
+          "provider": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "model": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "model_version": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "execution_session_id": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "spawn_event_id": { "not": { "enum": ["unavailable", "not-applicable"] } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "independence_class": { "const": "external-tool" } },
+        "required": ["independence_class"]
+      },
+      "then": {
+        "properties": {
+          "actor_type": { "const": "external-tool" },
+          "execution_surface": { "enum": ["tool_backed_validator", "external_verifier"] },
+          "independent_review_eligible": { "const": true },
+          "authoring_context_shared": { "const": false },
+          "provider": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "model": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "model_version": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "execution_session_id": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "spawn_event_id": { "not": { "enum": ["unavailable", "not-applicable"] } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "independence_class": { "const": "human" } },
+        "required": ["independence_class"]
+      },
+      "then": {
+        "properties": {
+          "actor_type": { "const": "human" },
+          "execution_surface": { "const": "human_reviewer" },
+          "independent_review_eligible": { "const": true },
+          "authoring_context_shared": { "const": false },
+          "provider": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "execution_session_id": { "not": { "enum": ["unavailable", "not-applicable"] } },
+          "spawn_event_id": { "not": { "enum": ["unavailable", "not-applicable"] } }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "localArtifactRef": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z][A-Za-z0-9+.-]*:)(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
+    },
+    "stringList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "nonEmptyStringList": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "inputHashMap": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/localArtifactRef" },
+      "additionalProperties": { "$ref": "#/$defs/sha256" }
+    },
+    "findingValue": {
+      "oneOf": [
+        { "$ref": "#/$defs/nonEmptyString" },
+        { "$ref": "#/$defs/stringList" }
+      ]
+    }
   }
 }

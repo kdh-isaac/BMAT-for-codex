@@ -4,6 +4,11 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "schema_version",
+    "validation_id",
+    "plugin_version",
+    "workflow_run_id",
+    "checked_at",
     "final_validator_verdict",
     "unsupported_final_claims",
     "citation_or_provenance_mismatches",
@@ -15,6 +20,11 @@
     "release_ready_claim_strength"
   ],
   "properties": {
+    "schema_version": { "const": "2.0" },
+    "validation_id": { "type": "string", "minLength": 1 },
+    "plugin_version": { "type": "string", "minLength": 1 },
+    "workflow_run_id": { "type": "string", "minLength": 1 },
+    "checked_at": { "type": "string", "format": "date-time" },
     "final_validator_verdict": {
       "type": "string",
       "enum": ["pass", "pass-with-revisions", "block"]

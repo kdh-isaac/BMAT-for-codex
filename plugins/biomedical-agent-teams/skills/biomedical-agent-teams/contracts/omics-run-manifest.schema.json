@@ -4,7 +4,11 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "schema_version",
     "analysis_id",
+    "plugin_version",
+    "workflow_run_id",
+    "created_at",
     "track",
     "data_sources",
     "sample_sheet",
@@ -18,9 +22,11 @@
     "review_status"
   ],
   "properties": {
-    "schema_version": { "type": "string" },
+    "schema_version": { "const": "2.0" },
     "analysis_id": { "type": "string" },
+    "plugin_version": { "type": "string", "minLength": 1 },
     "workflow_run_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
     "track": {
       "type": "string",
       "enum": [

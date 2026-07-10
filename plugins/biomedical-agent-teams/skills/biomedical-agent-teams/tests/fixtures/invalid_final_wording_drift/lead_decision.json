@@ -1,7 +1,13 @@
 {
-  "schema_version": "1.0",
-  "decision_id": "lead-run-valid-001",
-  "workflow_run_id": "run-valid-001",
+  "schema_version": "2.0",
+  "decision_id": "lead-release-fixture-001",
+  "workflow_run_id": "release-fixture-run-001",
+  "plugin_version": "1.2.0",
+  "created_at": "2026-07-10T01:00:02Z",
+  "selected_domain_pack": "generic-biomedical",
+  "domain_pack_version": "0.1.0",
+  "domain_pack_selection_reason": "The claim tests generic provenance invariants only.",
+  "domain_specific_assumptions": [],
   "lead_scientist_agent_id": "life-science-lead-scientist",
   "requested_alias": "evidence-audit-team",
   "selected_mode": "audit",
@@ -10,10 +16,11 @@
   "omics_subtrack": "not-applicable",
   "execution_strategy": "inline_first_selective_review",
   "lead_route_required": true,
-  "mode_rule": "synthetic fixture lead decision for validator regression",
-  "decision_rationale": "Fixture preserves the original validator scenario while satisfying the auditable lead-decision contract.",
+  "mode_rule": "Audit mode requires source, claim, review, and release-integrity gates.",
+  "decision_rationale": "Use one local snapshot and one external deterministic reviewer to exercise every release binding without specialty assumptions.",
   "selected_lanes": [
-    "evidence-audit-team"
+    "evidence-audit-team",
+    "citation-verifier"
   ],
   "skipped_lanes": [],
   "spawned_review_plan": {
@@ -22,7 +29,7 @@
     "selected_roles": [
       "citation-verifier"
     ],
-    "rationale": "tool-backed validation fixture"
+    "rationale": "Hash-bound external-tool review required."
   },
   "team_spawn_plan": {
     "allowed": false,
@@ -30,7 +37,7 @@
     "selected_teams": [],
     "dependency_graph": [],
     "nested_spawn_allowed": false,
-    "rationale": "single synthetic audit axis"
+    "rationale": "Single-claim fixture does not require a team DAG."
   },
-  "post_team_audit_plan": "post-write validation only"
+  "post_team_audit_plan": "Run all release validators and compare every referenced hash."
 }

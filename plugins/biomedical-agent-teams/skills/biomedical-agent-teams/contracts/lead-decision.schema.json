@@ -4,8 +4,15 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "schema_version",
     "decision_id",
     "workflow_run_id",
+    "plugin_version",
+    "created_at",
+    "selected_domain_pack",
+    "domain_pack_version",
+    "domain_pack_selection_reason",
+    "domain_specific_assumptions",
     "requested_alias",
     "selected_mode",
     "selected_playbook",
@@ -19,9 +26,15 @@
     "post_team_audit_plan"
   ],
   "properties": {
-    "schema_version": { "type": "string" },
+    "schema_version": { "const": "2.0" },
     "decision_id": { "type": "string" },
     "workflow_run_id": { "type": "string" },
+    "plugin_version": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "selected_domain_pack": { "type": "string", "enum": ["generic-biomedical", "cell-therapy", "immuno-oncology"] },
+    "domain_pack_version": { "type": "string", "minLength": 1 },
+    "domain_pack_selection_reason": { "type": "string", "minLength": 1 },
+    "domain_specific_assumptions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "lead_scientist_agent_id": {
       "type": "string",
       "const": "life-science-lead-scientist"

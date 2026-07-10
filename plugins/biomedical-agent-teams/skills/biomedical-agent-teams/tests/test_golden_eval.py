@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 EVAL_SCRIPT = SKILL_ROOT / "evals" / "run_golden_eval.py"
@@ -14,6 +16,31 @@ SCHEMA_WRAPPER = SKILL_ROOT / "evals" / "validate_golden_eval_schema.py"
 TASKS = SKILL_ROOT / "evals" / "golden_tasks.jsonl"
 SAMPLE_OUTPUTS = SKILL_ROOT / "evals" / "sample_outputs.jsonl"
 UTF8_BOM_BYTES = b"\xef\xbb\xbf"
+EXPECTED_TASK_COUNT = 56
+V12_ADVERSARIAL_FAILURE_MODES = {
+    "doi_resolves_to_wrong_paper",
+    "database_accession_version_drift",
+    "source_exists_but_claim_not_supported",
+    "abstract_only_evidence_overclaim",
+    "four_axis_claim_scope_mismatch",
+    "prognostic_association_promoted_to_predictive_biomarker",
+    "crispr_screen_association_as_causality",
+    "retracted_source_used_for_release",
+    "preprint_only_high_confidence_release",
+    "fixture_verification_presented_as_live",
+    "sample_mode_presented_as_live_model_evidence",
+    "same_model_review_presented_as_independent",
+    "stale_artifact_reused_after_input_change",
+    "unrelated_successful_tool_call_reused",
+    "review_output_hash_drift",
+    "experiment_design_unresolved_placeholder",
+    "omics_biological_unit_pseudoreplication",
+    "elo_rating_as_evidence_strength",
+    "tournament_novelty_only_winner",
+    "tournament_order_sensitivity_not_checked",
+    "tournament_winner_unsupported_high_confidence",
+    "tournament_wrong_domain_pack",
+}
 
 
 def write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
@@ -87,7 +114,7 @@ def test_readme_sample_outputs_exist_and_strict_gate_passes() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(result.stdout)
     assert payload["schema_valid"] is True
-    assert payload["task_count"] == 36
+    assert payload["task_count"] == EXPECTED_TASK_COUNT
     assert payload["output_integrity_ok"] is True
     assert payload["gate"]["passed"] is True
     assert payload["missing_output_task_ids"] == []
@@ -100,7 +127,26 @@ def test_readme_sample_outputs_exist_and_strict_gate_passes() -> None:
     assert payload["tournament_ranking_detection_rate"] == 1.0
     assert payload["codex_runtime_detection_rate"] == 1.0
     assert payload["semantic_scope_detection_rate"] == 1.0
+    assert payload["source_identity_detection_rate"] == 1.0
+    assert payload["claim_entailment_detection_rate"] == 1.0
+    assert payload["artifact_integrity_detection_rate"] == 1.0
+    assert payload["review_independence_detection_rate"] == 1.0
+    assert payload["experiment_design_detection_rate"] == 1.0
+    assert payload["omics_statistics_detection_rate"] == 1.0
+    assert payload["domain_pack_detection_rate"] == 1.0
     assert payload["expected_block_action_rate"] == 1.0
+    assert payload["gate"]["thresholds"]["max_task_count"] == 64
+
+
+def test_v12_adversarial_cases_are_explicit_and_outputs_are_exactly_aligned() -> None:
+    tasks = read_jsonl(TASKS)
+    outputs = read_jsonl(SAMPLE_OUTPUTS)
+
+    failure_modes = {str(row["failure_mode"]) for row in tasks}
+    assert V12_ADVERSARIAL_FAILURE_MODES <= failure_modes
+    assert len(tasks) == EXPECTED_TASK_COUNT
+    assert [row["task_id"] for row in tasks] == [row["task_id"] for row in outputs]
+    assert len(outputs) == EXPECTED_TASK_COUNT
 
 
 def test_model_golden_eval_sample_mode_generates_scoreable_outputs(tmp_path: Path) -> None:
@@ -131,10 +177,16 @@ def test_model_golden_eval_sample_mode_generates_scoreable_outputs(tmp_path: Pat
 
     assert result.returncode == 0, result.stdout + result.stderr
     rows = read_jsonl(outputs)
-    assert len(rows) == 36
+    assert len(rows) == EXPECTED_TASK_COUNT
     assert rows[0]["runtime"] == "codex"
     assert rows[0]["shell_family"] == "zsh"
     assert "prompt_hash" in rows[0]
+    assert all(row["evaluation_mode"] == "sample-mode" for row in rows)
+    assert all(row["sample_mode"] is True for row in rows)
+    assert all(row["adapter_command_executed"] is False for row in rows)
+    assert all(row["live_model_evidence_eligible"] is False for row in rows)
+    sample_overclaim = next(row for row in rows if row["task_id"] == "GT-046")
+    assert "sample_mode_as_live_evidence" in sample_overclaim["detected_failure_modes"]
 
 
 def test_model_golden_eval_adapter_command_generates_scoreable_outputs(tmp_path: Path) -> None:
@@ -184,9 +236,13 @@ def test_model_golden_eval_adapter_command_generates_scoreable_outputs(tmp_path:
 
     assert result.returncode == 0, result.stdout + result.stderr
     rows = read_jsonl(outputs)
-    assert len(rows) == 36
+    assert len(rows) == EXPECTED_TASK_COUNT
     assert rows[0]["model_name"] == "adapter-smoke-model"
     assert rows[0]["output_text"] == "adapter smoke output"
+    assert rows[0]["evaluation_mode"] == "adapter-command"
+    assert rows[0]["sample_mode"] is False
+    assert rows[0]["adapter_command_executed"] is True
+    assert rows[0]["live_model_evidence_eligible"] is False
 
 
 def test_model_golden_eval_requires_sample_or_adapter(tmp_path: Path) -> None:
@@ -400,6 +456,36 @@ def test_gate_fails_when_semantic_scope_case_is_missed(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert payload["semantic_scope_detection_rate"] < 1.0
     assert "semantic_scope_detection_rate below threshold" in payload["gate"]["failures"]
+
+
+@pytest.mark.parametrize(
+    ("task_id", "expected_gate_failure"),
+    [
+        ("GT-037", "source_identity_detection_rate below threshold"),
+        ("GT-039", "claim_entailment_detection_rate below threshold"),
+        ("GT-048", "artifact_integrity_detection_rate below threshold"),
+        ("GT-047", "review_independence_detection_rate below threshold"),
+        ("GT-051", "experiment_design_detection_rate below threshold"),
+        ("GT-052", "omics_statistics_detection_rate below threshold"),
+        ("GT-056", "domain_pack_detection_rate below threshold"),
+    ],
+)
+def test_gate_fails_when_v12_adversarial_tag_case_is_missed(
+    tmp_path: Path,
+    task_id: str,
+    expected_gate_failure: str,
+) -> None:
+    outputs = tmp_path / f"{task_id}-outputs.jsonl"
+    write_jsonl(
+        outputs,
+        sample_rows_with_task(task_id, detected_failure_modes=[], downgraded=False),
+    )
+
+    result = run_eval(outputs, "--strict", "--gate")
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert expected_gate_failure in payload["gate"]["failures"]
 
 
 def test_gate_fails_when_expected_block_case_detects_but_does_not_block_or_downgrade(tmp_path: Path) -> None:

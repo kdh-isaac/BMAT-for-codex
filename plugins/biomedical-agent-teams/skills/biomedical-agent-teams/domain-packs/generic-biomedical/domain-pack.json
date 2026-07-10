@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "generic-biomedical",
+  "domain_pack_version": "0.1.0",
+  "default": true,
+  "requires_explicit_selection": false,
+  "lazy_load": true,
+  "selection_scope": "Biomedical questions without a user-selected or question-explicit specialty context.",
+  "domain_specific_assumptions": [],
+  "idea_discovery_axes": [
+    "mechanistic specificity",
+    "causal identifiability",
+    "study quality",
+    "assayability",
+    "feasibility",
+    "safety and privacy",
+    "expected information gain"
+  ],
+  "experiment_design_axes": [
+    "primary estimand",
+    "experimental and biological units",
+    "controls",
+    "quantitative sample-size assumptions",
+    "multiplicity",
+    "bias control",
+    "safety and feasibility"
+  ],
+  "resource_load_order": [
+    "entity-normalization-rules.json",
+    "source-preferences.json",
+    "failure-modes.md",
+    "golden-tasks.jsonl"
+  ]
+}

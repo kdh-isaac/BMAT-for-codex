@@ -1,0 +1,63 @@
+{
+  "schema_version": "2.0",
+  "review_manifest_id": "review-manifest-release-fixture-001",
+  "plugin_version": "1.2.0",
+  "workflow_run_id": "release-fixture-run-001",
+  "created_at": "2026-07-10T01:07:00Z",
+  "review_instances": [
+    {
+      "instance_id": "REVIEW-EXT-001",
+      "agent_id": "citation-verifier",
+      "actor_type": "external-tool",
+      "provider": "BMAT local validators",
+      "model": "bmat-claim-support-check",
+      "model_version": "1.2.0",
+      "authoring_provider": "unavailable",
+      "authoring_model": "unavailable",
+      "authoring_model_version": "unavailable",
+      "authoring_execution_session_id": "unavailable",
+      "authoring_identity_available": false,
+      "execution_surface": "tool_backed_validator",
+      "execution_session_id": "validator-session-20260710-001",
+      "spawn_event_id": "local-tool-invocation-001",
+      "input_scope": "CL-001, S-001, SPAN-S-001-001, and exact source-verification receipts",
+      "input_artifact_refs": [
+        "claim_ledger.json",
+        "source_corpus.json",
+        "source_verification.json"
+      ],
+      "input_artifact_sha256": {
+        "claim_ledger.json": "2781f54c16b78e727d3d5ff937952165a19cce9d211e691eb5829ce274541df1",
+        "source_corpus.json": "14927a75c72000223b404a7342c72f3c7e2366545ba8d2c3b4672a733a087b2f",
+        "source_verification.json": "0ef1cb08cc36f488cab0832fd2cbbbbab408c9b39254ba1f9d70ca1ed7de290e"
+      },
+      "prompt_template_ref": "review/external-tool-review-prompt.md",
+      "prompt_template_sha256": "1e30fd4683476adbbdf00653167a232c162b52fd9f12e74cd5af4c0ec8f45f05",
+      "output_artifact": "review/external-tool-review.md",
+      "output_sha256": "427719a6f972d3fb998d5bd86fb2d2b07acff357dcc726565e2a878a6ce6e897",
+      "checks_run": [
+        "source snapshot hash",
+        "claim-to-source linkage",
+        "evidence span ownership",
+        "seven-axis scope",
+        "allowed final wording"
+      ],
+      "changed_claim_ids": [
+        "CL-001"
+      ],
+      "ledger_handoff": "RI-REVIEW-001 records the exact accepted wording for CL-001.",
+      "results_integration_rows": [
+        "RI-REVIEW-001"
+      ],
+      "independence_class": "external-tool",
+      "independent_review_eligible": true,
+      "fixture_only": false,
+      "authoring_context_shared": false,
+      "started_at": "2026-07-10T01:06:00Z",
+      "completed_at": "2026-07-10T01:06:02Z",
+      "runtime_receipt_ref": "review/review-runtime-receipt.json",
+      "runtime_receipt_sha256": "2b4647f219282a87fcc7b3bbbeeaeab104b49a3ff8a75233f817514445f4e12c",
+      "limitations": "The deterministic review establishes contract consistency, not external scientific truth."
+    }
+  ]
+}

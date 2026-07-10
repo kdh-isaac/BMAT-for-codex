@@ -85,6 +85,7 @@ BOM_CHECK_EXTENSIONS = {
     ".yml",
 }
 BOM_CHECK_FILENAMES = {"VERSION"}
+LEGACY_MIGRATION_FIXTURE_DIRS = {"valid_legacy_preflight_bundle"}
 
 
 def count_golden_tasks(skill_root: Path, findings: list[Finding]) -> int:
@@ -518,6 +519,7 @@ def validate_domain_packs(skill_root: Path, findings: list[Finding]) -> None:
         findings.append(Finding("ERROR", "DOMAIN_PACK_DIR_MISSING", "domain-packs directory missing", str(packs_root)))
         return
     required = {
+        "domain-pack.json",
         "entity-normalization-rules.json",
         "failure-modes.md",
         "source-preferences.json",
@@ -534,6 +536,18 @@ def validate_domain_packs(skill_root: Path, findings: list[Finding]) -> None:
         for filename in sorted(required):
             if not (pack / filename).exists():
                 findings.append(Finding("ERROR", "DOMAIN_PACK_FILE_MISSING", f"{pack.name} missing {filename}", str(pack)))
+        profile_path = pack / "domain-pack.json"
+        if profile_path.exists():
+            profile = read_json(profile_path, findings)
+            if isinstance(profile, dict):
+                if profile.get("pack_id") != pack.name:
+                    findings.append(Finding("ERROR", "DOMAIN_PACK_ID_MISMATCH", f"{pack.name} profile has wrong pack_id", str(profile_path)))
+                if profile.get("lazy_load") is not True:
+                    findings.append(Finding("ERROR", "DOMAIN_PACK_LAZY_LOAD_REQUIRED", f"{pack.name} must be lazy-loaded", str(profile_path)))
+                if pack.name == "generic-biomedical" and profile.get("domain_specific_assumptions"):
+                    findings.append(Finding("ERROR", "GENERIC_DOMAIN_PACK_MUST_BE_NEUTRAL", "generic-biomedical assumptions must be empty", str(profile_path)))
+                if pack.name != "generic-biomedical" and profile.get("requires_explicit_selection") is not True:
+                    findings.append(Finding("ERROR", "SPECIALTY_DOMAIN_PACK_REQUIRES_SELECTION", f"{pack.name} must require explicit selection", str(profile_path)))
         if pack.name == "immuno-oncology":
             for filename in sorted(immuno_oncology_required):
                 if not (pack / filename).exists():
@@ -545,6 +559,10 @@ def validate_fixture_versions(skill_root: Path, version: str, findings: list[Fin
     if not fixtures_root.exists():
         return
     for path in sorted(fixtures_root.glob("*/*.json")):
+        if path.parent.name in LEGACY_MIGRATION_FIXTURE_DIRS:
+            # This checked-in input intentionally represents a v1 bundle for
+            # conservative migration and non-release compatibility tests.
+            continue
         payload = read_json(path, findings)
         if not isinstance(payload, dict) or "plugin_version" not in payload:
             continue

@@ -1,6 +1,6 @@
 ---
-description: "Biomedical experiment-design team for mechanistic validation, CAR cell therapy assays, controls, sample size, causal kill-tests, protocol logistics, and decision gates"
-argument-hint: "<hypothesis or experimental objective>"
+description: "Domain-neutral biomedical experiment design with estimands, controls, quantitative sample-size assumptions, causal kill-tests, safety boundaries, and decision gates"
+argument-hint: "<hypothesis or experimental objective> [--domain-pack generic-biomedical|cell-therapy|immuno-oncology]"
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 ---
 
@@ -8,74 +8,84 @@ allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 
 User request: $ARGUMENTS
 
-Design a defensible validation plan. Default to Korean. Assume expert-level immunology and CAR cell therapy context.
+Design a defensible biomedical validation plan. Default to Korean and assume
+expert scientific knowledge, but do not assume a disease, cell type, modality,
+assay, or therapeutic platform that the request does not provide.
+
+BMAT provides structured research assistance. It does not authorize experiment
+initiation and does not replace PI/institutional review, IRB, IACUC, IBC,
+biosafety, clinician, DUA, privacy, or IP review.
+
+## Domain-Pack Selection and Lazy Loading
+
+Select exactly one pack before planning:
+
+- Default: `generic-biomedical`, with no specialty assumptions.
+- `cell-therapy`: only for an explicit adoptive-cell/product question or an
+  explicit user selection.
+- `immuno-oncology`: only for an explicit tumor-immune question or an explicit
+  user selection.
+
+Do not infer a specialty from the user's profile or prior projects. Load only
+`domain-packs/<selected_domain_pack>/domain-pack.json` and the minimum files it
+references. Never load all domain packs by default. Record and keep identical
+across preflight and run state:
+
+- `selected_domain_pack`
+- `domain_pack_version`
+- `selection_reason`
+- `domain_specific_assumptions`
+
+For `generic-biomedical`, the assumptions array is empty. Specialty axes are
+inactive until their pack is selected.
 
 ## Required Preflight Contract
 
-Before literature/database expansion, external tools, file writes, spawned-agent
-claims, or final writing, produce or update runtime capability preflight and a
-compact preflight contract with:
+Complete the runtime capability preflight before evidence expansion, tools,
+file writes, spawned-agent claims, or final writing, then record:
 `requested_alias`, `selected_mode`, `deliverable_type`, `evidence_scope`,
 `risk_class`, `required_role_outputs`, `skipped_role_outputs_with_reason`,
 `external_tools_allowed`, `file_write_plan`, `stop_criteria`,
-`checkpoint_plan`, `execution_strategy`, `spawned_review_plan`, `team_spawn_plan`,
-`all_role_spawn_avoidance_reason`, `nested_spawn_policy`, and
-`post_team_audit_plan`. If runtime capability preflight or this contract is absent,
-use the strongest downgraded workflow label supported by the produced artifacts
-and runtime rather than a full experiment-design audit.
+`checkpoint_plan`, `execution_strategy`, `spawned_review_plan`,
+`team_spawn_plan`, `all_role_spawn_avoidance_reason`, `nested_spawn_policy`,
+`post_team_audit_plan`, and the four domain-pack fields above.
 
-If shell/code execution is unavailable, or if `scripts/bmat_validate.py` cannot
-be run because shell/code execution is unavailable, record
-`validator_unavailable_due_to_runtime` in preflight, workflow-run downgrade
-reasons, and final skipped gates. Do not claim `Full protocol followed` in that
-state.
+If preflight is absent, use the strongest downgraded label supported by the
+artifacts. If shell/code or the validator is unavailable, record
+`validator_unavailable_due_to_runtime` and the skipped gate; never claim a full
+protocol in that state.
 
-## 1.1 Release-Gate Artifacts
+## 1.2 Release-Gate Artifacts
 
 For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
-outputs, keep the 1.1.1 hard-gate artifacts aligned with the narrative:
+outputs, align the narrative with `lead_decision.json`, `workflow_dag.json`
+when used, `results_integration.json`, `tool_call_ledger.json`, source-corpus
+`evidence_spans[]`, eligible `source_verification.json`,
+`claim_support_matrix.json`, and hashed `review_artifact_manifest.json`
+receipts. Regenerate `bundle_manifest.json` last. Sample-mode output is harness
+evidence only.
 
-- Use `lead_decision.json` for source-backed `standard`, `deep`, `audit`,
-  team-DAG, or full-protocol runs before release; it must match the selected
-  alias, mode, tier, execution strategy, selected lanes, skipped lanes, and
-  review plans.
-- Use `workflow_dag.json` when `execution_strategy=team_level_selective_dag`,
-  when `scripts/bmat_run.py` scaffolds the run, or when the final answer claims
-  a planned command-to-agent DAG.
-- Use `results_integration.json` when literature, omics, reviewer, validator,
-  tool, or human-review output changes a claim, ranking, label, or final wording.
-- Use `tool_call_ledger.json` before saying a database, external service, local
-  validator, spawned reviewer, or other tool was used; skipped, unavailable,
-  blocked, or failed tools need an explicit downgrade reason.
-- For included source-corpus rows, record `evidence_spans[]`; when possible,
-  claim-ledger `evidence_edges[]` should point back to those spans.
-- For release or full-protocol claims, maintain `source_verification.json` with
-  pass/verified rows for every source-backed claim source and
-  `claim_support_matrix.json` for high-confidence, tool-backed,
-  analysis-backed, or blocked claims.
-- Use claim-ledger `claim_profile` values only when the profile is supported by
-  matching source, tool, analysis, or block evidence. Sample-mode golden eval
-  output is CI harness evidence only, not live model validation evidence.
-- Use `review_artifact_manifest.json` for released review artifacts so every
-  reviewer or report artifact has a stable path, size, SHA-256, and claim link.
+For release-bound plans, write `experiment_design.json` with
+`contracts/experiment-design.schema.json` version 2.0. Use bundle-relative
+paths and SHA-256 for any sample-size output artifact.
 
 ## Spawned Team Bundle Policy
 
-This recipe may run as a selected team-level spawned subagent after the main
-BMAT lead has narrowed the candidate hypothesis, claim, or design objective.
-If spawned, run the internal roles inline, do not spawn child agents unless
-`nested_spawn_policy` explicitly allows it, and return one formal
-experiment-design team report. The report must include objective, experimental
-unit, controls, readouts, sample-size logic, confounders, kill-tests,
-feasibility gates, safety boundaries, confidence, files changed or `none`,
-checks run or skipped, and a handoff for the central claim ledger.
+When this recipe is a selected team-level subagent, run its internal roles
+inline and do not spawn children unless explicitly allowed. Return one report
+with objective, selected domain pack, estimand, experimental/biological/
+randomization/analysis units, controls, endpoints, quantitative assumptions,
+sample-size method, confounders, kill-tests, feasibility gates, safety
+boundaries, confidence, files changed or `none`, checks run or skipped, and a
+claim-ledger handoff.
 
-## Team
+## Role Selection
+
+Use the smallest useful set:
 
 - `protocol-context-locker`
 - `life-science-lead-scientist`
 - `entity-normalizer`
-- `immunology-mechanism-critic`
 - `causal-inference-confounder-analyst`
 - `experimental-design-planner`
 - `protocol-reagent-logistics-planner`
@@ -85,68 +95,93 @@ checks run or skipped, and a handoff for the central claim ledger.
 - `safety-ethics-privacy-dual-use-auditor`
 - `central-claim-ledger-evidence-graph`
 - `contradiction-red-team`
-- `figure-schematic-director`
 - `claim-level-evidence-verifier`
 - `citation-verifier`
 - `scientific-writer-citation-agent`
 - `post-write-final-validator`
 
+Load immunology-specific criticism, marker panels, or specialty interpretation
+boundaries only when the selected domain pack requires them.
+
 ## Workflow
 
-1. Run runtime capability preflight to record browsing/database, file-write, shell, and spawned-subagent support.
-2. Run `protocol-context-locker`: experimental objective, deliverable, safety/privacy class, feasibility boundary, approval gate, and stop criteria.
-3. Run preliminary `entity-normalizer`.
-4. Lock source corpus for source-backed rationale, methods, reagents, and prior-art claims.
-5. Restate the hypothesis, mechanism, experimental unit, and success/failure criteria.
-6. Build/update `central-claim-ledger-evidence-graph` for rationale, assumptions, and evidence gaps.
-7. Identify the strongest causal kill-test and the most likely confounders.
-8. Specify controls, biological replicates, technical replicates, donor/model considerations, randomization/blinding where feasible, and exclusion criteria.
-9. Define readouts, timing, expected outcomes, alternative interpretations, and follow-up branches.
-10. Add reagent/protocol/QC/logistics checks without inventing unknown reagent details.
-11. For `standard`, `deep`, `audit`, or release-bound outputs, write
-    `experiment_design.json` using `contracts/experiment-design.schema.json` and
-    run `scripts/bmat_experiment_design_check.py` before final wording.
-12. Run safety/ethics/privacy/dual-use audit before operational details or external disclosure.
-13. Use Bayesian decision modeling to prioritize the first experiment or staged validation route.
-14. Run biostats, risk-of-bias/study-quality, red-team, claim, and citation gates before final recommendation.
-15. For `deep` or `audit`, maintain workflow-run state and biomedical passport state and run the integrity gate before final recommendation.
-16. Apply `references/independent-review-policy.md` before describing validation as independent.
-17. Writer uses only verified ledger material; run `post-write-final-validator` before final output.
-18. If this was a spawned team output, provide `spawned_team_output_status`,
-    `nested_spawn_used`, and `ledger_handoff_claim_ids` before final wording.
+1. Lock the objective, decision to be informed, evidence scope, safety/privacy
+   class, feasibility boundary, human approval gate, and stop criteria.
+2. Select one domain pack and record its version, reason, and assumptions.
+3. Normalize entities and lock sources for any rationale, method, reagent, or
+   prior-art claim. Never invent reagent/catalog details.
+4. State the bounded hypothesis and `primary_estimand`: population/model,
+   treatment/exposure, comparator, outcome, and summary measure.
+5. Distinguish `exploratory` from `confirmatory` design.
+6. Define primary and secondary endpoints with measurement scale, unit,
+   assessment time, and direction of benefit.
+7. Specify positive, negative, and vehicle/mock controls and the strongest
+   causal kill-test.
+8. Declare biological, randomization, and analysis units. If they differ,
+   document clustering/pseudoreplication adjustment and effective sample-size
+   handling.
+9. Record numeric expected effect size, variance or event-rate assumption,
+   alpha, power, sidedness, total `planned_n`, and dropout/failure allowance.
+   Rationale without these numbers cannot support a high-confidence design.
+10. Record the sample-size method and, when code/output exists, bundle-relative
+    code/output references and the output SHA-256.
+11. Specify randomization, blocking, blinding, exclusions, confounders,
+    statistical model, multiplicity family/method/alpha allocation, interim
+    analysis, stopping rule, sensitivity analyses, and go/no-go gates.
+12. Mark each reagent-specific statement `verified` with eligible source IDs or
+    `unknown` with an explicit limitation.
+13. Before operational wet-lab, animal, human-material/participant, private,
+    patent-sensitive, or dual-use detail, record structured risk triggers,
+    required oversight, privacy/dual-use/IP boundaries, and limitations.
+14. Run biostats, study-quality, safety, contradiction, claim, and citation gates.
+15. Apply the independent-review policy; same-model self-review is not independent.
+16. Run the deterministic checker before final wording. For a release candidate:
+
+```text
+python scripts/bmat_experiment_design_check.py \
+  --experiment-design <bundle>/experiment_design.json \
+  --bundle-root <bundle> \
+  --source-verification <bundle>/source_verification.json \
+  --release --json
+```
+
+Omit `--source-verification` only when there are no verified reagent-specific
+claims; unknown claims must remain explicitly limited.
+
+## Release Policy
+
+- `schema_version` must be `2.0`; v1 may be inspected outside release but is
+  never promoted automatically.
+- `planned_n` must be a positive integer. `TBD`, `TODO`, `unknown`, and template
+  text are blockers.
+- A statistical model without a structured multiplicity plan is a blocker.
+- Unit mismatch without a structured explanation and analysis adjustment is a blocker.
+- A produced sample-size artifact must exist inside the bundle and match SHA-256.
+- Operational detail without a structured safety boundary is a blocker.
+- Reagent/catalog specifics must be verified through an eligible non-fixture
+  source row or marked unknown with limitations.
+- A passing process contract is not scientific truth certification or approval.
 
 ## Mode Routing
 
 | Mode | Agent selection and depth |
 |---|---|
-| `quick` | Restate hypothesis, experimental unit, core control, primary readout, and one strongest kill-test. Use compact final output. |
-| `standard` | Add mechanism critic, causal/confounder review, design planner, sample-size logic, confounders, and staged go/no-go gates. Maintain compact claim ledger. |
-| `deep` | Add protocol/reagent logistics, Bayesian decision model, biostats, risk-of-bias, contradiction red-team, safety auditor, claim/citation verification, figure plan, and post-write validation. |
-| `audit` | Audit an existing plan for controls, biological unit, sample size, feasibility, safety/privacy, confounding, and claim strength before rewriting. |
-
-Safety auditor is mandatory for operational wet-lab details, biosafety,
-animal/human material, private project context, patent-sensitive strategy, or
-external disclosure. Keep reagent/catalog specifics as unknown unless verified.
+| `quick` | Bounded hypothesis, primary estimand, units, core controls, primary endpoint, and one kill-test. Mark quantitative gaps explicitly. |
+| `standard` | Add numeric assumptions, sample-size method, causal/confounder review, multiplicity, unit alignment, and staged gates. |
+| `deep` | Add logistics, decision model, full biostats/study-quality/safety review, verified reagent provenance, sensitivity analysis, and post-write validation. |
+| `audit` | Audit an existing plan for v2 identity, placeholders, controls, units, sample size, artifact hashes, feasibility, safety, confounding, and claim strength before rewriting. |
 
 ## Final Output
 
-1. experimental objective
-2. runtime capability preflight and downgrade rule
-3. protocol/context lock and safety boundary
-4. source corpus status
-5. mechanistic rationale and claim boundary
-6. central claim ledger summary
-7. design overview
-8. controls and sample size considerations
-9. readouts and statistics
-10. confounders and failure modes
-11. protocol/reagent/QC logistics
-12. expected outcomes and alternative interpretations
-13. go/no-go gates
-14. useful but excluded or not-ledger-verified claims
-15. independent-review status
-16. post-write validation verdict
-17. workflow-run state, biomedical passport, and integrity-gate status
-18. figure or panel plan if useful
-19. spawned team output status and ledger handoff if this recipe was spawned
-20. final workflow label and skipped gates with reasons
+1. selected domain pack, version, reason, and assumptions
+2. objective, hypothesis, design stage, primary estimand, and decision boundary
+3. experimental, biological, randomization, and analysis units
+4. endpoints and controls
+5. numeric assumptions, `planned_n`, sample-size method, and artifact status/hash
+6. randomization, blocking, blinding, exclusions, confounders, and kill-tests
+7. statistical model, multiplicity, interim/stopping, and sensitivity analyses
+8. reagent provenance status and evidence limitations
+9. safety/ethics/privacy/dual-use/IP boundary and required human oversight
+10. expected outcomes, alternatives, feasibility, and go/no-go gates
+11. claim/provenance, independent-review, and validator status
+12. final workflow label and structured skipped gates

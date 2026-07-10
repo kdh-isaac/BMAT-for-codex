@@ -4,12 +4,13 @@
 This harness intentionally does not download raw public data. It locks official
 dataset URLs/accessions into the source corpus and omics manifest, then runs the
 local bundle validator. Use it as a lightweight release gate for the public
-benchmark cases described in the BMAT v1.1.1 improvement plan.
+benchmark cases maintained for the BMAT v1.2.0 release gate.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -22,6 +23,7 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 CASES_PATH = SKILL_ROOT / "evals" / "public_omics_benchmark_cases.jsonl"
 RUNNER = SKILL_ROOT / "scripts" / "bmat_run.py"
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
+BUNDLE_MANIFEST = SKILL_ROOT / "scripts" / "bmat_bundle_manifest.py"
 
 
 def local_date() -> str:
@@ -65,14 +67,43 @@ def read_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    temporary.replace(path)
 
 
-def source_corpus_for_case(case: dict[str, Any], retrieval_date: str) -> dict[str, Any]:
+def write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(text, encoding="utf-8")
+    temporary.replace(path)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def source_corpus_for_case(
+    case: dict[str, Any],
+    retrieval_date: str,
+    run_state: dict[str, Any],
+    snapshot_ref: str,
+    snapshot_sha256: str,
+) -> dict[str, Any]:
     case_id = str(case["case_id"])
+    created_at = str(run_state.get("created_at", f"{retrieval_date}T00:00:00Z"))
+    excerpt = str(case.get("scope_note", "Official public metadata record."))
     return {
+        "schema_version": "2.0",
         "corpus_id": f"corpus-public-benchmark-{case_id}",
-        "created_at": retrieval_date,
+        "plugin_version": str(run_state.get("plugin_version", "unknown")),
+        "workflow_run_id": str(run_state.get("run_id", "unknown")),
+        "created_at": created_at,
         "query_or_origin": str(case["question"]),
         "sources": [
             {
@@ -81,7 +112,7 @@ def source_corpus_for_case(case: dict[str, Any], retrieval_date: str) -> dict[st
                 "identifier": str(case.get("identifier", case_id)),
                 "title_or_name": str(case.get("title", case_id)),
                 "version_or_retrieval_date": retrieval_date,
-                "retrieved_at": retrieval_date,
+                "retrieved_at": created_at,
                 "query_or_origin": str(case.get("official_url", "")),
                 "inclusion_status": "included",
                 "claim_use": "public benchmark metadata lock; raw data not downloaded",
@@ -90,8 +121,18 @@ def source_corpus_for_case(case: dict[str, Any], retrieval_date: str) -> dict[st
                 "evidence_spans": [
                     {
                         "span_id": f"{case_id}-official-record",
-                        "location": str(case.get("official_url", "")),
-                        "scope_note": str(case.get("scope_note", "Official public metadata record.")),
+                        "source_id": case_id,
+                        "source_snapshot_ref": snapshot_ref,
+                        "source_snapshot_sha256": snapshot_sha256,
+                        "locator": str(case.get("official_url", "")),
+                        "section": "recorded public metadata",
+                        "paragraph_or_table": "metadata record",
+                        "sentence_or_cell": "scope_note",
+                        "evidence_text_sha256": hashlib.sha256(excerpt.encode("utf-8")).hexdigest(),
+                        "short_evidence_excerpt": excerpt,
+                        "retrieved_at": created_at,
+                        "extraction_actor": "bmat_public_omics_benchmark_smoke",
+                        "limitations": str(case.get("limitations", "Metadata-only smoke.")),
                     }
                 ],
             }
@@ -115,13 +156,32 @@ def final_text_for_case(case: dict[str, Any]) -> str:
 
 
 def apply_case_metadata(bundle: Path, case: dict[str, Any], retrieval_date: str) -> None:
+    run_state = read_json(bundle / "run_state.json")
     manifest = read_json(bundle / "omics_run_manifest.json")
     deep_update(manifest, case.get("manifest_overlay", {}))
-    manifest["workflow_run_id"] = read_json(bundle / "run_state.json").get("run_id", manifest.get("workflow_run_id", ""))
+    manifest["workflow_run_id"] = run_state.get("run_id", manifest.get("workflow_run_id", ""))
     write_json(bundle / "omics_run_manifest.json", manifest)
 
-    write_json(bundle / "source_corpus.json", source_corpus_for_case(case, retrieval_date))
-    (bundle / "final.md").write_text(final_text_for_case(case), encoding="utf-8")
+    case_id = str(case["case_id"])
+    snapshot_ref = f"evidence/{case_id}-official-metadata.json"
+    snapshot_path = bundle / snapshot_ref
+    snapshot = {
+        "case_id": case_id,
+        "title": case.get("title", case_id),
+        "identifier": case.get("identifier", case_id),
+        "official_url": case.get("official_url", ""),
+        "retrieval_date": retrieval_date,
+        "scope_note": case.get("scope_note", "Official public metadata record."),
+        "limitations": case.get("limitations", "Metadata-only smoke."),
+        "expected_checks": case.get("expected_checks", []),
+        "raw_data_downloaded": False,
+    }
+    write_json(snapshot_path, snapshot)
+    write_json(
+        bundle / "source_corpus.json",
+        source_corpus_for_case(case, retrieval_date, run_state, snapshot_ref, sha256_file(snapshot_path)),
+    )
+    write_text(bundle / "final.md", final_text_for_case(case))
 
 
 def run_command(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -153,27 +213,36 @@ def run_case(case: dict[str, Any], out_root: Path, validate: bool, force: bool, 
 
     runner_result = run_command(command)
     bundle.mkdir(parents=True, exist_ok=True)
-    (bundle / "benchmark_runner_stdout.log").write_text(runner_result.stdout, encoding="utf-8")
-    (bundle / "benchmark_runner_stderr.log").write_text(runner_result.stderr, encoding="utf-8")
+    write_text(bundle / "benchmark_runner_stdout.log", runner_result.stdout)
+    write_text(bundle / "benchmark_runner_stderr.log", runner_result.stderr)
 
     validator_exit: int | None = None
+    manifest_exit: int | None = None
     validator_stdout = ""
     validator_stderr = ""
     if runner_result.returncode == 0:
         apply_case_metadata(bundle, case, retrieval_date)
-        if validate:
+        manifest_result = run_command([sys.executable, str(BUNDLE_MANIFEST), "--bundle", str(bundle)])
+        manifest_exit = manifest_result.returncode
+        if manifest_result.returncode != 0:
+            validator_exit = manifest_result.returncode
+            validator_stdout = manifest_result.stdout
+            validator_stderr = manifest_result.stderr
+        elif validate:
             validator_result = run_command(
                 [sys.executable, str(VALIDATOR), "--bundle", str(bundle), "--check-tool-ledger", "--json"]
             )
             validator_exit = validator_result.returncode
             validator_stdout = validator_result.stdout
             validator_stderr = validator_result.stderr
-            (bundle / "benchmark_validator_stdout.json").write_text(validator_stdout, encoding="utf-8")
-            (bundle / "benchmark_validator_stderr.log").write_text(validator_stderr, encoding="utf-8")
+            write_text(bundle / "benchmark_validator_stdout.json", validator_stdout)
+            write_text(bundle / "benchmark_validator_stderr.log", validator_stderr)
 
     status = "pass"
     if runner_result.returncode != 0:
         status = "runner-failed"
+    elif manifest_exit != 0:
+        status = "manifest-failed"
     elif validate and validator_exit != 0:
         status = "validator-failed"
 
@@ -184,6 +253,7 @@ def run_case(case: dict[str, Any], out_root: Path, validate: bool, force: bool, 
         "official_url": case.get("official_url", ""),
         "raw_data_downloaded": False,
         "runner_exit": runner_result.returncode,
+        "manifest_exit": manifest_exit,
         "validator_exit": validator_exit,
         "status": status,
         "expected_checks": case.get("expected_checks", []),

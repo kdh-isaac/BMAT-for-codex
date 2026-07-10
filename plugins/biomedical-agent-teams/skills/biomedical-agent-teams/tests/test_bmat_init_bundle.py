@@ -79,7 +79,7 @@ def test_omics_run_scaffold_records_track_ambiguity_and_blocks_run_validation(tm
     lead_decision = json.loads((bundle / "lead_decision.json").read_text(encoding="utf-8"))
     assert preflight["runtime_id"] == preflight["runtime_capability_preflight_id"]
     assert preflight["codex_client"] == "codex"
-    assert preflight["plugin_version"] == "1.1.1"
+    assert preflight["plugin_version"] == (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
     assert preflight["workflow_tier"] == "compact"
     assert preflight["requested_omics_track"] == "track_ambiguous"
     assert "omics_track_ambiguity_note" in preflight

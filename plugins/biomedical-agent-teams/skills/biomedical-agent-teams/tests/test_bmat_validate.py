@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -13,6 +14,7 @@ import pytest
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
+BUNDLE_MANIFEST_GENERATOR = SKILL_ROOT / "scripts" / "bmat_bundle_manifest.py"
 FIXTURES = SKILL_ROOT / "tests" / "fixtures"
 PREFLIGHT_FILE = "runtime_capability_preflight.json"
 UTF8_BOM_BYTES = b"\xef\xbb\xbf"
@@ -49,38 +51,155 @@ def run_validator_args(*args: str) -> subprocess.CompletedProcess[str]:
 
 
 def valid_results_integration_payload() -> dict[str, object]:
-    return {
-        "schema_version": "1.0",
-        "integration_id": "RI-TEST-001",
-        "plugin_version": "1.1.1",
-        "source_corpus_lock": "locked",
-        "tool_use_log": [
-            {
-                "tool_id": "spawned-reviewer-lane",
-                "status": "used",
-                "used": True,
-                "source_corpus_rows": ["SC-001"],
-                "result_rows": ["RI-ROW-001"],
-                "downgrade_reason": "",
-            }
-        ],
-        "rows": [
-            {
-                "result_id": "RI-ROW-001",
-                "result_type": "literature",
-                "source_ref": "SC-001",
-                "claim_ids": ["CL-001"],
-                "status": "support",
-                "evidence_direction": "supports",
-                "confidence": "moderate",
-                "interpretation": "Public literature supports a bounded claim.",
-                "limitations": "Synthetic regression fixture.",
-                "ledger_action": "update",
-            }
-        ],
-        "final_claim_policy": "ledger-only",
-        "human_review_status": "not-needed",
-    }
+    return json.loads(
+        (FIXTURES / "valid_full_protocol_bundle" / "results_integration.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def read_json(path: Path) -> dict[str, object]:
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    assert isinstance(payload, dict)
+    return payload
+
+
+def write_json(path: Path, payload: dict[str, object]) -> None:
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def refresh_release_receipts(bundle: Path) -> None:
+    """Rebind hashes after a test intentionally rewrites valid release inputs."""
+    source_verification_path = bundle / "source_verification.json"
+    if source_verification_path.exists():
+        source_verification = read_json(source_verification_path)
+        rows = source_verification.get("rows", [])
+        if isinstance(rows, list):
+            for row in rows:
+                if not isinstance(row, dict) or row.get("verification_mode") != "local-file":
+                    continue
+                ref = row.get("local_snapshot_ref")
+                if isinstance(ref, str) and (bundle / ref).is_file():
+                    row["local_snapshot_sha256"] = sha256_file(bundle / ref)
+                    row["local_snapshot_size_bytes"] = (bundle / ref).stat().st_size
+        write_json(source_verification_path, source_verification)
+
+    source_corpus_path = bundle / "source_corpus.json"
+    if source_corpus_path.exists():
+        source_corpus = read_json(source_corpus_path)
+        sources = source_corpus.get("sources", [])
+        if isinstance(sources, list):
+            for source in sources:
+                if not isinstance(source, dict):
+                    continue
+                spans = source.get("evidence_spans", [])
+                if not isinstance(spans, list):
+                    continue
+                for span in spans:
+                    if not isinstance(span, dict):
+                        continue
+                    ref = span.get("source_snapshot_ref")
+                    if isinstance(ref, str) and (bundle / ref).is_file():
+                        span["source_snapshot_sha256"] = sha256_file(bundle / ref)
+                    excerpt = span.get("short_evidence_excerpt")
+                    if isinstance(excerpt, str):
+                        span["evidence_text_sha256"] = hashlib.sha256(excerpt.encode("utf-8")).hexdigest()
+        write_json(source_corpus_path, source_corpus)
+
+    tool_ledger_path = bundle / "tool_call_ledger.json"
+    if tool_ledger_path.exists():
+        tool_ledger = read_json(tool_ledger_path)
+        calls = tool_ledger.get("calls", [])
+        if isinstance(calls, list):
+            for call in calls:
+                if not isinstance(call, dict):
+                    continue
+                ref = call.get("output_ref")
+                if isinstance(ref, str) and (bundle / ref).is_file():
+                    call["output_sha256"] = sha256_file(bundle / ref)
+        write_json(tool_ledger_path, tool_ledger)
+
+    review_manifest_path = bundle / "review_artifact_manifest.json"
+    if review_manifest_path.exists():
+        review_manifest = read_json(review_manifest_path)
+        instances = review_manifest.get("review_instances", [])
+        if isinstance(instances, list):
+            for instance in instances:
+                if not isinstance(instance, dict):
+                    continue
+                refs = instance.get("input_artifact_refs", [])
+                if isinstance(refs, list):
+                    instance["input_artifact_sha256"] = {
+                        ref: sha256_file(bundle / ref)
+                        for ref in refs
+                        if isinstance(ref, str) and (bundle / ref).is_file()
+                    }
+                for ref_field, hash_field in (
+                    ("prompt_template_ref", "prompt_template_sha256"),
+                    ("output_artifact", "output_sha256"),
+                    ("runtime_receipt_ref", "runtime_receipt_sha256"),
+                ):
+                    ref = instance.get(ref_field)
+                    if isinstance(ref, str) and (bundle / ref).is_file():
+                        instance[hash_field] = sha256_file(bundle / ref)
+        write_json(review_manifest_path, review_manifest)
+
+    claim_support_path = bundle / "claim_support_matrix.json"
+    if claim_support_path.exists():
+        matrix = read_json(claim_support_path)
+        rows = matrix.get("rows", [])
+        if isinstance(rows, list):
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                ref = row.get("review_artifact_ref")
+                if isinstance(ref, str) and (bundle / ref).is_file():
+                    row["review_artifact_sha256"] = sha256_file(bundle / ref)
+        write_json(claim_support_path, matrix)
+
+    result = subprocess.run(
+        [sys.executable, str(BUNDLE_MANIFEST_GENERATOR), "--bundle", str(bundle)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def prepare_compact_policy_bundle(bundle: Path) -> None:
+    """Keep structural-policy tests out of release-only receipt/hash gates."""
+    for filename in ("bundle_manifest.json", "review_artifact_manifest.json", "claim_support_matrix.json"):
+        path = bundle / filename
+        if path.exists():
+            path.unlink()
+    run_state_path = bundle / "run_state.json"
+    run_state = read_json(run_state_path)
+    run_state["final_label"] = "Compact standard workflow"
+    run_state["workflow_tier"] = "compact"
+    run_state["downgrade_reasons"] = ["Policy-unit test intentionally runs below release mode."]
+    write_json(run_state_path, run_state)
+    claim_ledger_path = bundle / "claim_ledger.json"
+    claim_ledger = read_json(claim_ledger_path)
+    claims = claim_ledger.get("claims", [])
+    if isinstance(claims, list):
+        for claim in claims:
+            if isinstance(claim, dict):
+                claim["claim_profile"] = "source_backed"
+                claim["claim_strength"] = "exploratory"
+    write_json(claim_ledger_path, claim_ledger)
+    (bundle / "final.md").write_text(
+        "Final workflow label: Compact standard workflow\n\n"
+        "The bundled local receipt supports the conservative validator claim under the stated synthetic scenario.\n",
+        encoding="utf-8",
+    )
 
 
 def spawnable_agent_ids() -> list[str]:
@@ -175,8 +294,13 @@ def write_team_output_artifacts(bundle: Path) -> None:
 
 
 def write_valid_team_workflow_dag(bundle: Path) -> None:
+    run_state = read_json(bundle / "run_state.json")
     workflow_dag = {
+        "schema_version": "2.0",
         "workflow_id": "evidence-audit-team.audit.synthetic-team-dag",
+        "workflow_run_id": run_state["run_id"],
+        "plugin_version": run_state["plugin_version"],
+        "created_at": "2026-07-10T02:00:00Z",
         "runtime": "codex",
         "alias": "evidence-audit-team",
         "mode": "audit",
@@ -229,11 +353,13 @@ def sync_lead_decision(bundle: Path) -> None:
 
 
 def write_single_cell_other_omics_manifest(bundle: Path) -> None:
-    run_state = json.loads((bundle / "run_state.json").read_text(encoding="utf-8"))
+    run_state = read_json(bundle / "run_state.json")
     manifest = {
         "schema_version": "2.0",
         "analysis_id": "omics-fixture",
+        "plugin_version": run_state.get("plugin_version", "1.2.0"),
         "workflow_run_id": run_state.get("run_id", "omics-run-fixture"),
+        "created_at": "2026-07-10T02:01:00Z",
         "track": "single-cell-other",
         "data_sources": [],
         "sample_sheet": "samples.csv",
@@ -296,6 +422,9 @@ def valid_tenx_manifest(track: str) -> dict[str, object]:
     manifest: dict[str, object] = {
         "schema_version": "2.0",
         "analysis_id": "omics-test",
+        "plugin_version": "1.2.0",
+        "workflow_run_id": "release-fixture-run-001",
+        "created_at": "2026-07-10T02:01:00Z",
         "track": track,
         "data_sources": [],
         "sample_sheet": "samples.csv",
@@ -396,6 +525,7 @@ def make_omics_run_bundle(
 ) -> Path:
     bundle = tmp_path / "omics_bundle"
     shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    prepare_compact_policy_bundle(bundle)
 
     preflight_path = bundle / PREFLIGHT_FILE
     preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
@@ -410,7 +540,6 @@ def make_omics_run_bundle(
     ]
     preflight["skipped_role_outputs_with_reason"] = skipped_role_outputs or []
     preflight["spawned_review_plan"] = spawned_review_plan
-    preflight["workflow_run_id"] = "omics-run-fixture"
     preflight_path.write_text(json.dumps(preflight, indent=2), encoding="utf-8")
 
     claim_ledger_path = bundle / "claim_ledger.json"
@@ -422,13 +551,17 @@ def make_omics_run_bundle(
 
     run_state_path = bundle / "run_state.json"
     run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
-    run_state["run_id"] = "omics-run-fixture"
     run_state["alias"] = "omics-analysis-team"
     run_state["mode"] = "run"
     run_state["omics_track"] = "single-cell-other"
     run_state["execution_strategy"] = "inline_first_selective_review"
     run_state["spawned_review_lanes"] = spawned_review_lanes or []
-    run_state["spawned_agent_instances"] = spawned_agent_instances or []
+    normalized_instances = []
+    for instance in spawned_agent_instances or []:
+        normalized = dict(instance)
+        normalized["parent_run_id"] = run_state["run_id"]
+        normalized_instances.append(normalized)
+    run_state["spawned_agent_instances"] = normalized_instances
     run_state["final_label"] = "Compact standard workflow"
     run_state["downgrade_reasons"] = downgrade_reasons or []
     run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
@@ -456,12 +589,14 @@ def test_valid_bundle_passes() -> None:
     assert "LEGACY_BUNDLE_ARTIFACT_NAME" not in result.stdout
 
 
-def test_legacy_preflight_alias_passes_with_warning() -> None:
+def test_legacy_preflight_alias_is_readable_but_not_release_eligible() -> None:
     result = run_validator("valid_legacy_preflight_bundle")
     output = combined_output(result)
 
-    assert result.returncode == 0, output
+    assert result.returncode == 1
     assert "LEGACY_BUNDLE_ARTIFACT_NAME" in output
+    assert "LEGACY_SCHEMA_V1_NOT_RELEASE_ELIGIBLE" in output
+    assert "FULL_PROTOCOL_REQUIRES_BUNDLE_MANIFEST" in output
     assert PREFLIGHT_FILE in output
 
 
@@ -478,6 +613,7 @@ def test_valid_bundle_accepts_utf8_bom_prefixed_artifacts(tmp_path: Path) -> Non
         "final.md",
     ):
         prefix_utf8_bom(bundle / filename)
+    refresh_release_receipts(bundle)
 
     result = run_validator_path(bundle)
 
@@ -494,6 +630,7 @@ def test_results_integration_accepts_utf8_bom_prefix(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     prefix_utf8_bom(results_integration)
+    refresh_release_receipts(bundle)
 
     result = run_validator_path(bundle)
 
@@ -582,10 +719,200 @@ def test_semantic_scope_mismatch_blocks_high_confidence_claim(tmp_path: Path) ->
     assert "SCOPE_MISMATCH_BLOCKS_HIGH_CONFIDENCE" in combined_output(result)
 
 
+def test_offline_fixture_source_cannot_release_high_confidence_claim(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "source_verification.json"
+    payload = read_json(path)
+    row = payload["rows"][0]
+    row.update(
+        {
+            "verification_mode": "fixture",
+            "fixture_only": True,
+            "release_eligible": False,
+            "identifier_status": "not-checked",
+            "metadata_match": "not-checked",
+            "retrieval_surface": "offline-fixture",
+            "integrity_status": "unknown",
+            "version_status": "unknown",
+            "verification_limitations": "Offline fixture metadata is not release evidence.",
+        }
+    )
+    write_json(path, payload)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "SOURCE_VERIFICATION_BLOCKS_HIGH_CONFIDENCE" in combined_output(result)
+
+
+def test_local_source_hash_mismatch_is_rejected(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "source_verification.json"
+    payload = read_json(path)
+    payload["rows"][0]["local_snapshot_sha256"] = "0" * 64
+    write_json(path, payload)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "SOURCE_LOCAL_SNAPSHOT_HASH_MISMATCH" in combined_output(result)
+
+
+def test_local_source_path_traversal_is_rejected(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "source_verification.json"
+    payload = read_json(path)
+    payload["rows"][0]["local_snapshot_ref"] = "../outside.txt"
+    write_json(path, payload)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "SOURCE_LOCAL_SNAPSHOT_OUTSIDE_BUNDLE" in combined_output(result)
+
+
+def test_unrelated_successful_tool_call_cannot_back_claim(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    claim_path = bundle / "claim_ledger.json"
+    claim_ledger = read_json(claim_path)
+    claim = claim_ledger["claims"][0]
+    claim.update(
+        {
+            "claim_profile": "tool_backed",
+            "tool_backed": True,
+            "tool_ids": ["local-bmat-validators"],
+            "result_ids": ["RI-SOURCE-001"],
+        }
+    )
+    write_json(claim_path, claim_ledger)
+    tool_path = bundle / "tool_call_ledger.json"
+    tool_ledger = read_json(tool_path)
+    tool_ledger["calls"][0]["affected_claim_ids"] = ["CL-UNRELATED"]
+    write_json(tool_path, tool_ledger)
+
+    result = run_validator_args("--bundle", str(bundle), "--check-tool-ledger")
+
+    assert result.returncode == 1
+    assert "TOOL_BACKED_CLAIM_MISSING_SUCCESSFUL_CALL" in combined_output(result)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected_code"),
+    [
+        ("claim_id", "CL-UNKNOWN", "CLAIM_SUPPORT_UNKNOWN_CLAIM_ID"),
+        ("source_id", "S-UNKNOWN", "CLAIM_SUPPORT_UNKNOWN_SOURCE_ID"),
+        ("evidence_span_ref", "SPAN-UNKNOWN", "CLAIM_SUPPORT_SPAN_UNRESOLVED"),
+    ],
+)
+def test_claim_support_foreign_references_are_rejected(
+    tmp_path: Path,
+    field: str,
+    value: str,
+    expected_code: str,
+) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "claim_support_matrix.json"
+    matrix = read_json(path)
+    matrix["rows"][0][field] = value
+    write_json(path, matrix)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert expected_code in combined_output(result)
+
+
+def test_weak_support_cannot_release_high_confidence_claim(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "claim_support_matrix.json"
+    matrix = read_json(path)
+    matrix["rows"][0]["support_verdict"] = "weakly-supports"
+    write_json(path, matrix)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "WEAK_SUPPORT_CANNOT_BE_HIGH_CONFIDENCE" in combined_output(result)
+
+
+def test_claim_support_wording_conflict_is_rejected(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "claim_support_matrix.json"
+    matrix = read_json(path)
+    matrix["rows"][0]["allowed_final_wording"] = "Broader unsupported wording."
+    write_json(path, matrix)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "CLAIM_SUPPORT_WORDING_CONFLICT" in combined_output(result)
+
+
+def test_claim_support_review_hash_mismatch_is_rejected(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "claim_support_matrix.json"
+    matrix = read_json(path)
+    matrix["rows"][0]["review_artifact_sha256"] = "0" * 64
+    write_json(path, matrix)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "CLAIM_SUPPORT_REVIEW_HASH_MISMATCH" in combined_output(result)
+
+
+def test_claim_support_stale_run_id_is_rejected(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "claim_support_matrix.json"
+    matrix = read_json(path)
+    matrix["workflow_run_id"] = "stale-run-id"
+    write_json(path, matrix)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "CLAIM_SUPPORT_STALE_WORKFLOW_RUN_ID" in combined_output(result)
+
+
+def test_artifact_plugin_version_mismatch_is_rejected(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    path = bundle / "source_verification.json"
+    payload = read_json(path)
+    payload["plugin_version"] = "9.9.9"
+    write_json(path, payload)
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "ARTIFACT_PLUGIN_VERSION_MISMATCH" in combined_output(result)
+
+
+def test_bundle_manifest_detects_post_manifest_tampering(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    with (bundle / "final.md").open("a", encoding="utf-8") as handle:
+        handle.write("\nTampered after manifest generation.\n")
+
+    result = run_validator_path(bundle)
+
+    assert result.returncode == 1
+    assert "BUNDLE_MANIFEST_HASH_MISMATCH" in combined_output(result)
+
+
 def test_full_protocol_without_independent_review_fails() -> None:
     result = run_validator("invalid_full_protocol_without_independent_review")
     assert result.returncode == 1
-    assert "FULL_PROTOCOL_REQUIRES_INDEPENDENT_SURFACE" in combined_output(result)
+    assert "FULL_PROTOCOL_REQUIRES_INDEPENDENT_RECEIPT" in combined_output(result)
 
 
 def test_missing_lead_decision_emits_fix_hint_json(tmp_path: Path) -> None:
@@ -659,6 +986,9 @@ def test_tenx_omics_manifest_requires_cellranger_artifacts(tmp_path: Path) -> No
     omics_manifest = {
         "schema_version": "2.0",
         "analysis_id": "omics-test",
+        "plugin_version": run_state["plugin_version"],
+        "workflow_run_id": run_state["run_id"],
+        "created_at": "2026-07-10T02:01:00Z",
         "track": "tenx-gex",
         "data_sources": [],
         "sample_sheet": "samples.csv",
@@ -789,32 +1119,24 @@ def test_final_wording_drift_fails() -> None:
     assert "FINAL_WORDING_DRIFT" in combined_output(result)
 
 
-def test_compact_standard_label_requires_formal_artifacts(tmp_path: Path) -> None:
+def test_final_prose_alone_does_not_promote_compact_label(tmp_path: Path) -> None:
     final_text = tmp_path / "final.md"
     final_text.write_text("Final workflow label: Compact standard workflow\n", encoding="utf-8")
 
     result = run_validator_args("--final-text", str(final_text))
 
-    output = combined_output(result)
-    assert result.returncode == 1
-    assert "COMPACT_WORKFLOW_REQUIRES_ARTIFACT" in output
-    assert PREFLIGHT_FILE in output
-    assert "source_corpus.json" in output
-    assert "claim_ledger.json" in output
-    assert "post_write_validation.json" in output
+    assert result.returncode == 0, combined_output(result)
+    assert "COMPACT_WORKFLOW_REQUIRES_ARTIFACT" not in combined_output(result)
 
 
-def test_full_protocol_label_in_final_text_requires_run_state(tmp_path: Path) -> None:
+def test_final_prose_alone_does_not_promote_full_protocol(tmp_path: Path) -> None:
     final_text = tmp_path / "final.md"
     final_text.write_text("Final workflow label: Full protocol followed\n", encoding="utf-8")
 
     result = run_validator_args("--final-text", str(final_text))
 
-    output = combined_output(result)
-    assert result.returncode == 1
-    assert "FULL_PROTOCOL_REQUIRES_RUN_STATE" in output
-    assert "FULL_PROTOCOL_REQUIRES_PREFLIGHT" in output
-    assert "FULL_PROTOCOL_REQUIRES_POST_WRITE" in output
+    assert result.returncode == 0, combined_output(result)
+    assert "FULL_PROTOCOL_REQUIRES_" not in combined_output(result)
 
 
 def test_full_protocol_requires_complete_bundle_artifacts(tmp_path: Path) -> None:
@@ -872,9 +1194,22 @@ def test_negated_full_protocol_label_does_not_trigger_full_policy(tmp_path: Path
     result = run_validator_args("--final-text", str(final_text))
 
     output = combined_output(result)
-    assert result.returncode == 1
-    assert "COMPACT_WORKFLOW_REQUIRES_ARTIFACT" in output
+    assert result.returncode == 0, output
+    assert "COMPACT_WORKFLOW_REQUIRES_ARTIFACT" not in output
     assert "FULL_PROTOCOL_REQUIRES_" not in output
+
+
+def test_tool_use_prose_is_lint_only_not_structured_execution_evidence(tmp_path: Path) -> None:
+    final_text = tmp_path / "final.md"
+    final_text.write_text(
+        "We ran PubMed and checked NCBI, but no structured tool receipt is supplied.\n",
+        encoding="utf-8",
+    )
+
+    result = run_validator_args("--final-text", str(final_text), "--check-tool-ledger")
+
+    assert result.returncode == 0, combined_output(result)
+    assert "TOOL_CALL_LEDGER_REQUIRED" not in combined_output(result)
 
 
 def test_complete_spawned_review_lane_requires_actual_instance(tmp_path: Path) -> None:
@@ -892,9 +1227,10 @@ def test_complete_spawned_review_lane_requires_actual_instance(tmp_path: Path) -
 
 
 @pytest.mark.parametrize("agent_id", spawnable_agent_ids())
-def test_each_spawnable_agent_instance_contract_passes_validator(tmp_path: Path, agent_id: str) -> None:
+def test_each_spawnable_agent_instance_contract_passes_compact_validation(tmp_path: Path, agent_id: str) -> None:
     bundle = tmp_path / agent_id
     shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    prepare_compact_policy_bundle(bundle)
     run_state_path = bundle / "run_state.json"
     run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
     run_state["spawned_review_lanes"] = [
@@ -912,7 +1248,7 @@ def test_each_spawnable_agent_instance_contract_passes_validator(tmp_path: Path,
             "execution_surface": "spawned_subagent",
             "spawn_tool": "synthetic-contract-smoke",
             "thread_or_task_id": f"synthetic-{agent_id}",
-            "parent_run_id": "run-valid-001",
+            "parent_run_id": run_state["run_id"],
             "status": "complete",
             "input_scope": "synthetic CL-001/S-001 full-protocol fixture",
             "output_artifact": f"review/{agent_id}.md",
@@ -934,7 +1270,7 @@ def test_each_spawnable_agent_instance_contract_passes_validator(tmp_path: Path,
     assert "VALIDATION_PASSED" in combined_output(result)
 
 
-def test_full_protocol_requires_complete_independent_instance(tmp_path: Path) -> None:
+def test_full_protocol_independence_comes_from_receipt_not_spawn_status(tmp_path: Path) -> None:
     bundle = tmp_path / "bundle"
     shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
     run_state_path = bundle / "run_state.json"
@@ -942,14 +1278,15 @@ def test_full_protocol_requires_complete_independent_instance(tmp_path: Path) ->
     run_state["spawned_review_lanes"] = []
     run_state.pop("spawned_agent_instances")
     run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+    refresh_release_receipts(bundle)
 
     result = run_validator_path(bundle)
 
-    assert result.returncode == 1
-    assert "FULL_PROTOCOL_REQUIRES_INDEPENDENT_INSTANCE" in combined_output(result)
+    assert result.returncode == 0, combined_output(result)
+    assert "FULL_PROTOCOL_REQUIRES_INDEPENDENT_RECEIPT" not in combined_output(result)
 
 
-def test_failed_spawned_instance_does_not_satisfy_full_protocol(tmp_path: Path) -> None:
+def test_failed_spawn_record_does_not_override_successful_runtime_receipt(tmp_path: Path) -> None:
     bundle = tmp_path / "bundle"
     shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
     run_state_path = bundle / "run_state.json"
@@ -958,11 +1295,12 @@ def test_failed_spawned_instance_does_not_satisfy_full_protocol(tmp_path: Path) 
     run_state["spawned_agent_instances"][0]["status"] = "failed"
     run_state["spawned_agent_instances"][0]["failure_or_downgrade_reason"] = "synthetic failed reviewer"
     run_state_path.write_text(json.dumps(run_state, indent=2), encoding="utf-8")
+    refresh_release_receipts(bundle)
 
     result = run_validator_path(bundle)
 
-    assert result.returncode == 1
-    assert "FULL_PROTOCOL_REQUIRES_INDEPENDENT_INSTANCE" in combined_output(result)
+    assert result.returncode == 0, combined_output(result)
+    assert "FULL_PROTOCOL_REQUIRES_INDEPENDENT_RECEIPT" not in combined_output(result)
 
 
 def test_unknown_spawned_instance_agent_fails(tmp_path: Path) -> None:
@@ -1038,8 +1376,8 @@ def test_complete_spawned_instance_rejects_non_independent_surface(tmp_path: Pat
     output = combined_output(result)
 
     assert result.returncode == 1
-    assert "SPAWNED_INSTANCE_INVALID_EXECUTION_SURFACE" in output
-    assert "SPAWNED_LANE_MISSING_INSTANCE" in output
+    assert "SCHEMA_VALIDATION_FAILED" in output
+    assert "same_model_inline" in output
 
 
 def test_complete_spawned_review_lane_requires_ledger_handoff(tmp_path: Path) -> None:
@@ -1151,8 +1489,12 @@ def test_omics_run_reviewer_budget_zero_with_runtime_exception_warns(tmp_path: P
         },
         skipped_role_outputs=[
             {
-                "role": "omics-code-reviewer",
-                "reason": "spawned-subagent support unavailable; compact inline-only downgrade recorded",
+                "reason_code": "RUNTIME_NO_SPAWN_SUPPORT",
+                "reason_detail": "Spawned-subagent support is unavailable in this synthetic runtime.",
+                "affected_roles": ["omics-code-reviewer"],
+                "downgrade_label": "Compact standard workflow",
+                "approved_by": "test-harness",
+                "recorded_at": "2026-07-10T02:00:00Z",
             }
         ],
         downgrade_reasons=["spawned-subagent support unavailable; downgraded to Compact standard workflow"],
@@ -1211,6 +1553,9 @@ def test_omics_run_core_reviewer_instance_passes(tmp_path: Path) -> None:
                 "output_artifact": "review/omics-code-reviewer.md",
                 "checks_run": ["script reproducibility", "raw-data safety", "leakage review"],
                 "ledger_handoff": "CL-001 code/provenance checks accepted",
+                "independence_class": "separate-model",
+                "independent_review_eligible": True,
+                "fixture_only": False,
             }
         ],
         independent_review_status="spawned_subagent omics-code-reviewer complete",
@@ -1226,6 +1571,7 @@ def test_omics_run_core_reviewer_instance_passes(tmp_path: Path) -> None:
 def test_valid_team_level_selective_dag_passes(tmp_path: Path) -> None:
     bundle = tmp_path / "bundle"
     shutil.copytree(FIXTURES / "valid_full_protocol_bundle", bundle)
+    prepare_compact_policy_bundle(bundle)
     run_state_path = bundle / "run_state.json"
     run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
     add_valid_team_dag(run_state)

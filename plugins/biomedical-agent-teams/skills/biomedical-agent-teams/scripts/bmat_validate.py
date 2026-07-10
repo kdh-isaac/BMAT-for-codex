@@ -18,6 +18,11 @@ from pathlib import Path
 from typing import Any
 
 try:
+    import bmat_experiment_design_check as experiment_design_v2
+except ImportError:  # pragma: no cover - import shape depends on embedding host
+    experiment_design_v2 = None
+
+try:
     import jsonschema  # type: ignore
 except ImportError:  # pragma: no cover - depends on local environment
     jsonschema = None
@@ -48,6 +53,8 @@ OPTIONAL_BUNDLE_FILES = {
     "omics_metadata_check": "omics_metadata_check.json",
     "experiment_design": "experiment_design.json",
     "review_artifact_manifest": "review_artifact_manifest.json",
+    "bundle_manifest": "bundle_manifest.json",
+    "hypothesis_tournament": "hypothesis_tournament.json",
 }
 
 INTERNAL_ARTIFACT_PATHS = "_artifact_paths"
@@ -67,6 +74,8 @@ SCHEMA_FILES = {
     "omics_metadata_check": "omics-metadata-check.schema.json",
     "experiment_design": "experiment-design.schema.json",
     "review_artifact_manifest": "review-artifact-manifest.schema.json",
+    "bundle_manifest": "bundle-manifest.schema.json",
+    "hypothesis_tournament": "hypothesis-tournament.schema.json",
     "stage_evaluation": "stage-evaluation.schema.json",
     "post_write_validation": "post-write-validation.schema.json",
 }
@@ -132,6 +141,47 @@ INDEPENDENT_INSTANCE_SURFACES = {
     "tool_backed_validator",
     "external_verifier",
     "human_reviewer",
+}
+INDEPENDENT_REVIEW_CLASSES = {"separate-model", "external-tool", "human"}
+SUPPLEMENTARY_REVIEW_CLASSES = {"same-model-separate-context"}
+REVIEW_SKIP_REASON_CODES = {
+    "RUNTIME_NO_SPAWN_SUPPORT",
+    "TOOL_REVIEW_UNAVAILABLE",
+    "PRIVACY_BLOCKED",
+    "USER_COMPACT_INLINE_ONLY",
+    "EXPLICITLY_OUT_OF_SCOPE",
+    "BUDGET_BLOCKED",
+    "HUMAN_GATE_BLOCKED",
+}
+STRICT_SCOPE_FIELDS = {
+    "species",
+    "cell_type",
+    "assay",
+    "endpoint",
+    "population_or_model",
+    "intervention_or_exposure",
+    "biological_context",
+}
+STRICT_SCOPE_PASS = {"match", "not-applicable"}
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+RELEASE_ARTIFACT_IDENTITIES = {
+    "run_state": ("run_id", "created_at"),
+    "preflight": ("runtime_capability_preflight_id", "created_at"),
+    "lead_decision": ("decision_id", "created_at"),
+    "workflow_dag": ("workflow_id", "created_at"),
+    "source_corpus": ("corpus_id", "created_at"),
+    "source_verification": ("verification_id", "checked_at"),
+    "claim_ledger": ("claim_ledger_id", "created_at"),
+    "claim_support_matrix": ("support_matrix_id", "created_at"),
+    "results_integration": ("integration_id", "created_at"),
+    "tool_call_ledger": ("ledger_id", "created_at"),
+    "stage_evaluation": ("evaluation_id", "created_at"),
+    "post_write_validation": ("validation_id", "checked_at"),
+    "omics_run_manifest": ("analysis_id", "created_at"),
+    "omics_metadata_check": ("check_id", "checked_at"),
+    "experiment_design": ("design_id", "created_at"),
+    "review_artifact_manifest": ("review_manifest_id", "created_at"),
+    "hypothesis_tournament": ("tournament_id", "created_at"),
 }
 TEAM_LEVEL_STRATEGY = "team_level_selective_dag"
 REQUIRED_RUN_STATE_FIELDS = {
@@ -244,6 +294,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--omics-metadata-check", type=Path)
     parser.add_argument("--experiment-design", type=Path)
     parser.add_argument("--review-artifact-manifest", type=Path)
+    parser.add_argument("--bundle-manifest", type=Path)
+    parser.add_argument("--hypothesis-tournament", type=Path)
     parser.add_argument("--final-text", type=Path)
     parser.add_argument(
         "--require-label",
@@ -436,10 +488,22 @@ def validate_schemas(
         artifact = artifacts.get(key)
         if artifact is None:
             continue
+        if (
+            not strict_schema
+            and key in RELEASE_ARTIFACT_IDENTITIES
+            and isinstance(artifact, dict)
+            and str(artifact.get("schema_version", "")).strip() != "2.0"
+        ):
+            # Legacy v1 artifacts remain readable in non-release mode.  They are
+            # never silently upgraded and validate_artifact_identity_policy emits
+            # the explicit non-release-eligible warning.
+            continue
         schema_path = contracts_dir / schema_name
         try:
             schema = json.loads(read_text_file(schema_path))
-            jsonschema.validate(artifact, schema)
+            validator_class = jsonschema.validators.validator_for(schema)
+            validator_class.check_schema(schema)
+            validator_class(schema, format_checker=jsonschema.FormatChecker()).validate(artifact)
         except FileNotFoundError:
             findings.append(Finding("WARN", "SCHEMA_FILE_MISSING", f"schema missing for {key}", str(schema_path)))
         except jsonschema.ValidationError as exc:  # type: ignore[union-attr]
@@ -491,6 +555,11 @@ def has_affirmative_label_mention(final_norm: str, label_norm: str) -> bool:
 
 
 def declared_workflow_labels(artifacts: dict[str, Any], required_label: str | None = None) -> set[str]:
+    """Return structured label authorities only.
+
+    Free-form final prose is deliberately excluded: examples, negations, and
+    explanatory text must never promote a workflow state.
+    """
     labels: set[str] = set()
     if required_label:
         labels.add(required_label)
@@ -498,13 +567,31 @@ def declared_workflow_labels(artifacts: dict[str, Any], required_label: str | No
     run_state_label = workflow_label(artifacts.get("run_state")).strip()
     if run_state_label:
         labels.add(run_state_label)
-
-    final_text = artifacts.get("final_text") or ""
-    final_norm = normalized_text(final_text)
-    for label in WORKFLOW_LABELS:
-        if has_affirmative_label_mention(final_norm, normalized_text(label)):
-            labels.add(label)
     return labels
+
+
+def validate_final_label_display(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    """Check only an explicit rendered label field against run_state."""
+    final_text = str(artifacts.get("final_text") or "")
+    authoritative = workflow_label(artifacts.get("run_state")).strip()
+    if not final_text or not authoritative:
+        return
+    pattern = re.compile(r"^\s*(?:final workflow label|workflow label)\s*[:|]\s*(.+?)\s*$", re.IGNORECASE)
+    for line in final_text.splitlines():
+        match = pattern.match(line)
+        if not match:
+            continue
+        displayed = match.group(1).strip().strip("`*_ ")
+        if displayed != authoritative:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "FINAL_LABEL_DISPLAY_MISMATCH",
+                    f"final.md displays {displayed!r}, but run_state.final_label is {authoritative!r}",
+                    BUNDLE_FILES["final_text"],
+                    "Render the final label directly from run_state.final_label.",
+                )
+            )
 
 
 def validate_required_label(
@@ -795,6 +882,97 @@ def validate_lead_decision_policy(
             )
 
 
+def validate_domain_pack_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    preflight = artifacts.get("preflight")
+    run_state = artifacts.get("run_state")
+    if not isinstance(preflight, dict) or not isinstance(run_state, dict):
+        return
+    preflight_pack = str(preflight.get("selected_domain_pack", preflight.get("domain_pack", ""))).strip()
+    run_pack = str(run_state.get("selected_domain_pack", run_state.get("domain_pack", ""))).strip()
+    preflight_version = str(preflight.get("domain_pack_version", "")).strip()
+    run_version = str(run_state.get("domain_pack_version", "")).strip()
+    if preflight_pack != run_pack:
+        findings.append(Finding("ERROR", "DOMAIN_PACK_SELECTION_MISMATCH", f"preflight domain pack {preflight_pack!r} differs from run_state {run_pack!r}", "run_state.json"))
+        return
+    if preflight_version != run_version:
+        findings.append(Finding("ERROR", "DOMAIN_PACK_VERSION_MISMATCH", f"preflight domain pack version {preflight_version!r} differs from run_state {run_version!r}", "run_state.json"))
+    if not preflight_pack:
+        return
+    pack_path = Path(__file__).resolve().parents[1] / "domain-packs" / preflight_pack / "domain-pack.json"
+    try:
+        pack = json.loads(read_text_file(pack_path))
+    except (FileNotFoundError, json.JSONDecodeError):
+        findings.append(Finding("ERROR", "DOMAIN_PACK_NOT_FOUND", f"selected domain pack {preflight_pack} is missing or invalid", str(pack_path)))
+        return
+    if str(pack.get("pack_id", "")) != preflight_pack:
+        findings.append(Finding("ERROR", "DOMAIN_PACK_ID_MISMATCH", f"selected pack {preflight_pack} does not match pack_id", str(pack_path)))
+    if preflight_version and str(pack.get("domain_pack_version", "")) != preflight_version:
+        findings.append(Finding("ERROR", "DOMAIN_PACK_RESOURCE_VERSION_MISMATCH", f"selected pack version does not match {pack_path.name}", str(pack_path)))
+    assumptions = value_as_list(preflight.get("domain_specific_assumptions")) + value_as_list(run_state.get("domain_specific_assumptions"))
+    if preflight_pack == "generic-biomedical":
+        forbidden = ("car-t", "car t", "tumor-intrinsic", "tme-intrinsic", "product-intrinsic")
+        leaking = [value for value in assumptions if any(term in normalized_text(value) for term in forbidden)]
+        if leaking:
+            findings.append(Finding("ERROR", "GENERIC_DOMAIN_PACK_SPECIALTY_LEAK", "generic-biomedical assumptions contain cell-therapy/immuno-oncology-specific axes", "runtime_capability_preflight.json"))
+
+
+def validate_hypothesis_tournament_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    tournament = artifacts.get("hypothesis_tournament")
+    if tournament is None:
+        return
+    if not isinstance(tournament, dict):
+        return
+    candidates = [row for row in tournament.get("candidates", []) if isinstance(row, dict)]
+    hypothesis_ids = [str(row.get("hypothesis_id", "")).strip() for row in candidates]
+    blinded_ids = [str(row.get("blinded_candidate_id", "")).strip() for row in candidates]
+    order = tournament.get("candidate_order_randomization", {}).get("randomized_order", [])
+    if not isinstance(order, list) or set(map(str, order)) != set(blinded_ids):
+        findings.append(Finding("ERROR", "TOURNAMENT_RANDOMIZED_ORDER_INCOMPLETE", "tournament randomized order must include every blinded candidate", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    judge_scores = [row for row in tournament.get("judge_scores", []) if isinstance(row, dict)]
+    score_ids = {str(row.get("blinded_candidate_id", "")) for row in judge_scores}
+    if set(blinded_ids) - score_ids:
+        findings.append(Finding("ERROR", "TOURNAMENT_CANDIDATE_MISSING_JUDGE_SCORE", "every candidate requires judge-level scores", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    candidates_by_judge: dict[str, set[str]] = {}
+    seen_judgments: set[tuple[str, str]] = set()
+    for row in judge_scores:
+        judge_id = str(row.get("judge_id", "")).strip()
+        blinded_id = str(row.get("blinded_candidate_id", "")).strip()
+        pair = (judge_id, blinded_id)
+        if pair in seen_judgments:
+            findings.append(Finding("ERROR", "TOURNAMENT_DUPLICATE_JUDGE_SCORE", f"duplicate judge/candidate score: {judge_id}/{blinded_id}", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+        seen_judgments.add(pair)
+        candidates_by_judge.setdefault(judge_id, set()).add(blinded_id)
+    expected_blinded_ids = set(blinded_ids)
+    for judge_id, scored_ids in candidates_by_judge.items():
+        if scored_ids != expected_blinded_ids:
+            findings.append(Finding("ERROR", "TOURNAMENT_JUDGE_SCORE_MATRIX_INCOMPLETE", f"judge {judge_id} did not score every blinded candidate exactly once", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    sensitivity = tournament.get("order_sensitivity_check", {})
+    if not isinstance(sensitivity, dict) or sensitivity.get("performed") is not True:
+        findings.append(Finding("ERROR", "TOURNAMENT_ORDER_SENSITIVITY_REQUIRED", "tournament requires an order-sensitivity check", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    if tournament.get("aggregate_scores") == tournament.get("judge_disagreement"):
+        findings.append(Finding("ERROR", "TOURNAMENT_AGGREGATE_DISAGREEMENT_CONFLATED", "aggregate score and judge disagreement must remain separate", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    if tournament.get("ranking_model") != "qualitative" and not tournament.get("model_based_ranking"):
+        findings.append(Finding("ERROR", "TOURNAMENT_MODEL_RANKING_MISSING", "model-based rank must remain separate from qualitative rank", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    if not tournament.get("qualitative_ranking"):
+        findings.append(Finding("ERROR", "TOURNAMENT_QUALITATIVE_RANKING_MISSING", "qualitative ranking is required independently of Elo/Bradley-Terry output", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    known_hypotheses = set(hypothesis_ids)
+    ranking_ids = [str(value) for value in value_as_list(tournament.get("qualitative_ranking")) + value_as_list(tournament.get("model_based_ranking"))]
+    if any(value not in known_hypotheses for value in ranking_ids):
+        findings.append(Finding("ERROR", "TOURNAMENT_RANKING_UNKNOWN_CANDIDATE", "qualitative/model-based ranking references an unknown hypothesis", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    limitation = normalized_text(tournament.get("same_model_correlated_judgment_limitation"))
+    if "correlat" not in limitation or "limit" not in limitation:
+        findings.append(Finding("ERROR", "TOURNAMENT_SAME_MODEL_CORRELATION_LIMIT_MISSING", "same-model correlated-judgment limitation must be explicit", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    boundary = normalized_text(tournament.get("winner_interpretation_boundary"))
+    if not boundary or ("not" not in boundary and "does not" not in boundary):
+        findings.append(Finding("ERROR", "TOURNAMENT_WINNER_BOUNDARY_REQUIRED", "ranking winner must not be presented as biological proof or validation", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    run_state = artifacts.get("run_state")
+    if isinstance(run_state, dict):
+        expected_pack = str(run_state.get("selected_domain_pack", run_state.get("domain_pack", ""))).strip()
+        tournament_pack = str(tournament.get("selected_domain_pack", "")).strip()
+        if expected_pack and tournament_pack != expected_pack:
+            findings.append(Finding("ERROR", "TOURNAMENT_DOMAIN_PACK_MISMATCH", f"tournament domain pack {tournament_pack!r} does not match run_state {expected_pack!r}", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+
+
 def requested_omics_track(artifacts: dict[str, Any]) -> str:
     run_state = artifacts.get("run_state")
     preflight = artifacts.get("preflight")
@@ -935,7 +1113,10 @@ def complete_independent_instances(run_state: Any) -> list[dict[str, Any]]:
     return [
         instance
         for instance in spawned_agent_instances(run_state)
-        if instance.get("status") == "complete" and instance.get("execution_surface") in INDEPENDENT_INSTANCE_SURFACES
+        if instance.get("status") == "complete"
+        and instance.get("independence_class") in INDEPENDENT_REVIEW_CLASSES
+        and instance.get("independent_review_eligible") is True
+        and instance.get("fixture_only") is False
     ]
 
 
@@ -1040,8 +1221,77 @@ def omics_review_skip_text(artifacts: dict[str, Any]) -> str:
 
 
 def has_omics_review_skip_exception(artifacts: dict[str, Any]) -> bool:
-    text = omics_review_skip_text(artifacts)
-    return any(marker in text for marker in OMICS_REVIEW_SKIP_EXCEPTION_MARKERS)
+    return any(
+        record.get("reason_code") in REVIEW_SKIP_REASON_CODES
+        for record in review_skip_records(artifacts)
+    )
+
+
+def review_skip_records(artifacts: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for artifact_key in ("preflight", "run_state"):
+        artifact = artifacts.get(artifact_key)
+        if not isinstance(artifact, dict):
+            continue
+        for key in ("review_skip_reasons", "skip_reasons"):
+            value = artifact.get(key, [])
+            if isinstance(value, list):
+                records.extend(item for item in value if isinstance(item, dict))
+        skipped = artifact.get("skipped_role_outputs_with_reason", [])
+        if isinstance(skipped, list):
+            records.extend(item for item in skipped if isinstance(item, dict))
+    return records
+
+
+def validate_structured_skip_reasons(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    required = {
+        "reason_code",
+        "reason_detail",
+        "affected_roles",
+        "downgrade_label",
+        "approved_by",
+        "recorded_at",
+    }
+    for index, record in enumerate(review_skip_records(artifacts)):
+        missing = [field for field in sorted(required) if record.get(field) in (None, "", [])]
+        if missing:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "REVIEW_SKIP_REASON_FIELDS_MISSING",
+                    f"structured review skip record {index} is missing: {', '.join(missing)}",
+                    "runtime_capability_preflight.json",
+                )
+            )
+        code = str(record.get("reason_code", "")).strip()
+        if code not in REVIEW_SKIP_REASON_CODES:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "REVIEW_SKIP_REASON_CODE_INVALID",
+                    f"structured review skip record {index} has unsupported reason_code {code or 'missing'}",
+                    "runtime_capability_preflight.json",
+                )
+            )
+        roles = record.get("affected_roles")
+        if not isinstance(roles, list) or not roles or any(not str(role).strip() for role in roles):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "REVIEW_SKIP_AFFECTED_ROLES_INVALID",
+                    f"structured review skip record {index} requires non-empty affected_roles",
+                    "runtime_capability_preflight.json",
+                )
+            )
+        if str(record.get("downgrade_label", "")) not in WORKFLOW_LABELS - {FULL_LABEL}:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "REVIEW_SKIP_DOWNGRADE_LABEL_INVALID",
+                    f"structured review skip record {index} must use a non-Full workflow label",
+                    "runtime_capability_preflight.json",
+                )
+            )
 
 
 def complete_core_omics_reviewer_instances(run_state: Any) -> list[dict[str, Any]]:
@@ -1591,12 +1841,12 @@ def validate_tool_ledger_policy(
     ]
 
     if tool_call_ledger is None:
-        if require_ledger and (tool_backed_claims or final_mentions_tool or ri_used_tools or structured_results_integration_reasons(artifacts)):
+        if require_ledger and (tool_backed_claims or ri_used_tools or structured_results_integration_reasons(artifacts)):
             findings.append(
                 Finding(
                     "ERROR",
                     "TOOL_CALL_LEDGER_REQUIRED",
-                    "tool_call_ledger.json is required for tool-use wording, tool-backed claims, or result integration",
+                    "tool_call_ledger.json is required for structured tool-backed claims or result integration",
                     OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
                 )
             )
@@ -1609,7 +1859,13 @@ def validate_tool_ledger_policy(
     success_by_claim = successful_tool_calls_by_claim(tool_call_ledger)
     success_tool_ids = successful_tool_ids(tool_call_ledger)
 
+    seen_call_ids: set[str] = set()
     for index, call in enumerate(calls):
+        call_id_value = str(call.get("call_id", "")).strip()
+        if call_id_value in seen_call_ids:
+            findings.append(Finding("ERROR", "TOOL_CALL_DUPLICATE_CALL_ID", f"duplicate tool call_id {call_id_value}", OPTIONAL_BUNDLE_FILES["tool_call_ledger"]))
+        elif call_id_value:
+            seen_call_ids.add(call_id_value)
         tool_id = str(call.get("tool_id", "")).strip()
         status = str(call.get("status", "")).strip()
         if registry_ids and tool_id and tool_id not in registry_ids:
@@ -1630,6 +1886,37 @@ def validate_tool_ledger_policy(
                     OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
                 )
             )
+        if status in TOOL_SUCCESS_STATUS and value_as_list(call.get("affected_source_ids")):
+            for field in (
+                "query_identifiers",
+                "output_sha256",
+                "started_at",
+                "completed_at",
+                "runtime_surface",
+                "network_boundary",
+                "allowed_data_class",
+                "actual_data_class",
+                "retention_policy",
+            ):
+                if call.get(field) in (None, "", []):
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "SOURCE_TOOL_CALL_RECEIPT_FIELD_MISSING",
+                            f"source-verification call {call_id_value or index} requires {field}",
+                            OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
+                        )
+                    )
+            output_ref = str(call.get("output_ref", "")).strip()
+            if output_ref:
+                _validate_file_receipt(
+                    artifacts,
+                    findings,
+                    ref=output_ref,
+                    expected_hash=str(call.get("output_sha256", "")),
+                    code_prefix="TOOL_CALL_OUTPUT",
+                    path_label=OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
+                )
         if status in TOOL_NON_SUCCESS_STATUS and not str(call.get("downgrade_reason", "")).strip():
             findings.append(
                 Finding(
@@ -1718,18 +2005,9 @@ def validate_tool_ledger_policy(
     if final_mentions_tool and not calls:
         findings.append(
             Finding(
-                "ERROR",
-                "FINAL_TOOL_USE_WORDING_WITHOUT_LEDGER_CALL",
-                "final text contains tool-use wording but tool_call_ledger.json has no calls",
-                OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
-            )
-        )
-    if final_mentions_tool and calls and not success_tool_ids:
-        findings.append(
-            Finding(
-                "ERROR",
-                "FINAL_TOOL_USE_WORDING_WITHOUT_SUCCESSFUL_CALL",
-                "final text contains tool-use wording but no successful tool call is recorded",
+                "WARN",
+                "FINAL_TOOL_USE_WORDING_LINT",
+                "final text contains possible tool-use wording, but prose is not a tool-use authority",
                 OPTIONAL_BUNDLE_FILES["tool_call_ledger"],
             )
         )
@@ -1780,6 +2058,33 @@ def source_span_refs(source_corpus: Any) -> set[str]:
     return refs
 
 
+def source_records_by_id(source_corpus: Any) -> dict[str, dict[str, Any]]:
+    if not isinstance(source_corpus, dict):
+        return {}
+    records: dict[str, dict[str, Any]] = {}
+    for source in source_corpus.get("sources", []):
+        if not isinstance(source, dict):
+            continue
+        sid = str(source.get("source_id", "")).strip()
+        if sid:
+            records[sid] = source
+    return records
+
+
+def source_spans_by_source(source_corpus: Any) -> dict[str, dict[str, dict[str, Any]]]:
+    spans: dict[str, dict[str, dict[str, Any]]] = {}
+    for sid, source in source_records_by_id(source_corpus).items():
+        by_id: dict[str, dict[str, Any]] = {}
+        for span in source.get("evidence_spans", []):
+            if not isinstance(span, dict):
+                continue
+            span_id = str(span.get("span_id", span.get("evidence_span_ref", ""))).strip()
+            if span_id:
+                by_id[span_id] = span
+        spans[sid] = by_id
+    return spans
+
+
 def source_verification_by_source(source_verification: Any) -> dict[str, dict[str, Any]]:
     rows: dict[str, dict[str, Any]] = {}
     for row in iter_source_verification_rows(source_verification):
@@ -1793,6 +2098,11 @@ def verification_row_is_supportive(row: dict[str, Any]) -> bool:
     return (
         str(row.get("identifier_status", "")).strip() in SOURCE_VERIFIED_STATUSES
         and str(row.get("metadata_match", "")).strip() in SOURCE_PASS_STATUSES
+        and row.get("release_eligible") is True
+        and row.get("fixture_only") is False
+        and str(row.get("verification_mode", "")) in {"live-tool", "human", "local-file"}
+        and str(row.get("integrity_status", "")) not in {"retracted", "withdrawn", "expression-of-concern", "unknown"}
+        and str(row.get("version_status", "")) != "preprint"
     )
 
 
@@ -1802,6 +2112,44 @@ def successful_tool_call_ids(tool_call_ledger: Any) -> set[str]:
         for call in iter_tool_calls(tool_call_ledger)
         if str(call.get("status", "")).strip() in TOOL_SUCCESS_STATUS and str(call.get("call_id", "")).strip()
     }
+
+
+def tool_calls_by_id(tool_call_ledger: Any) -> dict[str, dict[str, Any]]:
+    calls: dict[str, dict[str, Any]] = {}
+    for call in iter_tool_calls(tool_call_ledger):
+        call_id_value = str(call.get("call_id", "")).strip()
+        if call_id_value:
+            calls[call_id_value] = call
+    return calls
+
+
+def _validate_file_receipt(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    ref: str,
+    expected_hash: str,
+    expected_size: Any = None,
+    code_prefix: str,
+    path_label: str,
+) -> None:
+    resolved = local_artifact_ref_path(artifacts, ref)
+    base = artifact_base_dir(artifacts)
+    if resolved is None or base is None:
+        findings.append(Finding("ERROR", f"{code_prefix}_REF_INVALID", f"invalid local artifact reference {ref!r}", path_label))
+        return
+    try:
+        resolved.relative_to(base.resolve())
+    except ValueError:
+        findings.append(Finding("ERROR", f"{code_prefix}_OUTSIDE_BUNDLE", f"artifact reference escapes bundle: {ref}", path_label))
+        return
+    if not resolved.is_file():
+        findings.append(Finding("ERROR", f"{code_prefix}_MISSING", f"artifact does not exist: {ref}", path_label))
+        return
+    if not SHA256_PATTERN.fullmatch(expected_hash) or sha256_file(resolved) != expected_hash:
+        findings.append(Finding("ERROR", f"{code_prefix}_HASH_MISMATCH", f"artifact SHA-256 mismatch: {ref}", path_label))
+    if expected_size is not None and (not isinstance(expected_size, int) or resolved.stat().st_size != expected_size):
+        findings.append(Finding("ERROR", f"{code_prefix}_SIZE_MISMATCH", f"artifact size mismatch: {ref}", path_label))
 
 
 def validate_source_verification_policy(
@@ -1832,31 +2180,76 @@ def validate_source_verification_policy(
     if not isinstance(source_verification, (dict, list)):
         return
 
-    rows_by_source = source_verification_by_source(source_verification)
-    success_call_ids = successful_tool_call_ids(artifacts.get("tool_call_ledger"))
+    rows = iter_source_verification_rows(source_verification)
+    rows_by_source: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        sid = str(row.get("source_id", "")).strip()
+        if sid in rows_by_source:
+            findings.append(Finding("ERROR", "SOURCE_VERIFICATION_DUPLICATE_SOURCE_ROW", f"duplicate source verification row for {sid}", OPTIONAL_BUNDLE_FILES["source_verification"]))
+        elif sid:
+            rows_by_source[sid] = row
+    calls_by_id = tool_calls_by_id(artifacts.get("tool_call_ledger"))
 
-    for row in iter_source_verification_rows(source_verification):
+    for row in rows:
         source_id = str(row.get("source_id", "")).strip()
+        identifier = str(row.get("identifier", "")).strip()
+        canonical_identifier = str(row.get("canonical_identifier", "")).strip()
+        mode = str(row.get("verification_mode", "")).strip()
+        release_eligible = row.get("release_eligible") is True
+        fixture_only = row.get("fixture_only") is True
+        identifier_status = str(row.get("identifier_status", "")).strip()
+        metadata_match = str(row.get("metadata_match", "")).strip()
         if source_id and source_ids and source_id not in source_ids:
-            findings.append(
-                Finding(
-                    "ERROR",
-                    "SOURCE_VERIFICATION_UNKNOWN_SOURCE_ID",
-                    f"source_verification row references unknown source_id {source_id}",
-                    OPTIONAL_BUNDLE_FILES["source_verification"],
-                )
-            )
-        tool_call_id = str(row.get("tool_call_id", "")).strip()
-        tool_id = str(row.get("tool_id", "")).strip()
-        if tool_id and tool_call_id and tool_call_id not in success_call_ids:
-            findings.append(
-                Finding(
-                    "ERROR",
-                    "SOURCE_VERIFICATION_TOOL_CALL_NOT_SUCCESSFUL",
-                    f"source verification for {source_id or 'unknown'} claims tool_call_id {tool_call_id}, but no successful matching tool call exists",
-                    OPTIONAL_BUNDLE_FILES["source_verification"],
-                )
-            )
+            findings.append(Finding("ERROR", "SOURCE_VERIFICATION_UNKNOWN_SOURCE_ID", f"source_verification row references unknown source_id {source_id}", OPTIONAL_BUNDLE_FILES["source_verification"]))
+        if mode == "fixture" or fixture_only or str(row.get("retrieval_surface", "")).strip() in {"offline-fixture", "test-fixture"}:
+            if not fixture_only or release_eligible:
+                findings.append(Finding("ERROR", "FIXTURE_SOURCE_NOT_RELEASE_ELIGIBLE", f"fixture source {source_id} must be fixture_only=true and release_eligible=false", OPTIONAL_BUNDLE_FILES["source_verification"]))
+            if identifier_status == "verified" or metadata_match in SOURCE_PASS_STATUSES:
+                findings.append(Finding("ERROR", "FIXTURE_SOURCE_CANNOT_BE_VERIFIED", f"fixture source {source_id} cannot be verified/pass", OPTIONAL_BUNDLE_FILES["source_verification"]))
+            if "fixture" not in normalized_text(row.get("verification_limitations")):
+                findings.append(Finding("ERROR", "FIXTURE_SOURCE_LIMITATION_REQUIRED", f"fixture source {source_id} must state its fixture limitation", OPTIONAL_BUNDLE_FILES["source_verification"]))
+        if mode == "live-tool" and (identifier_status == "verified" or release_eligible):
+            required_fields = ("resolver", "tool_id", "tool_call_id", "retrieved_at", "output_ref", "output_sha256", "canonical_identifier")
+            for field in required_fields:
+                if not str(row.get(field, "")).strip():
+                    findings.append(Finding("ERROR", "LIVE_SOURCE_RECEIPT_FIELD_MISSING", f"live-tool source {source_id} requires {field}", OPTIONAL_BUNDLE_FILES["source_verification"]))
+            if not str(row.get("canonical_title", row.get("canonical_name", ""))).strip():
+                findings.append(Finding("ERROR", "LIVE_SOURCE_CANONICAL_NAME_MISSING", f"live-tool source {source_id} requires canonical_title or canonical_name", OPTIONAL_BUNDLE_FILES["source_verification"]))
+            call_id_value = str(row.get("tool_call_id", "")).strip()
+            call = calls_by_id.get(call_id_value)
+            if call is None or str(call.get("status", "")) != "success":
+                findings.append(Finding("ERROR", "SOURCE_VERIFICATION_TOOL_CALL_NOT_SUCCESSFUL", f"source {source_id} has no successful call {call_id_value or 'missing'}", OPTIONAL_BUNDLE_FILES["source_verification"]))
+            else:
+                if str(row.get("tool_id", "")) != str(call.get("tool_id", "")):
+                    findings.append(Finding("ERROR", "SOURCE_VERIFICATION_TOOL_ID_MISMATCH", f"source {source_id} tool_id does not match call", OPTIONAL_BUNDLE_FILES["source_verification"]))
+                if source_id not in value_as_list(call.get("affected_source_ids")):
+                    findings.append(Finding("ERROR", "SOURCE_VERIFICATION_CALL_SOURCE_MISMATCH", f"call {call_id_value} did not affect source {source_id}", OPTIONAL_BUNDLE_FILES["source_verification"]))
+                query_ids = value_as_list(call.get("query_identifiers"))
+                if identifier not in query_ids and canonical_identifier not in query_ids:
+                    findings.append(Finding("ERROR", "SOURCE_VERIFICATION_QUERY_IDENTIFIER_MISMATCH", f"call {call_id_value} did not query source identifier", OPTIONAL_BUNDLE_FILES["source_verification"]))
+                if str(row.get("output_ref", "")) != str(call.get("output_ref", "")):
+                    findings.append(Finding("ERROR", "SOURCE_VERIFICATION_OUTPUT_REF_MISMATCH", f"source {source_id} output_ref does not match call", OPTIONAL_BUNDLE_FILES["source_verification"]))
+                if str(row.get("output_sha256", "")) != str(call.get("output_sha256", "")):
+                    findings.append(Finding("ERROR", "SOURCE_VERIFICATION_OUTPUT_HASH_MISMATCH", f"source {source_id} output hash does not match call", OPTIONAL_BUNDLE_FILES["source_verification"]))
+                output_ref = str(row.get("output_ref", "")).strip()
+                if output_ref:
+                    _validate_file_receipt(artifacts, findings, ref=output_ref, expected_hash=str(row.get("output_sha256", "")), code_prefix="SOURCE_TOOL_OUTPUT", path_label=OPTIONAL_BUNDLE_FILES["source_verification"])
+        if mode == "human" and (identifier_status == "verified" or release_eligible):
+            for field in ("verification_actor", "actor_id", "actor_role", "checked_at", "review_artifact_ref", "review_artifact_sha256", "canonical_identifier", "verification_limitations"):
+                if not str(row.get(field, "")).strip():
+                    findings.append(Finding("ERROR", "HUMAN_SOURCE_RECEIPT_FIELD_MISSING", f"human source {source_id} requires {field}", OPTIONAL_BUNDLE_FILES["source_verification"]))
+            review_ref = str(row.get("review_artifact_ref", "")).strip()
+            if review_ref:
+                _validate_file_receipt(artifacts, findings, ref=review_ref, expected_hash=str(row.get("review_artifact_sha256", "")), code_prefix="SOURCE_HUMAN_REVIEW", path_label=OPTIONAL_BUNDLE_FILES["source_verification"])
+        if mode == "local-file" and (identifier_status == "verified" or release_eligible):
+            for field in ("local_snapshot_ref", "local_snapshot_sha256", "local_snapshot_size_bytes", "checked_at"):
+                if row.get(field) in (None, ""):
+                    findings.append(Finding("ERROR", "LOCAL_SOURCE_RECEIPT_FIELD_MISSING", f"local-file source {source_id} requires {field}", OPTIONAL_BUNDLE_FILES["source_verification"]))
+            local_ref = str(row.get("local_snapshot_ref", "")).strip()
+            if local_ref:
+                _validate_file_receipt(artifacts, findings, ref=local_ref, expected_hash=str(row.get("local_snapshot_sha256", "")), expected_size=row.get("local_snapshot_size_bytes"), code_prefix="SOURCE_LOCAL_SNAPSHOT", path_label=OPTIONAL_BUNDLE_FILES["source_verification"])
+        if release_eligible and not verification_row_is_supportive(row):
+            findings.append(Finding("ERROR", "SOURCE_RELEASE_ELIGIBILITY_INVALID", f"source {source_id} is marked release eligible without a qualifying receipt/integrity/version status", OPTIONAL_BUNDLE_FILES["source_verification"]))
 
     for claim in source_backed_claims:
         cid = claim_id(claim)
@@ -1905,6 +2298,34 @@ def support_row_has_scope_mismatch(row: dict[str, Any]) -> bool:
     return scope_has_mismatch(row.get("scope_match"))
 
 
+def scope_is_strict_match(scope_match: Any) -> bool:
+    return (
+        isinstance(scope_match, dict)
+        and set(scope_match) == STRICT_SCOPE_FIELDS
+        and all(str(scope_match.get(field, "")) in STRICT_SCOPE_PASS for field in STRICT_SCOPE_FIELDS)
+    )
+
+
+def review_rows_by_instance(review_manifest: Any) -> dict[str, dict[str, Any]]:
+    return {
+        str(row.get("instance_id", "")).strip(): row
+        for row in review_manifest_rows(review_manifest)
+        if str(row.get("instance_id", "")).strip()
+    }
+
+
+def review_row_is_independent(row: dict[str, Any]) -> bool:
+    return (
+        str(row.get("independence_class", "")) in INDEPENDENT_REVIEW_CLASSES
+        and row.get("independent_review_eligible") is True
+        and row.get("fixture_only") is False
+        and bool(str(row.get("output_artifact", "")).strip())
+        and bool(str(row.get("output_sha256", "")).strip())
+        and bool(str(row.get("runtime_receipt_ref", "")).strip())
+        and bool(str(row.get("runtime_receipt_sha256", "")).strip())
+    )
+
+
 def validate_claim_support_matrix_policy(
     artifacts: dict[str, Any],
     findings: list[Finding],
@@ -1928,17 +2349,69 @@ def validate_claim_support_matrix_policy(
         return
     if matrix is None:
         return
+    run_state = artifacts.get("run_state")
+    if isinstance(matrix, dict) and isinstance(run_state, dict):
+        matrix_run_id = str(matrix.get("workflow_run_id", "")).strip()
+        current_run_id = str(run_state.get("run_id", "")).strip()
+        if matrix_run_id and current_run_id and matrix_run_id != current_run_id:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "CLAIM_SUPPORT_STALE_WORKFLOW_RUN_ID",
+                    f"claim_support_matrix run {matrix_run_id} does not match current run {current_run_id}",
+                    OPTIONAL_BUNDLE_FILES["claim_support_matrix"],
+                )
+            )
     rows_by_claim = support_rows_by_claim(matrix)
+    claims_by_id = {claim_id(claim): claim for claim in claims}
+    sources_by_id = source_records_by_id(artifacts.get("source_corpus"))
+    spans_by_source = source_spans_by_source(artifacts.get("source_corpus"))
+    verification_by_source = source_verification_by_source(artifacts.get("source_verification"))
+    reviews_by_instance = review_rows_by_instance(artifacts.get("review_artifact_manifest"))
     allowed_by_claim = {
         claim_id(claim): str(claim.get("allowed_final_wording", "")).strip()
         for claim in claims
         if str(claim.get("allowed_final_wording", "")).strip()
     }
 
+    seen_pairs: dict[tuple[str, str], str] = {}
     for row in iter_support_matrix_rows(matrix):
         cid = str(row.get("claim_id", "")).strip()
-        verdict = str(row.get("support_verdict", "")).strip()
+        sid = str(row.get("source_id", "")).strip()
+        verdict = str(row.get("support_verdict", "")).strip().replace("_", "-")
         allowed = str(row.get("allowed_final_wording", "")).strip()
+        pair = (cid, sid)
+        prior_verdict = seen_pairs.get(pair)
+        if prior_verdict is not None:
+            code = "CLAIM_SUPPORT_CONFLICTING_ROW" if prior_verdict != verdict else "CLAIM_SUPPORT_DUPLICATE_ROW"
+            findings.append(Finding("ERROR", code, f"duplicate/conflicting support row for {cid}/{sid}", OPTIONAL_BUNDLE_FILES["claim_support_matrix"]))
+        seen_pairs[pair] = verdict
+        claim = claims_by_id.get(cid)
+        source = sources_by_id.get(sid)
+        if claim is None:
+            findings.append(Finding("ERROR", "CLAIM_SUPPORT_UNKNOWN_CLAIM_ID", f"support row references unknown claim_id {cid}", OPTIONAL_BUNDLE_FILES["claim_support_matrix"]))
+        if source is None:
+            findings.append(Finding("ERROR", "CLAIM_SUPPORT_UNKNOWN_SOURCE_ID", f"support row references unknown source_id {sid}", OPTIONAL_BUNDLE_FILES["claim_support_matrix"]))
+        elif source.get("inclusion_status") != "included":
+            findings.append(Finding("ERROR", "CLAIM_SUPPORT_SOURCE_NOT_INCLUDED", f"support row source {sid} is not included", OPTIONAL_BUNDLE_FILES["claim_support_matrix"]))
+        if claim is not None and sid not in source_ids_from_claim(claim):
+            findings.append(Finding("ERROR", "CLAIM_SUPPORT_SOURCE_NOT_LINKED_TO_CLAIM", f"source {sid} is not linked by claim {cid}", OPTIONAL_BUNDLE_FILES["claim_support_matrix"]))
+        verification = verification_by_source.get(sid)
+        if row.get("release_eligible") is True and (verification is None or not verification_row_is_supportive(verification)):
+            findings.append(Finding("ERROR", "CLAIM_SUPPORT_SOURCE_NOT_RELEASE_ELIGIBLE", f"support row {cid}/{sid} lacks release-eligible source verification", OPTIONAL_BUNDLE_FILES["claim_support_matrix"]))
+        span_ref = str(row.get("evidence_span_ref", "")).strip()
+        if span_ref and span_ref not in spans_by_source.get(sid, {}):
+            other_owner = next((owner for owner, spans in spans_by_source.items() if span_ref in spans), None)
+            code = "CLAIM_SUPPORT_SPAN_SOURCE_MISMATCH" if other_owner else "CLAIM_SUPPORT_SPAN_UNRESOLVED"
+            findings.append(Finding("ERROR", code, f"evidence span {span_ref} does not belong to source {sid}", OPTIONAL_BUNDLE_FILES["claim_support_matrix"]))
+        review_ref = str(row.get("review_artifact_ref", "")).strip()
+        if review_ref:
+            _validate_file_receipt(artifacts, findings, ref=review_ref, expected_hash=str(row.get("review_artifact_sha256", "")), code_prefix="CLAIM_SUPPORT_REVIEW", path_label=OPTIONAL_BUNDLE_FILES["claim_support_matrix"])
+        review_instance_id = str(row.get("review_instance_id", "")).strip()
+        if row.get("independent_review_required") is True:
+            review_row = reviews_by_instance.get(review_instance_id)
+            if review_row is None or not review_row_is_independent(review_row):
+                findings.append(Finding("ERROR", "CLAIM_SUPPORT_INDEPENDENT_REVIEW_REQUIRED", f"support row {cid}/{sid} lacks an eligible independent review receipt", OPTIONAL_BUNDLE_FILES["claim_support_matrix"]))
         if cid in allowed_by_claim and allowed and allowed != allowed_by_claim[cid]:
             findings.append(
                 Finding(
@@ -1963,20 +2436,23 @@ def validate_claim_support_matrix_policy(
         rows = rows_by_claim.get(cid, [])
         supportive_rows = [
             row for row in rows
-            if str(row.get("support_verdict", "")).strip() == "supports"
+            if str(row.get("support_verdict", "")).strip().replace("_", "-") == "supports"
             and row.get("allowed_in_final") is True
-            and not support_row_has_scope_mismatch(row)
+            and row.get("release_eligible") is True
+            and str(row.get("overclaim_risk", "")) == "low"
+            and bool(str(row.get("evidence_span_ref", "")).strip())
+            and scope_is_strict_match(row.get("scope_match"))
         ]
         if not supportive_rows:
             findings.append(
                 Finding(
                     "ERROR",
                     "HIGH_CONFIDENCE_REQUIRES_SUPPORT_MATRIX_SUPPORT",
-                    f"{cid} is high-confidence but lacks a supports/no-mismatch claim_support_matrix row",
+                    f"{cid} is high-confidence but lacks a release-eligible supports row with strict scope, low overclaim risk, and evidence span",
                     OPTIONAL_BUNDLE_FILES["claim_support_matrix"],
                 )
             )
-        weak_rows = [row for row in rows if str(row.get("support_verdict", "")).strip() == "weakly_supports"]
+        weak_rows = [row for row in rows if str(row.get("support_verdict", "")).strip().replace("_", "-") == "weakly-supports"]
         if weak_rows and not supportive_rows:
             findings.append(
                 Finding(
@@ -1986,6 +2462,70 @@ def validate_claim_support_matrix_policy(
                     OPTIONAL_BUNDLE_FILES["claim_support_matrix"],
                 )
             )
+
+
+def validate_source_corpus_span_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    release: bool,
+) -> None:
+    source_corpus = artifacts.get("source_corpus")
+    if not isinstance(source_corpus, dict):
+        return
+    seen: dict[str, str] = {}
+    for source in source_corpus.get("sources", []):
+        if not isinstance(source, dict):
+            continue
+        sid = str(source.get("source_id", "")).strip()
+        spans = source.get("evidence_spans", [])
+        if not isinstance(spans, list):
+            continue
+        for span in spans:
+            if not isinstance(span, dict):
+                continue
+            span_id = str(span.get("span_id", "")).strip()
+            if span_id in seen:
+                findings.append(Finding("ERROR", "EVIDENCE_SPAN_DUPLICATE_ID", f"span_id {span_id} is duplicated across {seen[span_id]} and {sid}", BUNDLE_FILES["source_corpus"]))
+            elif span_id:
+                seen[span_id] = sid
+            span_source_id = str(span.get("source_id", "")).strip()
+            if span_source_id and span_source_id != sid:
+                findings.append(Finding("ERROR", "EVIDENCE_SPAN_SOURCE_ID_MISMATCH", f"span {span_id} source_id does not match parent source {sid}", BUNDLE_FILES["source_corpus"]))
+            if release:
+                required = (
+                    "span_id",
+                    "source_id",
+                    "source_snapshot_ref",
+                    "source_snapshot_sha256",
+                    "locator",
+                    "evidence_text_sha256",
+                    "short_evidence_excerpt",
+                    "retrieved_at",
+                    "extraction_actor",
+                    "limitations",
+                )
+                for field in required:
+                    if not str(span.get(field, "")).strip():
+                        findings.append(Finding("ERROR", "EVIDENCE_SPAN_FIELD_MISSING", f"span {span_id or 'unknown'} requires {field}", BUNDLE_FILES["source_corpus"]))
+            snapshot_ref = str(span.get("source_snapshot_ref", "")).strip()
+            if snapshot_ref:
+                _validate_file_receipt(artifacts, findings, ref=snapshot_ref, expected_hash=str(span.get("source_snapshot_sha256", "")), code_prefix="EVIDENCE_SNAPSHOT", path_label=BUNDLE_FILES["source_corpus"])
+            excerpt_hash = str(span.get("evidence_text_sha256", "")).strip()
+            if excerpt_hash and not SHA256_PATTERN.fullmatch(excerpt_hash):
+                findings.append(Finding("ERROR", "EVIDENCE_TEXT_HASH_INVALID", f"span {span_id} evidence_text_sha256 must be lowercase SHA-256", BUNDLE_FILES["source_corpus"]))
+            elif excerpt_hash:
+                excerpt = str(span.get("short_evidence_excerpt", ""))
+                actual_excerpt_hash = hashlib.sha256(excerpt.encode("utf-8")).hexdigest()
+                if actual_excerpt_hash != excerpt_hash:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "EVIDENCE_TEXT_HASH_MISMATCH",
+                            f"span {span_id} evidence_text_sha256 does not match short_evidence_excerpt bytes",
+                            BUNDLE_FILES["source_corpus"],
+                        )
+                    )
 
 
 def validate_release_claim_profile_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
@@ -2049,9 +2589,9 @@ def validate_release_claim_profile_policy(artifacts: dict[str, Any], findings: l
                 findings.append(
                     Finding("ERROR", "HIGH_CONFIDENCE_REQUIRES_SUPPORT_AND_SCOPE", f"{cid} requires entailment_verdict=supports", "claim_ledger.json")
                 )
-            if scope_has_mismatch(claim.get("scope_match")):
+            if not scope_is_strict_match(claim.get("scope_match")):
                 findings.append(
-                    Finding("ERROR", "HIGH_CONFIDENCE_REQUIRES_SUPPORT_AND_SCOPE", f"{cid} cannot have scope_match mismatch", "claim_ledger.json")
+                    Finding("ERROR", "HIGH_CONFIDENCE_REQUIRES_SUPPORT_AND_SCOPE", f"{cid} requires all seven scope dimensions to be match or not-applicable", "claim_ledger.json")
                 )
             allowed = normalized_text(claim.get("allowed_final_wording"))
             if allowed and allowed not in final_norm:
@@ -2132,13 +2672,6 @@ def validate_omics_metadata_check_policy(
             )
 
 
-def experiment_design_has_operational_detail(experiment_design: Any) -> bool:
-    if not isinstance(experiment_design, dict):
-        return False
-    text = normalized_text(json.dumps(experiment_design, sort_keys=True))
-    return any(token in text for token in ("dose", "animal", "human material", "protocol", "catalog", "patent", "private"))
-
-
 def validate_experiment_design_policy(
     artifacts: dict[str, Any],
     findings: list[Finding],
@@ -2161,53 +2694,61 @@ def validate_experiment_design_policy(
         return
     if not isinstance(experiment_design, dict):
         return
-    for field in ("positive_controls", "negative_controls", "vehicle_or_mock_controls"):
-        value = experiment_design.get(field)
-        if not isinstance(value, list) or not value:
-            findings.append(
-                Finding(
-                    "ERROR",
-                    "EXPERIMENT_DESIGN_CONTROLS_REQUIRED",
-                    f"experiment_design.{field} must contain at least one control",
-                    OPTIONAL_BUNDLE_FILES["experiment_design"],
-                )
-            )
-    stats_plan = experiment_design.get("statistical_plan")
-    biological_reps = experiment_design.get("biological_replicates")
-    if not isinstance(stats_plan, dict) or not stats_plan.get("model") or not stats_plan.get("multiplicity"):
+    if experiment_design_v2 is None:
         findings.append(
             Finding(
                 "ERROR",
-                "EXPERIMENT_DESIGN_STATS_PLAN_REQUIRED",
-                "experiment_design statistical_plan must include model and multiplicity",
+                "EXPERIMENT_DESIGN_CHECKER_UNAVAILABLE",
+                "the v2 experiment-design policy checker could not be imported",
                 OPTIONAL_BUNDLE_FILES["experiment_design"],
+                "Keep bmat_experiment_design_check.py beside bmat_validate.py and rerun validation.",
             )
         )
-    if not isinstance(biological_reps, dict) or not biological_reps.get("planned_n") or not biological_reps.get("rationale"):
-        findings.append(
-            Finding(
-                "ERROR",
-                "EXPERIMENT_DESIGN_REPLICATE_RATIONALE_REQUIRED",
-                "experiment_design biological_replicates must include planned_n and rationale",
-                OPTIONAL_BUNDLE_FILES["experiment_design"],
-            )
+        return
+
+    checker_findings: list[Any] = []
+    if str(experiment_design.get("schema_version", "")).strip() != "2.0":
+        experiment_design_v2.validate_legacy_design(experiment_design, checker_findings, release)
+    else:
+        experiment_design_v2.validate_controls(experiment_design, checker_findings)
+        experiment_design_v2.validate_quantitative_design(experiment_design, checker_findings, release)
+        experiment_design_v2.validate_unit_alignment(experiment_design, checker_findings)
+        experiment_design_v2.validate_multiplicity(experiment_design, checker_findings)
+        experiment_design_v2.validate_safety_boundary(experiment_design, checker_findings)
+        artifact_paths = artifacts.get(INTERNAL_ARTIFACT_PATHS, {})
+        source_path_value = artifact_paths.get("source_verification") if isinstance(artifact_paths, dict) else None
+        source_path = Path(source_path_value) if isinstance(source_path_value, str) and source_path_value else None
+        experiment_design_v2.validate_reagents(
+            experiment_design,
+            artifacts.get("source_verification"),
+            source_path,
+            checker_findings,
         )
-    if experiment_design_has_operational_detail(experiment_design) and not str(experiment_design.get("safety_ethics_privacy_boundary", "")).strip():
+        base_dir = artifact_base_dir(artifacts)
+        if base_dir is not None:
+            experiment_design_v2.validate_sample_size_artifacts(experiment_design, base_dir, checker_findings)
+
+    limitations = value_as_list(experiment_design.get("limitations"))
+    explicit_scaffold = (
+        not release
+        and experiment_design.get("recommendation_confidence") == "low"
+        and any("incomplete scaffold" in normalized_text(item) for item in limitations)
+    )
+    for finding in checker_findings:
+        pointer = str(getattr(finding, "path", "")).strip()
+        path = OPTIONAL_BUNDLE_FILES["experiment_design"]
+        if pointer:
+            path = f"{path}{pointer.removeprefix('$')}"
+        level = str(getattr(finding, "level", "ERROR"))
+        if explicit_scaffold and level == "ERROR":
+            level = "WARN"
         findings.append(
             Finding(
-                "ERROR",
-                "EXPERIMENT_DESIGN_SAFETY_BOUNDARY_REQUIRED",
-                "operational wet-lab/private/animal/human/patent-sensitive details require safety_ethics_privacy_boundary",
-                OPTIONAL_BUNDLE_FILES["experiment_design"],
-            )
-        )
-    if experiment_design.get("reagent_specific_claims") and artifacts.get("source_verification") is None:
-        findings.append(
-            Finding(
-                "ERROR",
-                "EXPERIMENT_DESIGN_REAGENT_SPECIFICS_REQUIRE_SOURCE_VERIFICATION",
-                "reagent/catalog/protocol-specific claims require source_verification.json or must be marked unknown",
-                OPTIONAL_BUNDLE_FILES["source_verification"],
+                level,
+                str(getattr(finding, "code", "EXPERIMENT_DESIGN_CHECK_FAILED")),
+                str(getattr(finding, "message", "experiment-design v2 policy check failed")),
+                path,
+                str(getattr(finding, "fix_hint", "")),
             )
         )
 
@@ -2220,10 +2761,299 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _artifact_workflow_run_id(key: str, artifact: dict[str, Any]) -> str:
+    if key == "run_state":
+        return str(artifact.get("run_id", "")).strip()
+    return str(artifact.get("workflow_run_id", "")).strip()
+
+
+def _artifact_identity_value(key: str, artifact: dict[str, Any]) -> str:
+    id_field, _ = RELEASE_ARTIFACT_IDENTITIES[key]
+    return str(artifact.get(id_field, "")).strip()
+
+
+def validate_artifact_identity_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    release: bool,
+) -> None:
+    """Bind release-critical artifacts to one run and one plugin version."""
+    run_state = artifacts.get("run_state")
+    if not isinstance(run_state, dict):
+        return
+    expected_run_id = str(run_state.get("run_id", "")).strip()
+    expected_plugin_version = str(run_state.get("plugin_version", "")).strip()
+    seen_ids: dict[str, str] = {}
+    for key, (_, time_field) in RELEASE_ARTIFACT_IDENTITIES.items():
+        artifact = artifacts.get(key)
+        if not isinstance(artifact, dict):
+            continue
+        path = BUNDLE_FILES.get(key, OPTIONAL_BUNDLE_FILES.get(key, f"{key}.json"))
+        schema_version = str(artifact.get("schema_version", "")).strip()
+        if schema_version != "2.0":
+            findings.append(
+                Finding(
+                    "ERROR" if release else "WARN",
+                    "LEGACY_SCHEMA_V1_NOT_RELEASE_ELIGIBLE",
+                    f"{key} must use schema_version 2.0 for release (found {schema_version or 'missing'})",
+                    path,
+                    "Migrate the bundle with bmat_migrate_bundle.py, then complete all not-checked receipt fields.",
+                )
+            )
+        identity = _artifact_identity_value(key, artifact)
+        if release and not identity:
+            findings.append(Finding("ERROR", "ARTIFACT_ID_MISSING", f"{key} is missing its artifact ID", path))
+        elif identity:
+            previous = seen_ids.get(identity)
+            if previous is not None and previous != key:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "ARTIFACT_ID_DUPLICATE",
+                        f"artifact ID {identity} is reused by {previous} and {key}",
+                        path,
+                    )
+                )
+            seen_ids[identity] = key
+        actual_run_id = _artifact_workflow_run_id(key, artifact)
+        if release and not actual_run_id:
+            findings.append(Finding("ERROR", "ARTIFACT_WORKFLOW_RUN_ID_MISSING", f"{key} lacks workflow_run_id", path))
+        elif expected_run_id and actual_run_id and actual_run_id != expected_run_id:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "ARTIFACT_WORKFLOW_RUN_ID_MISMATCH",
+                    f"{key} workflow run {actual_run_id} does not match run_state.run_id {expected_run_id}",
+                    path,
+                )
+            )
+        actual_plugin_version = str(artifact.get("plugin_version", "")).strip()
+        if release and not actual_plugin_version:
+            findings.append(Finding("ERROR", "ARTIFACT_PLUGIN_VERSION_MISSING", f"{key} lacks plugin_version", path))
+        elif expected_plugin_version and actual_plugin_version and actual_plugin_version != expected_plugin_version:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "ARTIFACT_PLUGIN_VERSION_MISMATCH",
+                    f"{key} plugin_version {actual_plugin_version} does not match {expected_plugin_version}",
+                    path,
+                )
+            )
+        timestamp = str(artifact.get(time_field, "")).strip()
+        if release and not timestamp:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "ARTIFACT_TIMESTAMP_MISSING",
+                    f"{key} requires {time_field}",
+                    path,
+                )
+            )
+
+
+def _safe_manifest_entry_path(base_dir: Path, raw_path: str) -> Path | None:
+    candidate = Path(raw_path)
+    if not raw_path.strip() or candidate.is_absolute() or ".." in candidate.parts:
+        return None
+    resolved = (base_dir / candidate).resolve()
+    try:
+        resolved.relative_to(base_dir.resolve())
+    except ValueError:
+        return None
+    return resolved
+
+
+def validate_bundle_manifest_policy(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    release: bool,
+) -> None:
+    manifest = artifacts.get("bundle_manifest")
+    if release and manifest is None:
+        findings.append(
+            Finding(
+                "ERROR",
+                "BUNDLE_MANIFEST_REQUIRED",
+                "release mode requires bundle_manifest.json with recomputable hashes",
+                OPTIONAL_BUNDLE_FILES["bundle_manifest"],
+            )
+        )
+        return
+    if not isinstance(manifest, dict):
+        return
+    base_dir = artifact_base_dir(artifacts)
+    if base_dir is None:
+        findings.append(Finding("ERROR", "BUNDLE_BASE_DIR_UNAVAILABLE", "cannot resolve bundle base directory"))
+        return
+    run_state = artifacts.get("run_state")
+    expected_run = str(run_state.get("run_id", "")).strip() if isinstance(run_state, dict) else ""
+    expected_plugin = str(run_state.get("plugin_version", "")).strip() if isinstance(run_state, dict) else ""
+    if str(manifest.get("workflow_run_id", "")).strip() != expected_run:
+        findings.append(Finding("ERROR", "BUNDLE_MANIFEST_RUN_ID_MISMATCH", "bundle manifest run ID does not match run_state", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+    if str(manifest.get("plugin_version", "")).strip() != expected_plugin:
+        findings.append(Finding("ERROR", "BUNDLE_MANIFEST_PLUGIN_VERSION_MISMATCH", "bundle manifest plugin version does not match run_state", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+    rows = manifest.get("entries", [])
+    if not isinstance(rows, list):
+        return
+    paths_seen: set[str] = set()
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            continue
+        raw_path = str(row.get("path", "")).strip()
+        if raw_path in paths_seen:
+            findings.append(Finding("ERROR", "BUNDLE_MANIFEST_DUPLICATE_PATH", f"duplicate manifest path {raw_path}", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+        paths_seen.add(raw_path)
+        resolved = _safe_manifest_entry_path(base_dir, raw_path)
+        if resolved is None:
+            findings.append(Finding("ERROR", "BUNDLE_MANIFEST_PATH_OUTSIDE_BUNDLE", f"entries[{index}] path is not bundle-relative: {raw_path}", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+            continue
+        if not resolved.is_file():
+            findings.append(Finding("ERROR", "BUNDLE_MANIFEST_FILE_MISSING", f"manifest file is missing: {raw_path}", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+            continue
+        expected_size = row.get("size_bytes")
+        if not isinstance(expected_size, int) or resolved.stat().st_size != expected_size:
+            findings.append(Finding("ERROR", "BUNDLE_MANIFEST_SIZE_MISMATCH", f"size mismatch for {raw_path}", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+        expected_hash = str(row.get("sha256", "")).strip()
+        if not SHA256_PATTERN.fullmatch(expected_hash) or sha256_file(resolved) != expected_hash:
+            findings.append(Finding("ERROR", "BUNDLE_MANIFEST_HASH_MISMATCH", f"SHA-256 mismatch for {raw_path}", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+        if str(row.get("workflow_run_id", "")).strip() != expected_run:
+            findings.append(Finding("ERROR", "BUNDLE_MANIFEST_ENTRY_RUN_ID_MISMATCH", f"run ID mismatch for {raw_path}", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+        if str(row.get("plugin_version", "")).strip() != expected_plugin:
+            findings.append(Finding("ERROR", "BUNDLE_MANIFEST_ENTRY_PLUGIN_VERSION_MISMATCH", f"plugin version mismatch for {raw_path}", OPTIONAL_BUNDLE_FILES["bundle_manifest"]))
+    if release:
+        artifact_paths = artifacts.get(INTERNAL_ARTIFACT_PATHS, {})
+        if isinstance(artifact_paths, dict):
+            for key in tuple(RELEASE_ARTIFACT_IDENTITIES) + ("final_text",):
+                artifact = artifacts.get(key)
+                path_value = artifact_paths.get(key)
+                if artifact in (None, "") or not isinstance(path_value, str):
+                    continue
+                filename = Path(path_value).name
+                if filename not in paths_seen:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            "BUNDLE_MANIFEST_RELEASE_ARTIFACT_UNLISTED",
+                            f"release-critical artifact {filename} is not listed in bundle_manifest.json",
+                            OPTIONAL_BUNDLE_FILES["bundle_manifest"],
+                        )
+                    )
+
+
 def review_manifest_rows(review_artifact_manifest: Any) -> list[dict[str, Any]]:
     if isinstance(review_artifact_manifest, dict) and isinstance(review_artifact_manifest.get("review_instances"), list):
         return [row for row in review_artifact_manifest["review_instances"] if isinstance(row, dict)]
     return []
+
+
+def validate_review_runtime_receipt_row(
+    artifacts: dict[str, Any],
+    manifest: dict[str, Any],
+    row: dict[str, Any],
+    findings: list[Finding],
+) -> None:
+    ref = str(row.get("runtime_receipt_ref", "")).strip()
+    if not ref:
+        return
+    resolved = local_artifact_ref_path(artifacts, ref)
+    if resolved is None or not resolved.is_file():
+        return
+    try:
+        receipt = json.loads(read_text_file(resolved))
+    except (json.JSONDecodeError, OSError):
+        findings.append(Finding("ERROR", "REVIEW_RUNTIME_RECEIPT_INVALID_JSON", f"runtime receipt is not valid JSON: {ref}", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+        return
+    if not isinstance(receipt, dict):
+        findings.append(Finding("ERROR", "REVIEW_RUNTIME_RECEIPT_INVALID_SHAPE", f"runtime receipt must be an object: {ref}", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+        return
+    schema_path = Path(__file__).resolve().parents[1] / "contracts" / "review-runtime-receipt.schema.json"
+    if jsonschema is not None and schema_path.exists():
+        try:
+            schema = json.loads(read_text_file(schema_path))
+            validator_class = jsonschema.validators.validator_for(schema)
+            validator_class(schema, format_checker=jsonschema.FormatChecker()).validate(receipt)
+        except jsonschema.ValidationError as exc:  # type: ignore[union-attr]
+            findings.append(Finding("ERROR", "REVIEW_RUNTIME_RECEIPT_SCHEMA_FAILED", exc.message, str(schema_path)))
+    for field in (
+        "instance_id",
+        "actor_type",
+        "provider",
+        "model",
+        "model_version",
+        "authoring_provider",
+        "authoring_model",
+        "authoring_model_version",
+        "authoring_execution_session_id",
+        "authoring_identity_available",
+        "execution_surface",
+        "execution_session_id",
+        "spawn_event_id",
+        "authoring_context_shared",
+        "fixture_only",
+        "started_at",
+        "completed_at",
+    ):
+        if receipt.get(field) != row.get(field):
+            findings.append(Finding("ERROR", "REVIEW_RUNTIME_RECEIPT_FIELD_MISMATCH", f"runtime receipt {field} does not match review instance {row.get('instance_id')}", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+    for field in ("workflow_run_id", "plugin_version"):
+        if receipt.get(field) != manifest.get(field):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "REVIEW_RUNTIME_RECEIPT_FIELD_MISMATCH",
+                    f"runtime receipt {field} does not match review manifest identity",
+                    OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                )
+            )
+    if row.get("independent_review_eligible") is True:
+        if receipt.get("status") != "success" or receipt.get("runtime_metadata_available") is not True:
+            findings.append(Finding("ERROR", "REVIEW_RUNTIME_RECEIPT_NOT_ELIGIBLE", f"independent review {row.get('instance_id')} requires successful runtime metadata receipt", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+
+
+def _review_model_identity(row: dict[str, Any], prefix: str = "") -> tuple[str, str, str]:
+    return tuple(
+        str(row.get(f"{prefix}{field}", "")).strip()
+        for field in ("provider", "model", "model_version")
+    )  # type: ignore[return-value]
+
+
+def _bundle_manifest_resolved_paths(artifacts: dict[str, Any]) -> set[Path]:
+    manifest = artifacts.get("bundle_manifest")
+    base_dir = artifact_base_dir(artifacts)
+    if not isinstance(manifest, dict) or base_dir is None:
+        return set()
+    paths: set[Path] = set()
+    for entry in manifest.get("entries", []):
+        if not isinstance(entry, dict):
+            continue
+        resolved = _safe_manifest_entry_path(base_dir, str(entry.get("path", "")))
+        if resolved is not None:
+            paths.add(resolved)
+    return paths
+
+
+def _require_review_ref_in_bundle_manifest(
+    artifacts: dict[str, Any],
+    findings: list[Finding],
+    *,
+    ref: str,
+    instance_id: str,
+) -> None:
+    if not isinstance(artifacts.get("bundle_manifest"), dict):
+        return
+    resolved = local_artifact_ref_path(artifacts, ref)
+    if resolved is not None and resolved not in _bundle_manifest_resolved_paths(artifacts):
+        findings.append(
+            Finding(
+                "ERROR",
+                "REVIEW_ARTIFACT_UNLISTED_IN_BUNDLE_MANIFEST",
+                f"review {instance_id} references {ref}, which is absent from bundle_manifest.json",
+                OPTIONAL_BUNDLE_FILES["bundle_manifest"],
+                "Regenerate bundle_manifest.json after finalizing every review input, prompt, output, and runtime receipt.",
+            )
+        )
 
 
 def validate_review_artifact_manifest_policy(
@@ -2233,8 +3063,6 @@ def validate_review_artifact_manifest_policy(
     release: bool = False,
     required_label: str | None = None,
 ) -> None:
-    if not release:
-        return
     manifest = artifacts.get("review_artifact_manifest")
     run_state = artifacts.get("run_state")
     needs_manifest = release and FULL_LABEL in declared_workflow_labels(artifacts, required_label)
@@ -2251,9 +3079,133 @@ def validate_review_artifact_manifest_policy(
     if not isinstance(manifest, dict):
         return
     rows = review_manifest_rows(manifest)
-    rows_by_instance = {str(row.get("instance_id", "")).strip(): row for row in rows if str(row.get("instance_id", "")).strip()}
-    results_rows = results_rows_by_claim(artifacts.get("results_integration"))
-    base_dir = artifact_base_dir(artifacts)
+    rows_by_instance: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        instance_id = str(row.get("instance_id", "")).strip()
+        if instance_id in rows_by_instance:
+            findings.append(Finding("ERROR", "REVIEW_MANIFEST_DUPLICATE_INSTANCE_ID", f"duplicate review instance {instance_id}", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+        elif instance_id:
+            rows_by_instance[instance_id] = row
+    results_integration = artifacts.get("results_integration")
+    integration_rows = (
+        [row for row in results_integration.get("rows", []) if isinstance(row, dict)]
+        if isinstance(results_integration, dict)
+        else []
+    )
+    integration_rows_by_id = {
+        str(row.get("result_id", "")).strip(): row
+        for row in integration_rows
+        if str(row.get("result_id", "")).strip()
+    }
+    for row in rows:
+        instance_id = str(row.get("instance_id", "")).strip() or "unknown"
+        independence_class = str(row.get("independence_class", "")).strip()
+        eligible = row.get("independent_review_eligible") is True
+        fixture_only = row.get("fixture_only") is True
+        reviewer_identity = _review_model_identity(row)
+        author_identity = _review_model_identity(row, "authoring_")
+        author_identity_available = row.get("authoring_identity_available") is True
+        reviewer_session = str(row.get("execution_session_id", "")).strip()
+        author_session = str(row.get("authoring_execution_session_id", "")).strip()
+        if independence_class in {"same-model-self-review", "same-model-separate-context"} and eligible:
+            findings.append(Finding("ERROR", "SAME_MODEL_REVIEW_NOT_INDEPENDENT", f"review {instance_id} cannot be independent_review_eligible", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+        if eligible and (independence_class not in INDEPENDENT_REVIEW_CLASSES or fixture_only):
+            findings.append(Finding("ERROR", "REVIEW_INDEPENDENCE_ELIGIBILITY_INVALID", f"review {instance_id} has invalid independent-review eligibility", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+        if independence_class in {"same-model-self-review", "same-model-separate-context"}:
+            if not author_identity_available or reviewer_identity != author_identity:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SAME_MODEL_REVIEW_IDENTITY_MISMATCH",
+                        f"review {instance_id} declares {independence_class} but reviewer and authoring model identities do not match",
+                        OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                    )
+                )
+        if independence_class == "same-model-self-review" and reviewer_session != author_session:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "SELF_REVIEW_SESSION_MISMATCH",
+                    f"same-model self-review {instance_id} must share the authoring execution session",
+                    OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                )
+            )
+        if independence_class == "same-model-separate-context" and reviewer_session == author_session:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "SEPARATE_CONTEXT_REVIEW_SESSION_REUSED",
+                    f"same-model separate-context review {instance_id} reused the authoring execution session",
+                    OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                )
+            )
+        if independence_class == "separate-model":
+            if not author_identity_available or not all(reviewer_identity) or not all(author_identity):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SEPARATE_MODEL_IDENTITY_UNAVAILABLE",
+                        f"separate-model review {instance_id} requires complete reviewer and authoring identity tuples",
+                        OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                    )
+                )
+            elif reviewer_identity == author_identity:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "SEPARATE_MODEL_IDENTITY_NOT_DISTINCT",
+                        f"separate-model review {instance_id} uses the same provider/model/version tuple as the author",
+                        OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
+                    )
+                )
+        input_refs = value_as_list(row.get("input_artifact_refs"))
+        input_hashes = row.get("input_artifact_sha256", {})
+        if not isinstance(input_hashes, dict):
+            input_hashes = {}
+        for ref in input_refs:
+            expected_hash = str(input_hashes.get(ref, "")).strip()
+            _validate_file_receipt(artifacts, findings, ref=ref, expected_hash=expected_hash, code_prefix="REVIEW_INPUT_ARTIFACT", path_label=OPTIONAL_BUNDLE_FILES["review_artifact_manifest"])
+            _require_review_ref_in_bundle_manifest(artifacts, findings, ref=ref, instance_id=instance_id)
+        for ref_key, hash_value in input_hashes.items():
+            if str(ref_key) not in input_refs:
+                findings.append(Finding("ERROR", "REVIEW_INPUT_HASH_WITHOUT_REF", f"review {instance_id} hashes unlisted input {ref_key}", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+            if not SHA256_PATTERN.fullmatch(str(hash_value)):
+                findings.append(Finding("ERROR", "REVIEW_INPUT_HASH_INVALID", f"review {instance_id} has invalid input hash for {ref_key}", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+        for ref_field, hash_field, prefix in (
+            ("prompt_template_ref", "prompt_template_sha256", "REVIEW_PROMPT_TEMPLATE"),
+            ("output_artifact", "output_sha256", "REVIEW_OUTPUT_ARTIFACT"),
+            ("runtime_receipt_ref", "runtime_receipt_sha256", "REVIEW_RUNTIME_RECEIPT"),
+        ):
+            ref = str(row.get(ref_field, "")).strip()
+            expected_hash = str(row.get(hash_field, "")).strip()
+            if ref:
+                _validate_file_receipt(artifacts, findings, ref=ref, expected_hash=expected_hash, code_prefix=prefix, path_label=OPTIONAL_BUNDLE_FILES["review_artifact_manifest"])
+                _require_review_ref_in_bundle_manifest(artifacts, findings, ref=ref, instance_id=instance_id)
+            elif release or eligible:
+                findings.append(Finding("ERROR", f"{prefix}_REF_MISSING", f"review {instance_id} requires {ref_field}", OPTIONAL_BUNDLE_FILES["review_artifact_manifest"]))
+        validate_review_runtime_receipt_row(artifacts, manifest, row, findings)
+        changed_claim_ids = value_as_list(row.get("changed_claim_ids"))
+        if changed_claim_ids:
+            integration_refs = value_as_list(row.get("results_integration_rows"))
+            missing_refs = [ref for ref in integration_refs if ref not in integration_rows_by_id]
+            if missing_refs:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        "REVIEW_RESULTS_INTEGRATION_ROW_UNKNOWN",
+                        f"review instance {instance_id} references unknown results integration rows: {', '.join(missing_refs)}",
+                        OPTIONAL_BUNDLE_FILES["results_integration"],
+                    )
+                )
+            integrated_claim_ids: set[str] = set()
+            for ref in integration_refs:
+                integration_row = integration_rows_by_id.get(ref)
+                if integration_row is not None:
+                    integrated_claim_ids.update(value_as_list(integration_row.get("claim_ids")))
+            missing = [cid for cid in changed_claim_ids if cid not in integrated_claim_ids]
+            if missing:
+                findings.append(Finding("ERROR", "REVIEW_CHANGED_CLAIM_REQUIRES_RESULTS_INTEGRATION", f"review instance {instance_id} changed claims without results_integration rows: {', '.join(missing)}", OPTIONAL_BUNDLE_FILES["results_integration"]))
+
     for instance in spawned_agent_instances(run_state):
         if instance.get("status") != "complete":
             continue
@@ -2269,41 +3221,6 @@ def validate_review_artifact_manifest_policy(
                 )
             )
             continue
-        output_artifact = str(row.get("output_artifact", "")).strip()
-        if output_artifact:
-            resolved = local_artifact_ref_path(artifacts, output_artifact)
-            if resolved is None or base_dir is None or not resolved.exists():
-                findings.append(
-                    Finding(
-                        "ERROR",
-                        "REVIEW_MANIFEST_OUTPUT_MISSING",
-                        f"review output artifact missing for {instance_id}: {output_artifact}",
-                        OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
-                    )
-                )
-            else:
-                expected_hash = str(row.get("output_sha256", "")).strip()
-                if expected_hash and sha256_file(resolved) != expected_hash:
-                    findings.append(
-                        Finding(
-                            "ERROR",
-                            "REVIEW_MANIFEST_OUTPUT_HASH_MISMATCH",
-                            f"review output sha256 mismatch for {instance_id}: {output_artifact}",
-                            OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
-                        )
-                    )
-        changed_claim_ids = value_as_list(row.get("changed_claim_ids"))
-        if changed_claim_ids:
-            missing = [cid for cid in changed_claim_ids if cid not in results_rows]
-            if missing:
-                findings.append(
-                    Finding(
-                        "ERROR",
-                        "REVIEW_CHANGED_CLAIM_REQUIRES_RESULTS_INTEGRATION",
-                        f"review instance {instance_id} changed claims without results_integration rows: {', '.join(missing)}",
-                        OPTIONAL_BUNDLE_FILES["results_integration"],
-                    )
-                )
 
 
 def validate_sample_mode_release_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
@@ -2333,6 +3250,7 @@ def validate_release_mode_policy(
     *,
     required_label: str | None = None,
 ) -> None:
+    validate_structured_skip_reasons(artifacts, findings)
     validate_sample_mode_release_policy(artifacts, findings)
     validate_source_verification_policy(artifacts, findings, release=True)
     validate_claim_support_matrix_policy(artifacts, findings, release=True)
@@ -2343,15 +3261,15 @@ def validate_release_mode_policy(
 
 
 def scope_has_mismatch(scope_match: Any) -> bool:
-    if not isinstance(scope_match, dict):
-        return False
-    return any(str(value) == "mismatch" for value in scope_match.values())
+    if not isinstance(scope_match, dict) or not scope_match:
+        return True
+    return any(str(value) not in STRICT_SCOPE_PASS for value in scope_match.values())
 
 
 def validate_semantic_scope_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
     for claim in iter_claims(artifacts.get("claim_ledger")):
         cid = claim_id(claim)
-        verdict = normalized_text(claim.get("entailment_verdict", "not_checked"))
+        verdict = normalized_text(claim.get("entailment_verdict", "not-checked")).replace("_", "-")
         allowed = str(claim.get("allowed_final_wording", "")).strip()
         high_confidence = is_high_confidence_claim(claim)
         if high_confidence and verdict != "supports":
@@ -2363,12 +3281,12 @@ def validate_semantic_scope_policy(artifacts: dict[str, Any], findings: list[Fin
                     "claim_ledger.json",
                 )
             )
-        if verdict == "not_checked" and allowed:
+        if verdict == "not-checked" and allowed:
             findings.append(
                 Finding(
                     "ERROR",
                     "UNCHECKED_ENTAILMENT_CANNOT_HAVE_FINAL_WORDING",
-                    f"{cid} has allowed_final_wording but entailment_verdict is not_checked",
+                    f"{cid} has allowed_final_wording but entailment_verdict is not-checked",
                     "claim_ledger.json",
                 )
             )
@@ -2523,10 +3441,31 @@ def validate_full_protocol(
             "FULL_PROTOCOL_REQUIRES_POST_WRITE",
             "Full protocol requires post_write_validation.json",
         ),
+        "source_verification": (
+            "FULL_PROTOCOL_REQUIRES_SOURCE_VERIFICATION",
+            "Full protocol requires receipt-bound source_verification.json",
+        ),
+        "claim_support_matrix": (
+            "FULL_PROTOCOL_REQUIRES_CLAIM_SUPPORT",
+            "Full protocol requires claim_support_matrix.json",
+        ),
+        "tool_call_ledger": (
+            "FULL_PROTOCOL_REQUIRES_TOOL_LEDGER",
+            "Full protocol requires tool_call_ledger.json, including explicit not-used receipts where applicable",
+        ),
+        "review_artifact_manifest": (
+            "FULL_PROTOCOL_REQUIRES_REVIEW_MANIFEST",
+            "Full protocol requires review_artifact_manifest.json",
+        ),
+        "bundle_manifest": (
+            "FULL_PROTOCOL_REQUIRES_BUNDLE_MANIFEST",
+            "Full protocol requires bundle_manifest.json",
+        ),
     }
     for artifact_key, (code, message) in required_artifacts.items():
         if artifacts.get(artifact_key) is None:
-            findings.append(Finding("ERROR", code, message, BUNDLE_FILES[artifact_key]))
+            artifact_path = BUNDLE_FILES[artifact_key] if artifact_key in BUNDLE_FILES else OPTIONAL_BUNDLE_FILES[artifact_key]
+            findings.append(Finding("ERROR", code, message, artifact_path))
     if not str(artifacts.get("final_text") or "").strip():
         findings.append(
             Finding(
@@ -2557,30 +3496,18 @@ def validate_full_protocol(
             )
         )
 
-    surface = review_surface_text(post_write, run_state)
-    if has_same_model_marker(surface):
+    eligible_review_rows = [
+        row
+        for row in review_manifest_rows(artifacts.get("review_artifact_manifest"))
+        if review_row_is_independent(row)
+    ]
+    if not eligible_review_rows:
         findings.append(
             Finding(
                 "ERROR",
-                "FULL_PROTOCOL_REQUIRES_INDEPENDENT_SURFACE",
-                "same-model validation cannot satisfy Full protocol followed",
-            )
-        )
-    elif not has_independent_surface(surface):
-        findings.append(
-            Finding(
-                "ERROR",
-                "FULL_PROTOCOL_REQUIRES_INDEPENDENT_SURFACE",
-                "Full protocol requires spawned, separate-model, tool-backed, external, human, or tool-corroborated review",
-            )
-        )
-
-    if not complete_independent_instances(run_state):
-        findings.append(
-            Finding(
-                "ERROR",
-                "FULL_PROTOCOL_REQUIRES_INDEPENDENT_INSTANCE",
-                "Full protocol requires at least one complete spawned_agent_instances record with an independent execution surface",
+                "FULL_PROTOCOL_REQUIRES_INDEPENDENT_RECEIPT",
+                "Full protocol requires a hash-bound separate-model, external-tool, or human review receipt; prose and spawned status are not evidence",
+                OPTIONAL_BUNDLE_FILES["review_artifact_manifest"],
             )
         )
 
@@ -2694,8 +3621,11 @@ def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[F
         )
 
     known_agent_ids = registry_agent_ids(findings)
+    complete_instance_agents: set[str] = set()
     complete_independent_instance_agents: set[str] = set()
+    review_rows = review_rows_by_instance(artifacts.get("review_artifact_manifest"))
     for instance in instances:
+        instance_id = str(instance.get("instance_id", "")).strip()
         agent_id = str(instance.get("agent_id", "")).strip()
         status = str(instance.get("status", ""))
         execution_surface = str(instance.get("execution_surface", "")).strip()
@@ -2712,14 +3642,16 @@ def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[F
                 )
             )
         if status == "complete":
-            if execution_surface in INDEPENDENT_INSTANCE_SURFACES:
+            complete_instance_agents.add(agent_id)
+            review_row = review_rows.get(instance_id)
+            if review_row is not None and review_row_is_independent(review_row):
                 complete_independent_instance_agents.add(agent_id)
-            else:
+            if not execution_surface:
                 findings.append(
                     Finding(
                         "ERROR",
-                        "SPAWNED_INSTANCE_INVALID_EXECUTION_SURFACE",
-                        f"complete spawned instance for {agent_id} must use an independent execution_surface",
+                        "SPAWNED_INSTANCE_EXECUTION_SURFACE_MISSING",
+                        f"complete spawned instance for {agent_id} must record execution_surface",
                     )
                 )
             if not input_scope:
@@ -2784,12 +3716,12 @@ def validate_spawned_instance_policy(artifacts: dict[str, Any], findings: list[F
             )
         )
     for role in complete_roles:
-        if role not in complete_independent_instance_agents:
+        if role not in complete_instance_agents:
             findings.append(
                 Finding(
                     "ERROR",
                     "SPAWNED_LANE_MISSING_INSTANCE",
-                    f"spawned_review_lanes marks {role} complete but no matching complete independent spawned_agent_instances entry exists",
+                    f"spawned_review_lanes marks {role} complete but no matching complete spawned_agent_instances entry exists",
                 )
             )
 
@@ -2971,7 +3903,13 @@ def validate_policies(
     release: bool = False,
 ) -> None:
     validate_required_label(artifacts, findings, required_label)
+    validate_final_label_display(artifacts, findings)
+    validate_artifact_identity_policy(artifacts, findings, release=release)
+    validate_bundle_manifest_policy(artifacts, findings, release=release)
+    validate_source_corpus_span_policy(artifacts, findings, release=release)
     validate_lead_decision_policy(artifacts, findings, required_label)
+    validate_domain_pack_policy(artifacts, findings)
+    validate_hypothesis_tournament_policy(artifacts, findings)
     validate_compact_standard_artifacts(artifacts, findings, required_label)
     validate_full_protocol(artifacts, findings, required_label)
     validate_spawned_instance_policy(artifacts, findings)

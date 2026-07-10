@@ -1,4 +1,9 @@
 {
+  "schema_version": "2.0",
+  "validation_id": "post-write-release-fixture-001",
+  "plugin_version": "1.2.0",
+  "workflow_run_id": "release-fixture-run-001",
+  "checked_at": "2026-07-10T01:08:01Z",
   "final_validator_verdict": "pass",
   "unsupported_final_claims": [],
   "citation_or_provenance_mismatches": [],
@@ -8,11 +13,11 @@
     {
       "failure_mode": "FM10 reviewer/writer self-ratification",
       "status": "pass",
-      "reason": "tool_backed_validator surface recorded"
+      "reason": "The accepted wording is bound to a successful external-tool runtime receipt and output hash."
     }
   ],
-  "excluded_claim_handling": "no excluded claims",
-  "independent_review_status": "tool_backed_validator",
+  "excluded_claim_handling": "No excluded claims are rendered.",
+  "independent_review_status": "Hash-bound external-tool review REVIEW-EXT-001 completed successfully.",
   "minimal_required_corrections": [],
-  "release_ready_claim_strength": "high-confidence"
+  "release_ready_claim_strength": "high-confidence within the bounded synthetic validator scenario"
 }

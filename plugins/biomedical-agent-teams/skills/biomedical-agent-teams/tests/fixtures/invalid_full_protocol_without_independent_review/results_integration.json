@@ -1,53 +1,74 @@
 {
-  "schema_version": "1.0",
-  "integration_id": "RI-FIXTURE-001",
-  "plugin_version": "1.1.1",
-  "workflow_run_id": "run-valid-001",
-  "source_corpus_lock": "locked",
+  "schema_version": "2.0",
+  "integration_id": "results-integration-release-fixture-001",
+  "plugin_version": "1.2.0",
+  "workflow_run_id": "release-fixture-run-001",
+  "created_at": "2026-07-10T01:07:01Z",
+  "source_corpus_lock": "corpus-release-fixture-001",
   "input_artifacts": [
     "source_corpus.json",
+    "source_verification.json",
     "claim_ledger.json",
-    "spawned_agent_instances"
+    "review/external-tool-review.md"
   ],
   "tool_use_log": [
     {
-      "tool_id": "spawned-reviewer-lane",
-      "invocation_surface": "synthetic fixture",
+      "tool_id": "local-bmat-validators",
+      "invocation_surface": "local_file_read",
       "status": "used",
       "used": true,
-      "retrieval_date": "not-applicable",
+      "retrieval_date": "2026-07-10",
       "source_corpus_rows": [
         "S-001"
       ],
       "result_rows": [
-        "RI-ROW-001"
+        "RI-SOURCE-001",
+        "RI-REVIEW-001"
       ],
       "downgrade_reason": ""
     }
   ],
   "rows": [
     {
-      "result_id": "RI-ROW-001",
-      "result_type": "reviewer-output",
+      "result_id": "RI-SOURCE-001",
+      "result_type": "tool-output",
       "source_ref": "S-001",
       "claim_ids": [
         "CL-001"
       ],
       "status": "support",
       "evidence_direction": "supports",
-      "confidence": "moderate",
-      "effect_or_observation": "synthetic spawned reviewer accepted the bounded claim",
+      "confidence": "high",
+      "effect_or_observation": "The source snapshot hash and size match the local-file receipt.",
       "sample_or_model_scope": "not-applicable",
       "statistical_support": "not-applicable",
-      "interpretation": "Fixture row maps reviewer output to CL-001.",
-      "limitations": "Synthetic validator fixture, not a real biomedical audit.",
+      "interpretation": "The bundled source bytes are bound to S-001 and CL-001.",
+      "limitations": "This verifies provenance mechanics only.",
       "ledger_action": "update",
-      "reviewer_or_human_gate": "spawned-reviewer-lane"
+      "reviewer_or_human_gate": "REVIEW-EXT-001"
+    },
+    {
+      "result_id": "RI-REVIEW-001",
+      "result_type": "reviewer-output",
+      "source_ref": "review/external-tool-review.md",
+      "claim_ids": [
+        "CL-001"
+      ],
+      "status": "support",
+      "evidence_direction": "supports",
+      "confidence": "high",
+      "effect_or_observation": "The external validator accepted the exact bounded wording after receipt and scope checks.",
+      "sample_or_model_scope": "not-applicable",
+      "statistical_support": "not-applicable",
+      "interpretation": "CL-001 may appear only with its allowed wording.",
+      "limitations": "The review does not establish scientific truth beyond the bundled synthetic scenario.",
+      "ledger_action": "update",
+      "reviewer_or_human_gate": "REVIEW-EXT-001"
     }
   ],
   "final_claim_policy": "ledger-only",
   "human_review_status": "not-needed",
   "release_notes": [
-    "synthetic fixture"
+    "Every changed claim is explicitly mapped to an integration row."
   ]
 }

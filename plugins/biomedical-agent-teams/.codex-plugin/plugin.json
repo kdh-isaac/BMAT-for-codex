@@ -1,7 +1,7 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "1.1.1",
-  "description": "BMAT for Codex v1.1.1: a Codex-native biomedical workflow router with lead_decision artifacts, 10x/bulk omics manifests, Compact/Full tiers, Codex adapter scaffolds, privacy-aware tool ledgers, golden eval gates, and validator-backed bundles.",
+  "version": "1.2.0",
+  "description": "BMAT for Codex v1.2.0: a Codex-native biomedical workflow router with receipt-backed source verification, evidence-span claim gates, hash-bound bundles, independent-review provenance, domain packs, omics workflows, and experiment-design validation.",
   "author": {
     "name": "Donghyun Kim Local Research Workflow"
   },
@@ -23,8 +23,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Biomedical Agent Teams",
-    "shortDescription": "BMAT for Codex 1.1.1: lead-routed biomedical audit, 10x/bulk omics, adapter, loop, and validator workflows.",
-    "longDescription": "BMAT for Codex v1.1.1 is a Codex-native biomedical workflow suite for structured life-science research. It uses a lightweight SKILL.md router with lazy-loaded command recipes, runtime capability preflight, source corpus lock, lead_decision.json routing evidence, fixed-field claim ledger, tool-use/result integration, privacy-aware tool-call ledgers, research overview synthesis, hypothesis tournament checks, public-omics routing, 10x and bulk RNA-seq omics_run_manifest.json v2 contracts, Compact/Full tier handling, local bmat_codex_adapter.py scaffolds, immuno-oncology domain-pack boundaries, experiment-design and translational-scout workflows, loop-state validation, selective reviewer lanes, dependency-aware team DAG outputs, post-write validation, golden-case eval gates for PMID drift, contradiction, overclaim, ranking honesty, semantic scope, omics provenance, privacy, and runtime mismatch, and validator-backed artifact checks with JSON fix_hint guidance and explicit downgrade handling.",
+    "shortDescription": "BMAT for Codex 1.2.0: receipt-backed biomedical evidence, review, omics, experiment, and release validation.",
+    "longDescription": "BMAT for Codex v1.2.0 is a Codex-native biomedical workflow suite for structured life-science research. Its lightweight SKILL.md router lazy-loads six command recipes and explicit domain packs. Release bundles bind workflow identity, source-verification receipts, tool-call provenance, local evidence spans, claim-support scope, independent-review runtime receipts, results integration, and critical artifact hashes. The suite also retains Compact and Full tiers, 10x and bulk RNA-seq provenance contracts, public-omics metadata smoke checks, experiment-design gates, hypothesis-tournament checks, loop-state validation, migration of legacy bundles without promoting unknown evidence, adversarial golden cases, and validator findings with actionable fix_hint guidance. BMAT validates process and provenance; it does not certify scientific truth or replace human scientific review.",
     "developerName": "Donghyun Kim Local Research Workflow",
     "category": "Research",
     "capabilities": [
@@ -33,9 +33,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "biomedical-research-council TET2 KO plus IL-21 armored CAR-T persistence hypothesis",
-      "omics-analysis-team --tier compact --track bulk-rnaseq find public datasets to test IL-21-STAT3-FOXO1 stem-like memory signatures",
-      "omics-analysis-team --tier full --track tenx-gex audit a 10x single-cell report for Cell Ranger provenance, donor-aware pseudobulk, ambient RNA, and doublet gates"
+      "biomedical-research-council --domain-pack generic-biomedical audit evidence for a bounded biomedical claim",
+      "experiment-design-team --domain-pack generic-biomedical design a reproducible preclinical study",
+      "omics-analysis-team --tier full --track tenx-gex audit donor-aware single-cell provenance and pseudobulk"
     ],
     "brandColor": "#0F766E"
   }

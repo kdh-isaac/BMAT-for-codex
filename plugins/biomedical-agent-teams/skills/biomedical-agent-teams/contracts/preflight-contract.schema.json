@@ -4,11 +4,20 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "schema_version",
+    "runtime_capability_preflight_id",
+    "plugin_version",
+    "workflow_run_id",
+    "created_at",
     "requested_alias",
     "selected_mode",
     "deliverable_type",
     "evidence_scope",
     "risk_class",
+    "selected_domain_pack",
+    "domain_pack_version",
+    "selection_reason",
+    "domain_specific_assumptions",
     "required_role_outputs",
     "skipped_role_outputs_with_reason",
     "external_tools_allowed",
@@ -23,6 +32,7 @@
     "post_team_audit_plan"
   ],
   "properties": {
+    "schema_version": { "const": "2.0" },
     "runtime_capability_preflight_id": {
       "type": "string"
     },
@@ -35,6 +45,7 @@
     "plugin_version": {
       "type": "string"
     },
+    "created_at": { "type": "string", "format": "date-time" },
     "workspace_root": {
       "type": "string"
     },
@@ -137,8 +148,17 @@
     "domain_pack": {
       "type": "string"
     },
+    "selected_domain_pack": {
+      "type": "string",
+      "enum": ["generic-biomedical", "cell-therapy", "immuno-oncology"]
+    },
     "domain_pack_version": {
       "type": "string"
+    },
+    "selection_reason": { "type": "string", "minLength": 1 },
+    "domain_specific_assumptions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
     },
     "workflow_tier": {
       "type": "string",
@@ -210,10 +230,22 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["role", "reason"],
+        "required": ["reason_code", "reason_detail", "affected_roles", "downgrade_label", "approved_by", "recorded_at"],
         "properties": {
           "role": { "type": "string" },
-          "reason": { "type": "string" }
+          "reason": { "type": "string" },
+          "reason_code": {
+            "type": "string",
+            "enum": ["RUNTIME_NO_SPAWN_SUPPORT", "TOOL_REVIEW_UNAVAILABLE", "PRIVACY_BLOCKED", "USER_COMPACT_INLINE_ONLY", "EXPLICITLY_OUT_OF_SCOPE", "BUDGET_BLOCKED", "HUMAN_GATE_BLOCKED"]
+          },
+          "reason_detail": { "type": "string", "minLength": 1 },
+          "affected_roles": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "downgrade_label": {
+            "type": "string",
+            "enum": ["Contract-shaped artifact bundle", "Compact standard workflow", "Biomedical Agent Teams-informed narrative review", "Limited capability-downgraded workflow", "Partial workflow; formal gates skipped", "Blocked"]
+          },
+          "approved_by": { "type": "string", "minLength": 1 },
+          "recorded_at": { "type": "string", "format": "date-time" }
         }
       }
     },

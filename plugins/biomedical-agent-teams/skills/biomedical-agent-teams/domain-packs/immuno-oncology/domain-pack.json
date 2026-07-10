@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "immuno-oncology",
+  "domain_pack_version": "0.1.0",
+  "default": false,
+  "requires_explicit_selection": true,
+  "lazy_load": true,
+  "selection_scope": "Questions explicitly about tumor-immune biology, immunotherapy response, or the tumor microenvironment.",
+  "domain_specific_assumptions": [
+    "Separate tumor-intrinsic, TME-intrinsic, immune-cell-intrinsic, product-level, and bulk-proxy evidence.",
+    "Do not convert marker or signature association into a cellular mechanism without scope-matched evidence.",
+    "Require donor/sample-aware inference for cross-patient single-cell claims."
+  ],
+  "idea_discovery_axes": [
+    "tumor-immune compartment specificity",
+    "immune-state and marker ambiguity",
+    "spatial and temporal context",
+    "perturbation support",
+    "response and prognosis boundary",
+    "expected information gain"
+  ],
+  "experiment_design_axes": [
+    "tumor, immune, stromal, and bulk-proxy separation",
+    "sample or donor as biological unit",
+    "cell-state annotation controls",
+    "perturbation or longitudinal validation",
+    "clinical-actionability boundary"
+  ],
+  "resource_load_order": [
+    "entity-normalization-rules.json",
+    "source-preferences.json",
+    "failure-modes.md",
+    "interpretation-boundaries.md",
+    "marker-panels.json",
+    "golden-tasks.jsonl"
+  ]
+}

@@ -23,6 +23,7 @@ import bmat_run
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
+BUNDLE_MANIFEST = SKILL_ROOT / "scripts" / "bmat_bundle_manifest.py"
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,7 +48,15 @@ def utc_now() -> str:
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def write_text(path: Path, text: str) -> None:
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(text, encoding="utf-8")
+    temporary.replace(path)
 
 
 def text_or_empty(value: str | bytes | None) -> str:
@@ -95,6 +104,8 @@ def collect_artifacts(bundle: Path) -> list[dict[str, Any]]:
     for path in sorted(bundle.rglob("*")):
         if not path.is_file():
             continue
+        if path.name in {"adapter_artifact_manifest.json", "bundle_manifest.json"}:
+            continue
         if any(part in {"__pycache__", ".pytest_cache"} for part in path.parts):
             continue
         stat = path.stat()
@@ -131,7 +142,7 @@ def main() -> int:
     print(f"BMAT Codex adapter scaffold created: {args.out.resolve()}")
 
     adapter_record: dict[str, Any] = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "adapter_id": f"adapter-{payloads['run_state.json']['run_id']}",
         "created_at": utc_now(),
         "workflow_run_id": payloads["run_state.json"]["run_id"],
@@ -160,16 +171,16 @@ def main() -> int:
         adapter_record["command_timed_out"] = command_result["timed_out"]
         adapter_record["command_stdout_sha256"] = sha256_text(command_result["stdout"])
         adapter_record["command_stderr_sha256"] = sha256_text(command_result["stderr"])
-        (args.out / "adapter_command_stdout.md").write_text(command_result["stdout"], encoding="utf-8")
-        (args.out / "adapter_command_stderr.log").write_text(command_result["stderr"], encoding="utf-8")
+        write_text(args.out / "adapter_command_stdout.md", command_result["stdout"])
+        write_text(args.out / "adapter_command_stderr.log", command_result["stderr"])
     elif args.codex_command and args.dry_run:
         print("Dry run: codex-command was recorded but not executed.")
         command_stdout = "Dry run: command not executed.\n"
         command_stderr = ""
         adapter_record["command_stdout_sha256"] = sha256_text(command_stdout)
         adapter_record["command_stderr_sha256"] = sha256_text(command_stderr)
-        (args.out / "adapter_command_stdout.md").write_text(command_stdout, encoding="utf-8")
-        (args.out / "adapter_command_stderr.log").write_text(command_stderr, encoding="utf-8")
+        write_text(args.out / "adapter_command_stdout.md", command_stdout)
+        write_text(args.out / "adapter_command_stderr.log", command_stderr)
 
     validator_result = run_capture(
         [sys.executable, str(VALIDATOR), "--bundle", str(args.out), "--check-tool-ledger"],
@@ -179,21 +190,25 @@ def main() -> int:
     adapter_record["validator_timed_out"] = validator_result["timed_out"]
     adapter_record["validator_stdout_sha256"] = sha256_text(validator_result["stdout"])
     adapter_record["validator_stderr_sha256"] = sha256_text(validator_result["stderr"])
-    (args.out / "adapter_validator_stdout.log").write_text(validator_result["stdout"], encoding="utf-8")
-    (args.out / "adapter_validator_stderr.log").write_text(validator_result["stderr"], encoding="utf-8")
+    write_text(args.out / "adapter_validator_stdout.log", validator_result["stdout"])
+    write_text(args.out / "adapter_validator_stderr.log", validator_result["stderr"])
     write_json(args.out / "adapter_run.json", adapter_record)
 
     manifest_path = args.out / "adapter_artifact_manifest.json"
-    if manifest_path.exists():
-        manifest_path.unlink()
     write_json(
         manifest_path,
         {
-            "schema_version": "1.0",
+            "schema_version": "2.0",
             "generated_at": utc_now(),
             "artifacts": collect_artifacts(args.out),
         },
     )
+    manifest_result = run_capture(
+        [sys.executable, str(BUNDLE_MANIFEST), "--bundle", str(args.out)],
+        timeout_seconds=args.validator_timeout_seconds,
+    )
+    if manifest_result["returncode"]:
+        return manifest_result["returncode"]
 
     if command_exit:
         return command_exit

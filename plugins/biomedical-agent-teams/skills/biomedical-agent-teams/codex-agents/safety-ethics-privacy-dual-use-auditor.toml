@@ -1,12 +1,23 @@
 name = "bmat-safety-ethics-privacy-dual-use-auditor"
 agent_id = "safety-ethics-privacy-dual-use-auditor"
-version = "1.1.1"
+version = "1.2.0"
 description = "Template for a Codex reviewer that checks safety, ethics, privacy, dual-use, and external-tool boundaries."
 role_prompt = "../agents/safety-ethics-privacy-dual-use-auditor.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"
 execution_surface = "spawned_reviewer_template"
 default_mode = "review"
-independent_review_surface = "spawned_subagent_or_tool_backed_validator"
+independent_review_policy = "../references/independent-review-policy.md"
+review_manifest_schema = "../contracts/review-artifact-manifest.schema.json"
+runtime_receipt_schema = "../contracts/review-runtime-receipt.schema.json"
+independence_class_source = "runtime_receipt"
+independent_review_eligibility_field = "independent_review_eligible"
+full_protocol_eligible_independence_classes = ["separate-model", "external-tool", "human"]
+supplementary_independence_classes = ["same-model-separate-context"]
+non_independent_classes = ["same-model-self-review"]
+spawn_event_is_independence_proof = false
+input_output_runtime_hashes_required = true
+authoring_identity_comparison_required = true
+unknown_runtime_metadata_policy = "downgrade-not-fabricate"
 requires_claim_ledger = false
 requires_source_corpus = false
 may_write_files = false
@@ -18,6 +29,41 @@ blocked_inputs = [
   "operational wet-lab or dual-use-sensitive detail beyond approved scope"
 ]
 required_output_fields = [
+  "schema_version",
+  "workflow_run_id",
+  "plugin_version",
+  "instance_id",
+  "agent_id",
+  "actor_type",
+  "provider",
+  "model",
+  "model_version",
+  "authoring_provider",
+  "authoring_model",
+  "authoring_model_version",
+  "authoring_execution_session_id",
+  "authoring_identity_available",
+  "execution_surface",
+  "execution_session_id",
+  "spawn_event_id",
+  "input_scope",
+  "input_artifact_refs",
+  "input_artifact_sha256",
+  "prompt_template_ref",
+  "prompt_template_sha256",
+  "output_artifact",
+  "output_sha256",
+  "checks_run",
+  "changed_claim_ids",
+  "independence_class",
+  "independent_review_eligible",
+  "fixture_only",
+  "authoring_context_shared",
+  "started_at",
+  "completed_at",
+  "runtime_receipt_ref",
+  "runtime_receipt_sha256",
+  "limitations",
   "objective",
   "assigned_scope",
   "inputs_checked",

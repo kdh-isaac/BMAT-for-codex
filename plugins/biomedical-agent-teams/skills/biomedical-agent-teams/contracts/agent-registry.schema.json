@@ -3,10 +3,62 @@
   "title": "Biomedical Agent Teams Agent Registry",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "runtime", "agents"],
+  "required": ["version", "runtime", "review_contract", "agents"],
   "properties": {
-    "version": { "type": "string" },
-    "runtime": { "type": "string", "enum": ["codex"] },
+    "version": { "type": "string", "minLength": 1 },
+    "runtime": { "const": "codex" },
+    "review_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "policy_ref",
+        "manifest_schema",
+        "spawned_output_schema",
+        "runtime_receipt_schema",
+        "independence_class_source",
+        "eligibility_field",
+        "full_protocol_eligible_classes",
+        "supplementary_review_classes",
+        "non_independent_review_classes",
+        "spawn_event_is_independence_proof",
+        "input_output_runtime_hashes_required",
+        "authoring_identity_comparison_required",
+        "unknown_runtime_metadata_policy"
+      ],
+      "properties": {
+        "schema_version": { "const": "2.0" },
+        "policy_ref": { "const": "references/independent-review-policy.md" },
+        "manifest_schema": { "const": "contracts/review-artifact-manifest.schema.json" },
+        "spawned_output_schema": { "const": "contracts/spawned-agent-output.schema.json" },
+        "runtime_receipt_schema": { "const": "contracts/review-runtime-receipt.schema.json" },
+        "independence_class_source": { "const": "runtime_receipt" },
+        "eligibility_field": { "const": "independent_review_eligible" },
+        "full_protocol_eligible_classes": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["separate-model", "external-tool", "human"] }
+        },
+        "supplementary_review_classes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "same-model-separate-context" }
+        },
+        "non_independent_review_classes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "same-model-self-review" }
+        },
+        "spawn_event_is_independence_proof": { "const": false },
+        "input_output_runtime_hashes_required": { "const": true },
+        "authoring_identity_comparison_required": { "const": true },
+        "unknown_runtime_metadata_policy": { "const": "downgrade-not-fabricate" }
+      }
+    },
     "agents": {
       "type": "array",
       "minItems": 1,
@@ -24,8 +76,8 @@
           "recommended_modes"
         ],
         "properties": {
-          "agent_id": { "type": "string" },
-          "prompt_path": { "type": "string" },
+          "agent_id": { "type": "string", "minLength": 1 },
+          "prompt_path": { "type": "string", "minLength": 1 },
           "spawnable": { "type": "boolean" },
           "default_execution_surface": {
             "type": "string",
@@ -33,19 +85,46 @@
           },
           "allowed_workflows": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
           },
-          "required_output_schema": { "type": "string" },
+          "required_output_schema": { "type": "string", "minLength": 1 },
           "privacy_level": {
             "type": "string",
             "enum": ["public_only", "public_or_local_private", "local_private_with_gate"]
           },
           "recommended_modes": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
           },
-          "toml_template_path": { "type": "string" }
-        }
+          "toml_template_path": { "type": "string", "minLength": 1 }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "spawnable": { "const": true } },
+              "required": ["spawnable"]
+            },
+            "then": {
+              "required": ["toml_template_path"],
+              "properties": {
+                "required_output_schema": { "const": "contracts/spawned-agent-output.schema.json" }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "spawnable": { "const": false } },
+              "required": ["spawnable"]
+            },
+            "then": {
+              "properties": {
+                "default_execution_surface": { "const": "inline_only" }
+              }
+            }
+          }
+        ]
       }
     }
   }

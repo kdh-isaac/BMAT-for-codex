@@ -4,18 +4,22 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "schema_version",
     "integration_id",
     "plugin_version",
+    "workflow_run_id",
+    "created_at",
     "source_corpus_lock",
     "rows",
     "final_claim_policy",
     "human_review_status"
   ],
   "properties": {
-    "schema_version": { "type": "string" },
+    "schema_version": { "const": "2.0" },
     "integration_id": { "type": "string" },
     "plugin_version": { "type": "string" },
     "workflow_run_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
     "source_corpus_lock": { "type": "string" },
     "input_artifacts": {
       "type": "array",

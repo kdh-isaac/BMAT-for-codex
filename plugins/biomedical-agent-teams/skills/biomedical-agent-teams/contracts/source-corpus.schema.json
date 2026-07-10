@@ -1,90 +1,149 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Biomedical Agent Teams Source Corpus",
+  "title": "Biomedical Agent Teams Source Corpus v2",
   "type": "object",
   "additionalProperties": false,
-  "required": ["corpus_id", "created_at", "sources"],
+  "required": [
+    "schema_version",
+    "corpus_id",
+    "plugin_version",
+    "workflow_run_id",
+    "created_at",
+    "query_or_origin",
+    "sources"
+  ],
   "properties": {
-    "corpus_id": { "type": "string" },
-    "created_at": { "type": "string" },
-    "query_or_origin": { "type": "string" },
+    "schema_version": { "const": "2.0" },
+    "corpus_id": { "$ref": "#/$defs/nonEmptyString" },
+    "plugin_version": { "$ref": "#/$defs/semanticVersion" },
+    "workflow_run_id": { "$ref": "#/$defs/nonEmptyString" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "query_or_origin": { "$ref": "#/$defs/nonEmptyString" },
     "sources": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "source_id",
-          "source_type",
-          "identifier",
-          "version_or_retrieval_date",
-          "inclusion_status",
-          "claim_use",
-          "checked_by",
-          "limitations"
-        ],
-        "allOf": [
-          {
-            "if": {
-              "properties": {
-                "inclusion_status": { "const": "included" }
-              },
-              "required": ["inclusion_status"]
-            },
-            "then": {
-              "required": ["evidence_spans"],
-              "properties": {
-                "evidence_spans": { "minItems": 1 }
-              }
-            }
-          }
-        ],
-        "properties": {
-          "source_id": { "type": "string" },
-          "source_type": {
-            "type": "string",
-            "enum": [
-              "PMID",
-              "DOI",
-              "accession",
-              "NCT",
-              "database-record",
-              "local-file",
-              "analysis-artifact",
-              "software",
-              "other"
-            ]
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/source" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": ".*\\S.*"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "bundlePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?![/\\\\])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$)).+"
+    },
+    "sourceType": {
+      "type": "string",
+      "enum": [
+        "PMID",
+        "DOI",
+        "accession",
+        "NCT",
+        "database-record",
+        "local-file",
+        "analysis-artifact",
+        "software",
+        "other"
+      ]
+    },
+    "evidenceSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "span_id",
+        "source_id",
+        "source_snapshot_ref",
+        "source_snapshot_sha256",
+        "locator",
+        "section",
+        "paragraph_or_table",
+        "sentence_or_cell",
+        "evidence_text_sha256",
+        "short_evidence_excerpt",
+        "retrieved_at",
+        "extraction_actor",
+        "limitations"
+      ],
+      "properties": {
+        "span_id": { "$ref": "#/$defs/nonEmptyString" },
+        "source_id": { "$ref": "#/$defs/nonEmptyString" },
+        "source_snapshot_ref": { "$ref": "#/$defs/bundlePath" },
+        "source_snapshot_sha256": { "$ref": "#/$defs/sha256" },
+        "locator": { "$ref": "#/$defs/nonEmptyString" },
+        "section": { "$ref": "#/$defs/nonEmptyString" },
+        "paragraph_or_table": { "$ref": "#/$defs/nonEmptyString" },
+        "sentence_or_cell": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_text_sha256": { "$ref": "#/$defs/sha256" },
+        "short_evidence_excerpt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": ".*\\S.*"
+        },
+        "retrieved_at": { "type": "string", "format": "date-time" },
+        "extraction_actor": { "$ref": "#/$defs/nonEmptyString" },
+        "limitations": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_type",
+        "identifier",
+        "version_or_retrieval_date",
+        "inclusion_status",
+        "claim_use",
+        "checked_by",
+        "limitations"
+      ],
+      "properties": {
+        "source_id": { "$ref": "#/$defs/nonEmptyString" },
+        "source_type": { "$ref": "#/$defs/sourceType" },
+        "identifier": { "$ref": "#/$defs/nonEmptyString" },
+        "title_or_name": { "$ref": "#/$defs/nonEmptyString" },
+        "version_or_retrieval_date": { "$ref": "#/$defs/nonEmptyString" },
+        "retrieved_at": { "type": "string", "format": "date-time" },
+        "database_version": { "$ref": "#/$defs/nonEmptyString" },
+        "query_or_origin": { "$ref": "#/$defs/nonEmptyString" },
+        "inclusion_status": {
+          "type": "string",
+          "enum": ["included", "excluded", "not-checked", "blocked"]
+        },
+        "claim_use": { "$ref": "#/$defs/nonEmptyString" },
+        "checked_by": { "$ref": "#/$defs/nonEmptyString" },
+        "limitations": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_spans": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evidenceSpan" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "inclusion_status": { "const": "included" } },
+            "required": ["inclusion_status"]
           },
-          "identifier": { "type": "string" },
-          "title_or_name": { "type": "string" },
-          "version_or_retrieval_date": { "type": "string" },
-          "retrieved_at": { "type": "string" },
-          "database_version": { "type": "string" },
-          "query_or_origin": { "type": "string" },
-          "inclusion_status": {
-            "type": "string",
-            "enum": ["included", "excluded", "not-checked", "blocked"]
-          },
-          "claim_use": { "type": "string" },
-          "checked_by": { "type": "string" },
-          "limitations": { "type": "string" },
-          "evidence_spans": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["span_id", "location", "scope_note"],
-              "properties": {
-                "span_id": { "type": "string" },
-                "location": { "type": "string" },
-                "evidence_span_ref": { "type": "string" },
-                "text_quote": { "type": "string" },
-                "scope_note": { "type": "string" }
-              }
-            }
+          "then": {
+            "required": ["evidence_spans"],
+            "properties": { "evidence_spans": { "minItems": 1 } }
           }
         }
-      }
+      ]
     }
   }
 }

@@ -1,0 +1,1 @@
+The bundled local receipt supports the conservative validator claim under the stated synthetic scenario.

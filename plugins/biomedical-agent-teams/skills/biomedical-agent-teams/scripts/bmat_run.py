@@ -15,6 +15,7 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ WORKFLOWS_ROOT = SKILL_ROOT / "workflows"
 DOMAIN_PACKS_ROOT = SKILL_ROOT / "domain-packs"
 VALIDATOR = SKILL_ROOT / "scripts" / "bmat_validate.py"
 TOOL_LEDGER_CHECK = SKILL_ROOT / "scripts" / "bmat_tool_ledger_check.py"
+BUNDLE_MANIFEST = SKILL_ROOT / "scripts" / "bmat_bundle_manifest.py"
 OMICS_TRACKS = (
     "bulk-rnaseq",
     "tenx-gex",
@@ -71,21 +73,30 @@ def parse_args() -> argparse.Namespace:
 def write_json(path: Path, payload: dict[str, Any], force: bool) -> None:
     if path.exists() and not force:
         raise FileExistsError(f"{path} exists; use --force to overwrite scaffold files")
-    path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    temporary.replace(path)
 
 
 def write_text(path: Path, text: str, force: bool) -> None:
     if path.exists() and not force:
         raise FileExistsError(f"{path} exists; use --force to overwrite scaffold files")
-    path.write_text(text, encoding="utf-8")
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(text, encoding="utf-8")
+    temporary.replace(path)
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def default_results_integration(run_id: str, version: str) -> dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "integration_id": f"ri-{run_id}",
         "plugin_version": version,
         "workflow_run_id": run_id,
+        "created_at": utc_now(),
         "source_corpus_lock": "scaffold-only",
         "input_artifacts": [],
         "tool_use_log": [],
@@ -112,41 +123,44 @@ def default_results_integration(run_id: str, version: str) -> dict[str, Any]:
 
 def default_tool_call_ledger(run_id: str, version: str) -> dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "ledger_id": f"tcl-{run_id}",
         "plugin_version": version,
         "workflow_run_id": run_id,
+        "created_at": utc_now(),
         "calls": []
     }
 
 
 def default_source_verification(run_id: str, version: str) -> dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "verification_id": f"sv-{run_id}",
         "plugin_version": version,
         "workflow_run_id": run_id,
-        "checked_at": "scaffold-only",
+        "checked_at": utc_now(),
         "rows": [],
     }
 
 
 def default_claim_support_matrix(run_id: str, version: str) -> dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "support_matrix_id": f"csm-{run_id}",
         "plugin_version": version,
         "workflow_run_id": run_id,
+        "created_at": utc_now(),
         "rows": [],
     }
 
 
 def default_omics_metadata_check(run_id: str, version: str, track: str) -> dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "check_id": f"omc-{run_id}",
         "plugin_version": version,
         "workflow_run_id": run_id,
+        "checked_at": utc_now(),
         "track": track,
         "status": "block",
         "blocking_issues": [
@@ -163,50 +177,141 @@ def default_omics_metadata_check(run_id: str, version: str, track: str) -> dict[
 
 def default_experiment_design(run_id: str, version: str, question: str) -> dict[str, Any]:
     return {
+        "schema_version": "2.0",
         "design_id": f"exp-{run_id}",
         "workflow_run_id": run_id,
         "plugin_version": version,
+        "created_at": utc_now(),
+        "design_stage": "exploratory",
+        "recommendation_confidence": "low",
+        "decision_authority": "research-assistance-only",
         "hypothesis": question,
-        "experimental_objective": "TODO: define the bounded experimental objective before execution",
-        "experimental_unit": {
-            "unit_type": "TODO",
-            "justification": "TODO: define the biological unit and independence assumptions",
+        "experimental_objective": "TBD: define the bounded experimental objective before execution",
+        "primary_estimand": {
+            "population_or_model": "not yet determined",
+            "treatment_or_exposure": "not yet determined",
+            "comparator": "not yet determined",
+            "outcome": "not yet determined",
+            "summary_measure": "not yet determined",
         },
-        "primary_endpoint": "TODO",
+        "primary_endpoint": {
+            "endpoint_id": "endpoint-not-yet-determined",
+            "name": "not yet determined",
+            "measurement_scale": "other",
+            "measurement_unit": "not yet determined",
+            "assessment_timepoint": "not yet determined",
+            "direction_of_benefit": "not-applicable",
+        },
         "secondary_endpoints": [],
-        "positive_controls": ["TODO: specify positive control"],
-        "negative_controls": ["TODO: specify negative control"],
-        "vehicle_or_mock_controls": ["TODO: specify vehicle or mock control"],
+        "expected_effect_size": {
+            "measure": "not yet determined",
+            "value": None,
+            "unit": "not yet determined",
+            "direction": "not-applicable",
+            "assumption_basis": "feasibility-bound",
+            "rationale": "No effect-size assumption has been supplied; release remains blocked.",
+            "source_ids": [],
+        },
+        "variance_or_event_rate_assumption": {
+            "assumption_type": "other",
+            "value": None,
+            "unit": "not yet determined",
+            "assumption_basis": "feasibility-bound",
+            "rationale": "No variance or event-rate assumption has been supplied; release remains blocked.",
+            "source_ids": [],
+        },
+        "alpha": None,
+        "power": None,
+        "sidedness": "not-applicable",
+        "planned_n": None,
+        "dropout_or_failure_allowance": None,
+        "positive_controls": ["not yet determined"],
+        "negative_controls": ["not yet determined"],
+        "vehicle_or_mock_controls": ["not yet determined"],
         "biological_replicates": {
-            "planned_n": "TODO",
-            "rationale": "TODO: justify sample size and biological replicate unit",
+            "planned_n": None,
+            "allocation": "not yet determined",
+            "rationale": "No biological-unit count has been justified; release remains blocked.",
         },
         "technical_replicates": {
-            "planned_n": "TODO",
-            "rationale": "TODO: justify technical replicate handling",
+            "planned_n": 0,
+            "rationale": "Technical replicate handling has not yet been determined.",
         },
-        "randomization": {"method": "TODO"},
-        "blinding": {"method": "TODO"},
-        "exclusion_criteria": ["TODO: define before execution"],
-        "confounders": ["TODO: list expected confounders and mitigation"],
-        "causal_kill_tests": ["TODO: define falsification or rescue experiment"],
+        "randomization_unit": "not yet determined",
+        "analysis_unit": "not yet determined",
+        "biological_unit": "not yet determined",
+        "unit_mismatch_handling": None,
+        "randomization_plan": {
+            "planned": False,
+            "method_or_reason": "not yet determined",
+            "allocation_concealment_or_reason": "not yet determined",
+        },
+        "blocking_factors": [],
+        "blinding_plan": {
+            "planned": False,
+            "masked_roles": [],
+            "method_or_reason": "not yet determined",
+        },
+        "exclusion_criteria": ["not yet determined"],
+        "confounders": ["not yet determined"],
+        "causal_kill_tests": ["not yet determined"],
         "statistical_plan": {
-            "model": "TODO",
-            "multiplicity": "TODO",
+            "model": "not yet determined",
+            "covariates": [],
+            "clustering_or_repeated_measures": "not yet determined",
+            "effect_size_reporting": "not yet determined",
         },
-        "go_no_go_gates": ["TODO: define decision threshold"],
-        "safety_ethics_privacy_boundary": "TODO: document biosafety, human/animal, privacy, and external-service boundaries",
-        "reagent_provenance_policy": "TODO: source-lock reagent, catalog, and protocol-specific claims before final wording",
+        "multiplicity_plan": {
+            "method": "not-assessed",
+            "family_definition": "not yet determined",
+            "alpha_allocation": "not yet determined",
+            "rationale": "Multiplicity handling must be specified before release.",
+        },
+        "interim_analysis": {
+            "planned": False,
+            "timing_or_reason": "not yet determined",
+            "alpha_spending_or_reason": "not yet determined",
+        },
+        "stopping_rule": {
+            "rule_type": "not-assessed",
+            "criteria": "not yet determined",
+            "decision_authority": "responsible human investigator",
+        },
+        "sensitivity_analyses": [],
+        "sample_size_method": "not yet determined",
+        "sample_size_artifact_status": "not-produced",
+        "sample_size_code_ref": None,
+        "sample_size_output_ref": None,
+        "sample_size_output_sha256": None,
+        "go_no_go_gates": ["not yet determined"],
+        "design_scope": "conceptual",
+        "safety_ethics_privacy_boundary": {
+            "operational_details_included": False,
+            "risk_triggers": ["none"],
+            "required_oversight": ["responsible human investigator review before execution"],
+            "privacy_boundary": "No private data are included in this scaffold.",
+            "dual_use_boundary": "No operational dual-use detail is included in this scaffold.",
+            "patent_sensitive_boundary": "No confidential or patent-sensitive detail is included in this scaffold.",
+            "limitations": "BMAT provides research planning assistance only and does not grant experimental, clinical, IRB, IACUC, or IBC approval.",
+            "bmat_role": "research-assistance-only",
+        },
+        "reagent_provenance_policy": "Verify reagent-specific claims with eligible source receipts or mark them unknown.",
+        "reagent_specific_claims": [],
         "source_ids": [],
         "claim_ids_supported": [],
+        "limitations": [
+            "This is an incomplete scaffold. Missing quantitative assumptions remain unknown and are not release eligible."
+        ],
     }
 
 
 def default_review_artifact_manifest(run_id: str, version: str) -> dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
+        "review_manifest_id": f"ram-{run_id}",
         "workflow_run_id": run_id,
         "plugin_version": version,
+        "created_at": utc_now(),
         "review_instances": [],
     }
 
@@ -231,11 +336,13 @@ def cellranger_command_for_track(track: str) -> str:
     return "count"
 
 
-def default_omics_manifest(run_id: str, track: str) -> dict[str, Any]:
+def default_omics_manifest(run_id: str, version: str, track: str) -> dict[str, Any]:
     manifest: dict[str, Any] = {
         "schema_version": "2.0",
         "analysis_id": f"omics-{run_id}",
         "workflow_run_id": run_id,
+        "plugin_version": version,
+        "created_at": utc_now(),
         "track": track,
         "data_sources": [],
         "sample_sheet": "TODO: lock sample sheet path or accession sample table before analysis",
@@ -411,6 +518,7 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     assert isinstance(preflight, dict)
     assert isinstance(lead_decision, dict)
     run_id = str(run_state["run_id"])
+    created_at = utc_now()
     workflow_dag = workflow_dag_for_run(args.alias, args.mode)
     omics_track = selected_omics_track(args)
     omics_track_locked = omics_track not in AMBIGUOUS_OMICS_TRACKS
@@ -433,9 +541,20 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
         workflow_dag["track"] = omics_track
 
     domain_pack_root = DOMAIN_PACKS_ROOT / args.domain_pack
+    domain_profile = json.loads((domain_pack_root / "domain-pack.json").read_text(encoding="utf-8"))
+    domain_version = str(domain_profile.get("domain_pack_version", "unknown"))
+    domain_assumptions = list(domain_profile.get("domain_specific_assumptions", []))
+    selection_reason = (
+        "default domain-neutral pack for a request without an explicit specialty context"
+        if args.domain_pack == "generic-biomedical"
+        else "explicit specialty context selected by --domain-pack"
+    )
 
     preflight["domain_pack"] = args.domain_pack
-    preflight["domain_pack_version"] = "0.1.0"
+    preflight["selected_domain_pack"] = args.domain_pack
+    preflight["domain_pack_version"] = domain_version
+    preflight["selection_reason"] = selection_reason
+    preflight["domain_specific_assumptions"] = domain_assumptions
     preflight["workflow_tier"] = args.tier
     preflight["requested_omics_track"] = omics_track
     preflight["domain_specific_failure_modes_loaded"] = (domain_pack_root / "failure-modes.md").exists()
@@ -444,7 +563,10 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     preflight["results_integration_required"] = True
 
     run_state["domain_pack"] = args.domain_pack
-    run_state["domain_pack_version"] = "0.1.0"
+    run_state["selected_domain_pack"] = args.domain_pack
+    run_state["domain_pack_version"] = domain_version
+    run_state["domain_pack_selection_reason"] = selection_reason
+    run_state["domain_specific_assumptions"] = domain_assumptions
     run_state["workflow_tier"] = args.tier
     run_state["omics_track"] = omics_track
     run_state["workflow_dag_id"] = workflow_dag["workflow_id"]
@@ -466,6 +588,12 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     ]
 
     lead_decision["workflow_run_id"] = run_id
+    lead_decision["plugin_version"] = version
+    lead_decision["created_at"] = created_at
+    lead_decision["selected_domain_pack"] = args.domain_pack
+    lead_decision["domain_pack_version"] = domain_version
+    lead_decision["domain_pack_selection_reason"] = selection_reason
+    lead_decision["domain_specific_assumptions"] = domain_assumptions
     lead_decision["requested_alias"] = args.alias
     lead_decision["selected_mode"] = args.mode
     lead_decision["workflow_tier"] = args.tier
@@ -475,6 +603,34 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     lead_decision["team_spawn_plan"] = preflight["team_spawn_plan"]
     lead_decision["post_team_audit_plan"] = preflight["post_team_audit_plan"]
 
+    workflow_dag.update(
+        {
+            "schema_version": "2.0",
+            "workflow_run_id": run_id,
+            "plugin_version": version,
+            "created_at": created_at,
+        }
+    )
+    for filename, artifact_id_field in (
+        ("run_state.json", "run_id"),
+        ("runtime_capability_preflight.json", "runtime_capability_preflight_id"),
+        ("lead_decision.json", "decision_id"),
+        ("source_corpus.json", "corpus_id"),
+        ("claim_ledger.json", "claim_ledger_id"),
+        ("stage_evaluation.json", "evaluation_id"),
+        ("post_write_validation.json", "validation_id"),
+    ):
+        artifact = payloads.get(filename)
+        if not isinstance(artifact, dict):
+            continue
+        artifact["schema_version"] = "2.0"
+        artifact["plugin_version"] = version
+        if filename == "run_state.json":
+            artifact["created_at"] = created_at
+        else:
+            artifact["workflow_run_id"] = run_id
+            artifact["checked_at" if filename == "post_write_validation.json" else "created_at"] = created_at
+        artifact.setdefault(artifact_id_field, f"{Path(filename).stem}-{run_id}")
     payloads["workflow_dag.json"] = workflow_dag
     payloads["results_integration.json"] = default_results_integration(run_id, version)
     payloads["tool_call_ledger.json"] = default_tool_call_ledger(run_id, version)
@@ -490,7 +646,14 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     if "omics_metadata_check" in declared_outputs:
         payloads["omics_metadata_check.json"] = default_omics_metadata_check(run_id, version, omics_track)
     if omics_track_locked:
-        payloads["omics_run_manifest.json"] = default_omics_manifest(run_id, omics_track)
+        payloads["omics_run_manifest.json"] = default_omics_manifest(run_id, version, omics_track)
+    final_text = str(payloads.get("final.md", "")).rstrip()
+    final_text = "\n".join(
+        line
+        for line in final_text.splitlines()
+        if not line.lower().lstrip().startswith(("final workflow label:", "workflow label:"))
+    ).rstrip()
+    payloads["final.md"] = f"{final_text}\n\nFinal workflow label: {run_state['final_label']}\n"
 
 
 def write_payloads(payloads: dict[str, dict[str, Any] | str], out: Path, force: bool) -> None:
@@ -537,7 +700,7 @@ def export_markdown_workbench(bundle: Path, force: bool) -> Path:
         path = reports / filename
         if path.exists() and not force:
             raise FileExistsError(f"{path} exists; use --force to overwrite")
-        path.write_text(text, encoding="utf-8")
+        write_text(path, text, force=True)
     return reports
 
 
@@ -558,6 +721,10 @@ def main() -> int:
     if args.export == "markdown":
         reports = export_markdown_workbench(args.out, args.force)
         print(f"BMAT markdown workbench exported: {reports.resolve()}")
+
+    manifest_status = run_check([sys.executable, str(BUNDLE_MANIFEST), "--bundle", str(args.out)])
+    if manifest_status:
+        return manifest_status
 
     status = 0
     if args.validate:
