@@ -1,0 +1,2 @@
+# Release fixtures bind exact bytes and must remain stable across platforms.
+* text=auto eol=lf

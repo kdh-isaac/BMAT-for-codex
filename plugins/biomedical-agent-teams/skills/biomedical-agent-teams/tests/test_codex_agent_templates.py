@@ -3,7 +3,11 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10 uses the supported backport.
+    import tomli as tomllib
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
