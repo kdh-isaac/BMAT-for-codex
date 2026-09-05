@@ -12,7 +12,7 @@ runtime receipt against `contracts/review-runtime-receipt.schema.json`.
   "schema_version": "2.0",
   "review_manifest_id": "BMAT-REVIEW-MANIFEST-20260710-001",
   "workflow_run_id": "BMAT-RUN-20260710-001",
-  "plugin_version": "1.2.0",
+  "plugin_version": "1.2.1",
   "created_at": "2026-07-10T09:00:00+09:00",
   "review_instances": [
     {
@@ -74,7 +74,7 @@ The referenced `review/receipts/citation-verifier-runtime.json` has this shape:
   "schema_version": "2.0",
   "receipt_id": "BMAT-RUNTIME-RECEIPT-001",
   "workflow_run_id": "BMAT-RUN-20260710-001",
-  "plugin_version": "1.2.0",
+  "plugin_version": "1.2.1",
   "instance_id": "BMAT-REVIEW-001",
   "actor_type": "model",
   "provider": "<runtime-reported-provider>",

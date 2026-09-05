@@ -4,7 +4,7 @@
   "created_at": "2026-07-10T01:00:00Z",
   "alias": "evidence-audit-team",
   "mode": "audit",
-  "plugin_version": "1.2.0",
+  "plugin_version": "1.2.1",
   "selected_domain_pack": "generic-biomedical",
   "domain_pack_version": "0.1.0",
   "domain_pack_selection_reason": "The bounded validator claim has no specialty-domain assumptions.",

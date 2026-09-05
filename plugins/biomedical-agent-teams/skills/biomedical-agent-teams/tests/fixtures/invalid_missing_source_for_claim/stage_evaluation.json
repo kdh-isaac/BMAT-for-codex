@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "evaluation_id": "stage-evaluation-release-fixture-001",
-  "plugin_version": "1.2.0",
+  "plugin_version": "1.2.1",
   "workflow_run_id": "release-fixture-run-001",
   "created_at": "2026-07-10T01:08:00Z",
   "workflow_alias": "evidence-audit-team",

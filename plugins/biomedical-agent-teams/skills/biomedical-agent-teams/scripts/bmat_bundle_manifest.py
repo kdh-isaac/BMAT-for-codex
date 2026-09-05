@@ -14,6 +14,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from bmat_artifacts import ARTIFACT_FILES, BUNDLE_FILES
+
 
 EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", ".git"}
 
@@ -77,10 +79,13 @@ def main() -> int:
         schema_version = "not-applicable"
         if path.suffix.lower() == ".json":
             try:
-                payload = read_json(path)
+                payload = json.loads(path.read_text(encoding="utf-8-sig"))
+                if relative in ARTIFACT_FILES.values() and not isinstance(payload, dict):
+                    raise SystemExit(f"{path} must contain a JSON object")
             except (json.JSONDecodeError, UnicodeDecodeError):
                 payload = {}
-            schema_version = str(payload.get("schema_version", "not-applicable"))
+            if isinstance(payload, dict):
+                schema_version = str(payload.get("schema_version", "not-applicable"))
         entries.append(
             {
                 "artifact_type": path.stem.replace("-", "_"),
@@ -90,15 +95,7 @@ def main() -> int:
                 "schema_version": schema_version,
                 "plugin_version": plugin_version,
                 "workflow_run_id": workflow_run_id,
-                "required_for_release": path.name in {
-                    "run_state.json",
-                    "runtime_capability_preflight.json",
-                    "source_corpus.json",
-                    "claim_ledger.json",
-                    "stage_evaluation.json",
-                    "post_write_validation.json",
-                    "final.md",
-                },
+                "required_for_release": relative in BUNDLE_FILES.values(),
                 "generated_at": generated_at,
             }
         )

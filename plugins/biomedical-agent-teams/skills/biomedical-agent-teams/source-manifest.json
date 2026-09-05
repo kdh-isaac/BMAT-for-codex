@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "runtime": "codex",
   "entrypoint": "SKILL.md",
   "agent_count": 38,
@@ -7,7 +7,7 @@
   "template_count": 21,
   "contract_count": 25,
   "reference_count": 10,
-  "script_count": 18,
+  "script_count": 20,
   "test_fixture_count": 12,
   "eval_count": 3,
   "golden_task_count": 56,
@@ -159,6 +159,7 @@
     "weekly-literature-watch"
   ],
   "scripts": [
+    "bmat_artifacts",
     "bmat_bundle_manifest",
     "bmat_claim_support_check",
     "bmat_codex_adapter",
@@ -176,7 +177,8 @@
     "bmat_source_check",
     "bmat_tool_ledger_check",
     "bmat_tournament_check",
-    "bmat_validate"
+    "bmat_validate",
+    "bmat_workflow_policy"
   ],
   "codex_agent_templates": [
     "biostats-repro-auditor",
@@ -265,5 +267,14 @@
     "run-state-only-final-label-authority",
     "adversarial-cross-artifact-release-regression-suite",
     "ubuntu-and-windows-ci-release-gates"
+  ],
+  "new_in_v1_2_1": [
+    "required-tournament-and-declared-artifact-release-gates",
+    "arbitrary-json-data-manifest-support",
+    "mode-aware-compact-workflow-plans",
+    "shared-artifact-and-tournament-policies",
+    "canonical-independent-review-docs",
+    "installed-package-regression-suite",
+    "explicit-smoke-and-release-selftest-status"
   ]
 }

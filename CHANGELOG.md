@@ -2,6 +2,21 @@
 
 All notable BMAT-for-Codex changes are recorded here.
 
+## 1.2.1 - 2026-09-05
+
+- Reject missing declared release artifacts and missing/draft hypothesis tournaments.
+- Share artifact registration, mode planning, and tournament checks between CLIs.
+- Hash ordinary JSON arrays/scalars without imposing artifact-object requirements.
+- Generate smaller quick/compact plans and expose stage/file/reviewer counts.
+- Preserve full gates for deep, audit, run, and full-tier workflows.
+- Create honest empty tournament drafts and distinguish domain-file availability from reading.
+- Unify independent-review guidance and keep generic research routing domain-neutral.
+- Separate installed-package tests from repository marketplace tests; bundle user documentation.
+- Add explicit smoke_passed/release_passed self-test modes and isolated-package CI.
+
+Completed v2 tournament artifacts without a status field remain compatible.
+Drafts are editable planning artifacts and never satisfy a release gate.
+
 ## 1.2.0 - 2026-07-10
 
 ### Added

@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "review_manifest_id": "review-manifest-release-fixture-001",
-  "plugin_version": "1.2.0",
+  "plugin_version": "1.2.1",
   "workflow_run_id": "release-fixture-run-001",
   "created_at": "2026-07-10T01:07:00Z",
   "review_instances": [
@@ -11,10 +11,10 @@
       "actor_type": "model",
       "provider": "Example provider",
       "model": "example-author-model",
-      "model_version": "1.2.0",
+      "model_version": "1.2.1",
       "authoring_provider": "Example provider",
       "authoring_model": "example-author-model",
-      "authoring_model_version": "1.2.0",
+      "authoring_model_version": "1.2.1",
       "authoring_execution_session_id": "same-model-session-001",
       "authoring_identity_available": true,
       "execution_surface": "same_model_pass",
@@ -27,9 +27,9 @@
         "source_verification.json"
       ],
       "input_artifact_sha256": {
-        "claim_ledger.json": "bd9a18ee3016fa5fa36a0b0238d2b2f635ce2d338625a77a919d0112e06a49fd",
-        "source_corpus.json": "14927a75c72000223b404a7342c72f3c7e2366545ba8d2c3b4672a733a087b2f",
-        "source_verification.json": "0ef1cb08cc36f488cab0832fd2cbbbbab408c9b39254ba1f9d70ca1ed7de290e"
+        "claim_ledger.json": "45b4fb88db0d74c522c110c9ac94c9b65dfda1e54bb60f52370fb142ec4717f1",
+        "source_corpus.json": "1e1ff7dfe6841e4b4e61aedd47ed7807c814cad98388686e3df2b96577611fc3",
+        "source_verification.json": "30750a515cac2f864ca96fe9c9a6ff3b34e3059e0d408e183d1bc37dcfc8cfb4"
       },
       "prompt_template_ref": "review/external-tool-review-prompt.md",
       "prompt_template_sha256": "1e30fd4683476adbbdf00653167a232c162b52fd9f12e74cd5af4c0ec8f45f05",
@@ -56,7 +56,7 @@
       "started_at": "2026-07-10T01:06:00Z",
       "completed_at": "2026-07-10T01:06:02Z",
       "runtime_receipt_ref": "review/review-runtime-receipt.json",
-      "runtime_receipt_sha256": "4d5614c269092ce283b79e94ba83d1021ddc78c4745ed0a768df746cdcd8c924",
+      "runtime_receipt_sha256": "a71ccc149afa0fe2c8bea9c7fa33088a2db4d1317cf2554e71ef4ae52307a139",
       "limitations": "The deterministic review establishes contract consistency, not external scientific truth."
     }
   ]

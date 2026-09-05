@@ -45,7 +45,7 @@ def valid_tournament() -> dict:
     return {
         "schema_version": "2.0",
         "tournament_id": "tournament-test-v2",
-        "plugin_version": "1.2.0",
+        "plugin_version": "1.2.1",
         "workflow_run_id": "run-test-v2",
         "created_at": "2026-07-10T00:00:00Z",
         "selected_domain_pack": "generic-biomedical",

@@ -21,6 +21,10 @@
     "workspace_root": { "type": "string" },
     "domain_pack": { "type": "string" },
     "domain_pack_version": { "type": "string" },
+    "domain_specific_failure_modes_available": {
+      "type": "boolean",
+      "description": "File exists; does not establish that its contents were read."
+    },
     "domain_specific_failure_modes_loaded": {
       "oneOf": [
         { "type": "boolean" },

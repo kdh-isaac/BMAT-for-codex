@@ -17,6 +17,16 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from bmat_artifacts import (
+    ARTIFACT_FILES,
+    BUNDLE_FILES,
+    BUNDLE_FILE_ALIASES,
+    OPTIONAL_BUNDLE_FILES,
+    SCHEMA_FILES,
+)
+import bmat_workflow_policy as workflow_policy
+import bmat_tournament_check as tournament_policy
+
 try:
     import bmat_experiment_design_check as experiment_design_v2
 except ImportError:  # pragma: no cover - import shape depends on embedding host
@@ -27,58 +37,8 @@ try:
 except ImportError:  # pragma: no cover - depends on local environment
     jsonschema = None
 
-
-BUNDLE_FILES = {
-    "run_state": "run_state.json",
-    "preflight": "runtime_capability_preflight.json",
-    "source_corpus": "source_corpus.json",
-    "claim_ledger": "claim_ledger.json",
-    "stage_evaluation": "stage_evaluation.json",
-    "post_write_validation": "post_write_validation.json",
-    "final_text": "final.md",
-}
-
-BUNDLE_FILE_ALIASES = {
-    "preflight": ("preflight.json",),
-}
-
-OPTIONAL_BUNDLE_FILES = {
-    "lead_decision": "lead_decision.json",
-    "results_integration": "results_integration.json",
-    "tool_call_ledger": "tool_call_ledger.json",
-    "workflow_dag": "workflow_dag.json",
-    "omics_run_manifest": "omics_run_manifest.json",
-    "source_verification": "source_verification.json",
-    "claim_support_matrix": "claim_support_matrix.json",
-    "omics_metadata_check": "omics_metadata_check.json",
-    "experiment_design": "experiment_design.json",
-    "review_artifact_manifest": "review_artifact_manifest.json",
-    "bundle_manifest": "bundle_manifest.json",
-    "hypothesis_tournament": "hypothesis_tournament.json",
-}
-
 INTERNAL_ARTIFACT_PATHS = "_artifact_paths"
 
-SCHEMA_FILES = {
-    "run_state": "workflow-run.schema.json",
-    "preflight": "preflight-contract.schema.json",
-    "lead_decision": "lead-decision.schema.json",
-    "source_corpus": "source-corpus.schema.json",
-    "claim_ledger": "claim-ledger.schema.json",
-    "results_integration": "results-integration.schema.json",
-    "tool_call_ledger": "tool-call-ledger.schema.json",
-    "workflow_dag": "workflow-dag.schema.json",
-    "omics_run_manifest": "omics-run-manifest.schema.json",
-    "source_verification": "source-verification.schema.json",
-    "claim_support_matrix": "claim-support-matrix.schema.json",
-    "omics_metadata_check": "omics-metadata-check.schema.json",
-    "experiment_design": "experiment-design.schema.json",
-    "review_artifact_manifest": "review-artifact-manifest.schema.json",
-    "bundle_manifest": "bundle-manifest.schema.json",
-    "hypothesis_tournament": "hypothesis-tournament.schema.json",
-    "stage_evaluation": "stage-evaluation.schema.json",
-    "post_write_validation": "post-write-validation.schema.json",
-}
 
 PASSING_STAGE_STATUS = {"pass", "pass-with-caveats", "not-applicable"}
 FULL_LABEL = "Full protocol followed"
@@ -916,61 +876,33 @@ def validate_domain_pack_policy(artifacts: dict[str, Any], findings: list[Findin
             findings.append(Finding("ERROR", "GENERIC_DOMAIN_PACK_SPECIALTY_LEAK", "generic-biomedical assumptions contain cell-therapy/immuno-oncology-specific axes", "runtime_capability_preflight.json"))
 
 
-def validate_hypothesis_tournament_policy(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+def validate_hypothesis_tournament_policy(
+    artifacts: dict[str, Any], findings: list[Finding], *, release: bool = False,
+    required_label: str | None = None,
+) -> None:
     tournament = artifacts.get("hypothesis_tournament")
+    labels = declared_workflow_labels(artifacts, required_label)
+    final_gate = release or FULL_LABEL in labels
     if tournament is None:
+        if workflow_policy.tournament_required(artifacts):
+            findings.append(Finding("ERROR", "TOURNAMENT_ARTIFACT_REQUIRED",
+                "Selected tournament workflow requires hypothesis_tournament.json",
+                OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
         return
     if not isinstance(tournament, dict):
         return
-    candidates = [row for row in tournament.get("candidates", []) if isinstance(row, dict)]
-    hypothesis_ids = [str(row.get("hypothesis_id", "")).strip() for row in candidates]
-    blinded_ids = [str(row.get("blinded_candidate_id", "")).strip() for row in candidates]
-    order = tournament.get("candidate_order_randomization", {}).get("randomized_order", [])
-    if not isinstance(order, list) or set(map(str, order)) != set(blinded_ids):
-        findings.append(Finding("ERROR", "TOURNAMENT_RANDOMIZED_ORDER_INCOMPLETE", "tournament randomized order must include every blinded candidate", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    judge_scores = [row for row in tournament.get("judge_scores", []) if isinstance(row, dict)]
-    score_ids = {str(row.get("blinded_candidate_id", "")) for row in judge_scores}
-    if set(blinded_ids) - score_ids:
-        findings.append(Finding("ERROR", "TOURNAMENT_CANDIDATE_MISSING_JUDGE_SCORE", "every candidate requires judge-level scores", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    candidates_by_judge: dict[str, set[str]] = {}
-    seen_judgments: set[tuple[str, str]] = set()
-    for row in judge_scores:
-        judge_id = str(row.get("judge_id", "")).strip()
-        blinded_id = str(row.get("blinded_candidate_id", "")).strip()
-        pair = (judge_id, blinded_id)
-        if pair in seen_judgments:
-            findings.append(Finding("ERROR", "TOURNAMENT_DUPLICATE_JUDGE_SCORE", f"duplicate judge/candidate score: {judge_id}/{blinded_id}", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-        seen_judgments.add(pair)
-        candidates_by_judge.setdefault(judge_id, set()).add(blinded_id)
-    expected_blinded_ids = set(blinded_ids)
-    for judge_id, scored_ids in candidates_by_judge.items():
-        if scored_ids != expected_blinded_ids:
-            findings.append(Finding("ERROR", "TOURNAMENT_JUDGE_SCORE_MATRIX_INCOMPLETE", f"judge {judge_id} did not score every blinded candidate exactly once", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    sensitivity = tournament.get("order_sensitivity_check", {})
-    if not isinstance(sensitivity, dict) or sensitivity.get("performed") is not True:
-        findings.append(Finding("ERROR", "TOURNAMENT_ORDER_SENSITIVITY_REQUIRED", "tournament requires an order-sensitivity check", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    if tournament.get("aggregate_scores") == tournament.get("judge_disagreement"):
-        findings.append(Finding("ERROR", "TOURNAMENT_AGGREGATE_DISAGREEMENT_CONFLATED", "aggregate score and judge disagreement must remain separate", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    if tournament.get("ranking_model") != "qualitative" and not tournament.get("model_based_ranking"):
-        findings.append(Finding("ERROR", "TOURNAMENT_MODEL_RANKING_MISSING", "model-based rank must remain separate from qualitative rank", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    if not tournament.get("qualitative_ranking"):
-        findings.append(Finding("ERROR", "TOURNAMENT_QUALITATIVE_RANKING_MISSING", "qualitative ranking is required independently of Elo/Bradley-Terry output", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    known_hypotheses = set(hypothesis_ids)
-    ranking_ids = [str(value) for value in value_as_list(tournament.get("qualitative_ranking")) + value_as_list(tournament.get("model_based_ranking"))]
-    if any(value not in known_hypotheses for value in ranking_ids):
-        findings.append(Finding("ERROR", "TOURNAMENT_RANKING_UNKNOWN_CANDIDATE", "qualitative/model-based ranking references an unknown hypothesis", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    limitation = normalized_text(tournament.get("same_model_correlated_judgment_limitation"))
-    if "correlat" not in limitation or "limit" not in limitation:
-        findings.append(Finding("ERROR", "TOURNAMENT_SAME_MODEL_CORRELATION_LIMIT_MISSING", "same-model correlated-judgment limitation must be explicit", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    boundary = normalized_text(tournament.get("winner_interpretation_boundary"))
-    if not boundary or ("not" not in boundary and "does not" not in boundary):
-        findings.append(Finding("ERROR", "TOURNAMENT_WINNER_BOUNDARY_REQUIRED", "ranking winner must not be presented as biological proof or validation", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
-    run_state = artifacts.get("run_state")
-    if isinstance(run_state, dict):
-        expected_pack = str(run_state.get("selected_domain_pack", run_state.get("domain_pack", ""))).strip()
-        tournament_pack = str(tournament.get("selected_domain_pack", "")).strip()
-        if expected_pack and tournament_pack != expected_pack:
-            findings.append(Finding("ERROR", "TOURNAMENT_DOMAIN_PACK_MISMATCH", f"tournament domain pack {tournament_pack!r} does not match run_state {expected_pack!r}", OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+    if tournament.get("status") == "draft":
+        if final_gate or labels - {CONTRACT_LABEL, BLOCKED_LABEL, PARTIAL_LABEL}:
+            findings.append(Finding("ERROR", "TOURNAMENT_DRAFT_NOT_RELEASE_ELIGIBLE",
+                "Complete the actual tournament before releasing its results",
+                OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+        else:
+            findings.append(Finding("WARN", "TOURNAMENT_DRAFT_NOT_EXECUTED",
+                "Draft tournament contains no executed judgments or ranking",
+                OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
+        return
+    for item in tournament_policy.check(tournament, artifacts.get("run_state")):
+        findings.append(Finding(item.level, item.code, item.message, item.path))
 
 
 def requested_omics_track(artifacts: dict[str, Any]) -> str:
@@ -3909,7 +3841,11 @@ def validate_policies(
     validate_source_corpus_span_policy(artifacts, findings, release=release)
     validate_lead_decision_policy(artifacts, findings, required_label)
     validate_domain_pack_policy(artifacts, findings)
-    validate_hypothesis_tournament_policy(artifacts, findings)
+    validate_hypothesis_tournament_policy(artifacts, findings, release=release, required_label=required_label)
+    if release or FULL_LABEL in declared_workflow_labels(artifacts, required_label):
+        for key in workflow_policy.missing_declared_artifacts(artifacts, ARTIFACT_FILES):
+            findings.append(Finding("ERROR", "WORKFLOW_DAG_OUTPUT_MISSING",
+                f"Declared workflow output {key} is missing", ARTIFACT_FILES[key]))
     validate_compact_standard_artifacts(artifacts, findings, required_label)
     validate_full_protocol(artifacts, findings, required_label)
     validate_spawned_instance_policy(artifacts, findings)

@@ -1,6 +1,6 @@
 # Biomedical Agent Teams skill
 
-BMAT v1.2.0 is a Codex-native biomedical workflow router. `SKILL.md` selects
+BMAT v1.2.1 is a Codex-native biomedical workflow router. `SKILL.md` selects
 one command recipe; the recipe loads only its required agents, references,
 contracts, templates, scripts, domain pack, and workflow DAG.
 

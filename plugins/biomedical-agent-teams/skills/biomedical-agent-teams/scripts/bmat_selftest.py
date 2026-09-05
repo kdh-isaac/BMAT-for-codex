@@ -25,6 +25,7 @@ def parse_args() -> argparse.Namespace:
         help="BMAT skill root, plugin root, marketplace root, or installed cache root.",
     )
     parser.add_argument("--skip-golden", action="store_true", help="Skip offline golden-task sample scoring.")
+    parser.add_argument("--release", action="store_true", help="Require schema dependencies and release-grade fixture validation.")
     return parser.parse_args()
 
 
@@ -55,7 +56,7 @@ def run_check(check: Check) -> bool:
     return False
 
 
-def checks_for(skill_root: Path, skip_golden: bool) -> list[Check]:
+def checks_for(skill_root: Path, skip_golden: bool, release: bool = False) -> list[Check]:
     scripts = skill_root / "scripts"
     fixtures = skill_root / "tests" / "fixtures"
     evals = skill_root / "evals"
@@ -80,6 +81,7 @@ def checks_for(skill_root: Path, skip_golden: bool) -> list[Check]:
                 str(scripts / "bmat_validate.py"),
                 "--bundle",
                 str(fixtures / "valid_full_protocol_bundle"),
+                *(["--release"] if release else []),
             ],
         ),
     ]
@@ -95,18 +97,21 @@ def checks_for(skill_root: Path, skip_golden: bool) -> list[Check]:
                     "--outputs",
                     str(evals / "sample_outputs.jsonl"),
                     "--strict",
+                    *(["--gate"] if release else []),
                 ],
             )
         )
+    if release:
+        checks.insert(0, Check("release schema dependency", [sys.executable, "-c", "import jsonschema"]))
     return checks
 
 
 def main() -> int:
     args = parse_args()
     skill_root = resolve_skill_root(args.root)
-    results = [run_check(check) for check in checks_for(skill_root, args.skip_golden)]
+    results = [run_check(check) for check in checks_for(skill_root, args.skip_golden, args.release)]
     if all(results):
-        print("\nBMAT self-test passed.")
+        print("\nBMAT self-test passed: release_passed." if args.release else "\nBMAT self-test passed: smoke_passed; release gates were not requested.")
         return 0
     print("\nBMAT self-test failed.", file=sys.stderr)
     return 1

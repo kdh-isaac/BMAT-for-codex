@@ -9,7 +9,6 @@ It does not call external models or databases.
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import os
 import shutil
@@ -22,6 +21,8 @@ from typing import Any
 sys.dont_write_bytecode = True
 
 import bmat_init_bundle
+from bmat_artifacts import ARTIFACT_FILES
+from bmat_workflow_policy import plan_workflow, declared_artifacts
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
@@ -305,6 +306,27 @@ def default_experiment_design(run_id: str, version: str, question: str) -> dict[
     }
 
 
+def default_hypothesis_tournament(run_id: str, version: str, question: str, domain_pack: str) -> dict[str, Any]:
+    """An honest empty draft, never invented candidates, scores or execution."""
+    return {
+        "schema_version": "2.0", "status": "draft",
+        "tournament_id": f"tournament-{run_id}", "workflow_run_id": run_id,
+        "plugin_version": version, "created_at": utc_now(),
+        "selected_domain_pack": domain_pack, "context_lock": question,
+        "candidate_order_randomization": {"method": "not-run", "seed": None, "randomized_order": []},
+        "judge_scores": [], "aggregate_scores": [], "judge_disagreement": [],
+        "order_sensitivity_check": {"performed": False, "alternate_seed": None,
+            "rank_stability": None, "limitations": "Not executed; complete before release."},
+        "ranking_uncertainty": {"method": "not-run", "summary": "No ranking has been performed.",
+            "limitations": "Draft contains no scientific results."},
+        "same_model_correlated_judgment_limitation": "Same-model judgment correlation limits independence.",
+        "winner_interpretation_boundary": "A ranking is not biological validation or proof.",
+        "iteration_budget": 1, "compute_budget_status": "not-tracked",
+        "candidates": [], "rounds": [], "ranking_model": "qualitative",
+        "qualitative_ranking": [], "model_based_ranking": [], "final_ranking": [],
+    }
+
+
 def default_review_artifact_manifest(run_id: str, version: str) -> dict[str, Any]:
     return {
         "schema_version": "2.0",
@@ -494,19 +516,8 @@ def select_workflow_dag(alias: str) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def workflow_dag_for_run(alias: str, mode: str) -> dict[str, Any]:
-    workflow_dag = copy.deepcopy(select_workflow_dag(alias))
-    workflow_dag["mode"] = mode
-    workflow_dag["workflow_id"] = f"{alias}.{mode}"
-    return workflow_dag
-
-
-def workflow_declared_outputs(workflow_dag: dict[str, Any]) -> set[str]:
-    outputs: set[str] = set()
-    for node in workflow_dag.get("nodes", []):
-        if isinstance(node, dict):
-            outputs.update(str(output) for output in node.get("outputs", []) if output)
-    return outputs
+def workflow_dag_for_run(alias: str, mode: str, tier: str = "compact") -> dict[str, Any]:
+    return plan_workflow(select_workflow_dag(alias), mode, tier)
 
 
 def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Namespace) -> None:
@@ -519,7 +530,7 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     assert isinstance(lead_decision, dict)
     run_id = str(run_state["run_id"])
     created_at = utc_now()
-    workflow_dag = workflow_dag_for_run(args.alias, args.mode)
+    workflow_dag = workflow_dag_for_run(args.alias, args.mode, args.tier)
     omics_track = selected_omics_track(args)
     omics_track_locked = omics_track not in AMBIGUOUS_OMICS_TRACKS
     if args.alias == "omics-analysis-team" and not omics_track_locked:
@@ -557,8 +568,9 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     preflight["domain_specific_assumptions"] = domain_assumptions
     preflight["workflow_tier"] = args.tier
     preflight["requested_omics_track"] = omics_track
-    preflight["domain_specific_failure_modes_loaded"] = (domain_pack_root / "failure-modes.md").exists()
-    preflight["domain_assumptions_skipped"] = []
+    preflight["domain_specific_failure_modes_available"] = (domain_pack_root / "failure-modes.md").is_file()
+    preflight["domain_specific_failure_modes_loaded"] = False
+    preflight["domain_assumptions_skipped"] = ["Failure-mode document has not been read during scaffolding."]
     preflight["workflow_dag_id"] = workflow_dag["workflow_id"]
     preflight["results_integration_required"] = True
 
@@ -634,7 +646,7 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
     payloads["workflow_dag.json"] = workflow_dag
     payloads["results_integration.json"] = default_results_integration(run_id, version)
     payloads["tool_call_ledger.json"] = default_tool_call_ledger(run_id, version)
-    declared_outputs = workflow_declared_outputs(workflow_dag)
+    declared_outputs = declared_artifacts(workflow_dag)
     if "source_verification" in declared_outputs:
         payloads["source_verification.json"] = default_source_verification(run_id, version)
     if "claim_support_matrix" in declared_outputs:
@@ -645,8 +657,17 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
         payloads["review_artifact_manifest.json"] = default_review_artifact_manifest(run_id, version)
     if "omics_metadata_check" in declared_outputs:
         payloads["omics_metadata_check.json"] = default_omics_metadata_check(run_id, version, omics_track)
+    if "hypothesis_tournament" in declared_outputs:
+        payloads[ARTIFACT_FILES["hypothesis_tournament"]] = default_hypothesis_tournament(run_id, version, args.question, args.domain_pack)
     if omics_track_locked:
         payloads["omics_run_manifest.json"] = default_omics_manifest(run_id, version, omics_track)
+    planned_reviews = sum(bool(node.get("independence_required")) for node in workflow_dag["nodes"])
+    lead_decision["selected_lanes"] = [node["agent"] for node in workflow_dag["nodes"]]
+    lead_decision["decision_rationale"] = (
+        f"{args.mode}/{args.tier}: {len(workflow_dag['nodes'])} planned stages, "
+        f"{planned_reviews} required review lanes. Runtime review capability and "
+        "execution remain unconfirmed; the scaffold does not authorize external work."
+    )
     final_text = str(payloads.get("final.md", "")).rstrip()
     final_text = "\n".join(
         line
@@ -718,6 +739,10 @@ def main() -> int:
     write_payloads(payloads, args.out, args.force)
 
     print(f"BMAT workflow bundle created: {args.out.resolve()}")
+    dag = payloads["workflow_dag.json"]
+    print(f"Plan: {args.mode}/{args.tier}; {len(dag['nodes'])} stages; "
+          f"{len(payloads) + 1} files including manifest; "
+          f"{sum(bool(n.get('independence_required')) for n in dag['nodes'])} required review lanes")
     if args.export == "markdown":
         reports = export_markdown_workbench(args.out, args.force)
         print(f"BMAT markdown workbench exported: {reports.resolve()}")

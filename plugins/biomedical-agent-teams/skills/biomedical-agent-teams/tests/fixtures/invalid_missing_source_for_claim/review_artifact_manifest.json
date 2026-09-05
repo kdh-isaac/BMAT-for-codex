@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "review_manifest_id": "review-manifest-release-fixture-001",
-  "plugin_version": "1.2.0",
+  "plugin_version": "1.2.1",
   "workflow_run_id": "release-fixture-run-001",
   "created_at": "2026-07-10T01:07:00Z",
   "review_instances": [
@@ -11,7 +11,7 @@
       "actor_type": "external-tool",
       "provider": "BMAT local validators",
       "model": "bmat-claim-support-check",
-      "model_version": "1.2.0",
+      "model_version": "1.2.1",
       "authoring_provider": "unavailable",
       "authoring_model": "unavailable",
       "authoring_model_version": "unavailable",
@@ -27,9 +27,9 @@
         "source_verification.json"
       ],
       "input_artifact_sha256": {
-        "claim_ledger.json": "2781f54c16b78e727d3d5ff937952165a19cce9d211e691eb5829ce274541df1",
-        "source_corpus.json": "14927a75c72000223b404a7342c72f3c7e2366545ba8d2c3b4672a733a087b2f",
-        "source_verification.json": "0ef1cb08cc36f488cab0832fd2cbbbbab408c9b39254ba1f9d70ca1ed7de290e"
+        "claim_ledger.json": "da07b797264703625418cca2cf3fdb1f961250d4a7065262c7c3f53c580e3f22",
+        "source_corpus.json": "1e1ff7dfe6841e4b4e61aedd47ed7807c814cad98388686e3df2b96577611fc3",
+        "source_verification.json": "30750a515cac2f864ca96fe9c9a6ff3b34e3059e0d408e183d1bc37dcfc8cfb4"
       },
       "prompt_template_ref": "review/external-tool-review-prompt.md",
       "prompt_template_sha256": "1e30fd4683476adbbdf00653167a232c162b52fd9f12e74cd5af4c0ec8f45f05",
@@ -56,7 +56,7 @@
       "started_at": "2026-07-10T01:06:00Z",
       "completed_at": "2026-07-10T01:06:02Z",
       "runtime_receipt_ref": "review/review-runtime-receipt.json",
-      "runtime_receipt_sha256": "2b4647f219282a87fcc7b3bbbeeaeab104b49a3ff8a75233f817514445f4e12c",
+      "runtime_receipt_sha256": "232041c92bcee6bcf64c4b9d60d04367a1cfe826b936b08148bd43e52ab52416",
       "limitations": "The deterministic review establishes contract consistency, not external scientific truth."
     }
   ]

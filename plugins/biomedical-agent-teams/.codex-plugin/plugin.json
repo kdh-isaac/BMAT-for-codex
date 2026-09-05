@@ -1,7 +1,7 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "1.2.0",
-  "description": "BMAT for Codex v1.2.0: a Codex-native biomedical workflow router with receipt-backed source verification, evidence-span claim gates, hash-bound bundles, independent-review provenance, domain packs, omics workflows, and experiment-design validation.",
+  "version": "1.2.1",
+  "description": "BMAT for Codex v1.2.1: a Codex-native biomedical workflow router with receipt-backed source verification, evidence-span claim gates, hash-bound bundles, independent-review provenance, domain packs, omics workflows, and experiment-design validation.",
   "author": {
     "name": "Donghyun Kim Local Research Workflow"
   },
@@ -23,8 +23,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Biomedical Agent Teams",
-    "shortDescription": "BMAT for Codex 1.2.0: receipt-backed biomedical evidence, review, omics, experiment, and release validation.",
-    "longDescription": "BMAT for Codex v1.2.0 is a Codex-native biomedical workflow suite for structured life-science research. Its lightweight SKILL.md router lazy-loads six command recipes and explicit domain packs. Release bundles bind workflow identity, source-verification receipts, tool-call provenance, local evidence spans, claim-support scope, independent-review runtime receipts, results integration, and critical artifact hashes. The suite also retains Compact and Full tiers, 10x and bulk RNA-seq provenance contracts, public-omics metadata smoke checks, experiment-design gates, hypothesis-tournament checks, loop-state validation, migration of legacy bundles without promoting unknown evidence, adversarial golden cases, and validator findings with actionable fix_hint guidance. BMAT validates process and provenance; it does not certify scientific truth or replace human scientific review.",
+    "shortDescription": "BMAT for Codex 1.2.1: receipt-backed biomedical evidence, review, omics, experiment, and release validation.",
+    "longDescription": "BMAT for Codex v1.2.1 is a Codex-native biomedical workflow suite for structured life-science research. Its lightweight SKILL.md router lazy-loads six command recipes and explicit domain packs. Release bundles bind workflow identity, source-verification receipts, tool-call provenance, local evidence spans, claim-support scope, independent-review runtime receipts, results integration, and critical artifact hashes. The suite also retains Compact and Full tiers, 10x and bulk RNA-seq provenance contracts, public-omics metadata smoke checks, experiment-design gates, hypothesis-tournament checks, loop-state validation, migration of legacy bundles without promoting unknown evidence, adversarial golden cases, and validator findings with actionable fix_hint guidance. BMAT validates process and provenance; it does not certify scientific truth or replace human scientific review.",
     "developerName": "Donghyun Kim Local Research Workflow",
     "category": "Research",
     "capabilities": [

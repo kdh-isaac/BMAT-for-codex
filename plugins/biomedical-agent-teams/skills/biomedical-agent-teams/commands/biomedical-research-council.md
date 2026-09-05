@@ -8,7 +8,7 @@ allowed-tools: Read, Glob, Grep, WebSearch, WebFetch, Bash
 
 User request: $ARGUMENTS
 
-Run a lead-controlled biomedical research council. Default to Korean. Treat the user as an expert in immunology, CAR cell therapy, and public-omics analysis.
+Run a lead-controlled biomedical research council. Match the user's language and expertise. Keep the default generic-biomedical route domain-neutral; load specialty assumptions only from the selected domain pack.
 
 ## Current Workflow Spine
 
@@ -59,8 +59,9 @@ Use the label ceiling below before final writing:
   ledger, and post-write validation exist inline or as local artifacts.
 - Use `Full protocol followed` only when a complete artifact bundle exists,
   mandatory gates pass or pass with caveats, `scripts/bmat_validate.py` passes,
-  and independent review is backed by a valid spawned, separate-model,
-  tool-backed, external, human, or tool-corroborated review surface.
+  and independent review satisfies `references/independent-review-policy.md`.
+  A spawned same-model reviewer is supplementary only; spawning is not proof
+  of an eligible independent review.
 - For one-off research questions, loop status is `not-applicable`; do not report
   a missing `loop_state.json` as a loop failure unless the user requested a
   watch, recurring monitor, inbox, or triage loop.
@@ -102,7 +103,7 @@ state.
 ## 1.2 Release-Gate Artifacts
 
 For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
-outputs, keep the 1.2.0 hard-gate artifacts aligned with the narrative:
+outputs, keep the 1.2.1 hard-gate artifacts aligned with the narrative:
 
 - Use `lead_decision.json` for source-backed `standard`, `deep`, `audit`,
   team-DAG, or full-protocol runs before release; it must match the selected
@@ -229,7 +230,7 @@ verdict. If either is skipped, downgrade the final workflow label.
 2. Record actual runtime capabilities before claiming tool-backed execution.
 3. Normalize entities before source expansion.
 4. Lock source corpus before source-backed final wording.
-5. Keep tumor-intrinsic, TME-intrinsic, product-intrinsic, and CAR-T-intrinsic evidence separate.
+5. Apply biological-context boundaries from the selected domain pack. Do not inject cell-therapy or immuno-oncology axes into generic-biomedical work.
 6. Distinguish association, mechanism, prognostic biomarker, predictive biomarker, and therapeutic actionability.
 7. Before a strong conclusion, update `central-claim-ledger-evidence-graph` and run `claim-level-evidence-verifier` plus `citation-verifier`.
 8. Before reporting omics/survival conclusions, run S1-S5 stage evaluation, `provenance-traceability-architect`, `biostats-repro-auditor`, and `risk-of-bias-study-quality-auditor`.
@@ -287,8 +288,9 @@ Final workflow label must be one of:
 
 Use `Full protocol followed` only when mandatory artifacts exist, required
 gates pass or pass with caveats, post-write validation is not blocked, and the
-workflow has a spawned, separate-model, tool-backed, external, human, or
-tool-corroborated review surface. When `scripts/bmat_validate.py` was not run
+workflow has an eligible receipt-backed review under
+`references/independent-review-policy.md`. Same-model review in any context
+does not satisfy this requirement. When `scripts/bmat_validate.py` was not run
 against a complete artifact bundle, downgrade to the strongest supported
 non-full workflow label.
 

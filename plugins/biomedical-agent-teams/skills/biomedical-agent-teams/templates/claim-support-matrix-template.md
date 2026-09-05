@@ -6,7 +6,7 @@ Use `claim_support_matrix.json` to separate source identity verification from cl
 {
   "schema_version": "1.0",
   "support_matrix_id": "csm-<workflow_run_id>",
-  "plugin_version": "1.2.0",
+  "plugin_version": "1.2.1",
   "workflow_run_id": "<workflow_run_id>",
   "rows": [
     {

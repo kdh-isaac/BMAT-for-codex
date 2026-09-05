@@ -46,9 +46,11 @@ run must record the concrete execution in `spawned_agent_instances`. A planned
 or completed `spawned_review_lanes` row without a matching instance is only a
 planning record and must not be used as proof of independent execution.
 
-Do not call same-model separate-pass review independent unless a spawned
-subagent, separate model, tool-backed validator, external verifier, or human
-reviewer actually performed the review.
+Apply `independent-review-policy.md` as the canonical eligibility policy.
+Spawning and context isolation describe execution, not independence.
+Same-model review, including a spawned separate context, is supplementary only.
+Eligible review requires a hash-bound receipt for the canonical policy's
+separate-model, external-tool, or human class; tool retrieval alone does not qualify.
 
 ## Team-Level Selective DAG
 

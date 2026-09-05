@@ -35,7 +35,7 @@ def valid_design() -> dict:
     return {
         "schema_version": "2.0",
         "design_id": "exp-test-v2",
-        "plugin_version": "1.2.0",
+        "plugin_version": "1.2.1",
         "workflow_run_id": "run-test-v2",
         "created_at": "2026-07-10T00:00:00Z",
         "design_stage": "exploratory",

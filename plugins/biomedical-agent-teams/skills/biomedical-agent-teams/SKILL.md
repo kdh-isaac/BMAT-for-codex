@@ -1,10 +1,10 @@
 ---
 name: biomedical-agent-teams
 description: >
-  BMAT for Codex v1.2.0 router for biomedical evidence audit, public omics,
+  BMAT for Codex v1.2.1 router for biomedical evidence audit, public omics,
   hypothesis tournaments, experiment design, translational scouting, and
   validator-backed v2 workflow bundles.
-version: "1.2.0"
+version: "1.2.1"
 ---
 
 # Biomedical Agent Teams Router
@@ -183,6 +183,11 @@ identity, or scientific support.
 - `evals/run_model_golden_eval.py`: explicit sample/live adapter boundary.
 
 ## Maintenance gate
+
+For an installed plugin, use the standalone commands in
+`../../docs/release-checklist.md`. `bmat_selftest.py --release` requires schema
+dependencies and reports `release_passed`; the default smoke reports only
+`smoke_passed`. Neither substitutes for validating the actual research bundle.
 
 Run maintenance commands from the repository or marketplace root. The core
 release sequence is:

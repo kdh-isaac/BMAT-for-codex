@@ -361,7 +361,8 @@ def test_bmat_run_accepts_cell_therapy_domain_pack(tmp_path: Path) -> None:
     preflight = json.loads((bundle / PREFLIGHT_FILE).read_text(encoding="utf-8"))
     assert run_state["domain_pack"] == "cell-therapy"
     assert preflight["domain_pack"] == "cell-therapy"
-    assert preflight["domain_specific_failure_modes_loaded"] is True
+    assert preflight["domain_specific_failure_modes_loaded"] is False
+    assert preflight["domain_specific_failure_modes_available"] is True
 
 
 def test_bmat_run_extended_tier_and_omics_fields_validate(tmp_path: Path) -> None:

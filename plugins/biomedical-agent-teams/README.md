@@ -1,6 +1,6 @@
 # Biomedical Agent Teams plugin
 
-Codex Desktop wrapper for BMAT v1.2.0. The plugin is a lightweight router plus
+Codex Desktop wrapper for BMAT v1.2.1. The plugin is a lightweight router plus
 auditable command recipes, contracts, specialist prompts, deterministic
 checkers, and offline regression cases.
 
@@ -20,7 +20,7 @@ recipe under `commands/` and loads only that recipe's required resources.
 
 ```mermaid
 flowchart LR
-    accTitle: BMAT v1.2.0 Workflow Structure
+    accTitle: BMAT v1.2.1 Workflow Structure
     request["User request"] --> lock["Runtime, scope, source, and strategy lock"]
     lock --> inline["inline_first_selective_review"]
     lock --> team["team_level_selective_dag"]
@@ -46,7 +46,7 @@ Important package surfaces:
 - `skills/biomedical-agent-teams/scripts/bmat_validate.py`: bundle policy and
   release gate.
 
-## v1.2.0 release contract
+## v1.2.1 release contract
 
 Release artifacts use v2 identity fields and bind to one `workflow_run_id` and
 plugin version. Source verification records how identity was checked and keeps
@@ -86,21 +86,24 @@ then run `bmat_validate.py --release`.
 
 ```bash
 python skills/biomedical-agent-teams/scripts/bmat_package_check.py --root .
-python skills/biomedical-agent-teams/scripts/bmat_selftest.py --root .
+python skills/biomedical-agent-teams/scripts/bmat_selftest.py --root . --release
 python skills/biomedical-agent-teams/evals/validate_golden_eval_schema.py --tasks skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs skills/biomedical-agent-teams/evals/sample_outputs.jsonl
 python skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
 python skills/biomedical-agent-teams/scripts/bmat_validate.py --bundle skills/biomedical-agent-teams/tests/fixtures/valid_full_protocol_bundle --release
-python -B -m pytest -p no:cacheprovider ../../tests skills/biomedical-agent-teams/tests -q
+python -B -m pytest -p no:cacheprovider skills/biomedical-agent-teams/tests -q
 ```
 
 The supported release matrix is Python 3.10-3.13. The public-omics smoke is
 metadata-only and downloads no raw data. CI uses deterministic `--sample-mode`;
 live model evaluation requires an explicit adapter command.
 
-See the repository-level
-[validation boundaries](../../docs/validation-boundaries.md),
-[migration guide](../../docs/migration-v1-to-v2.md), and
-[release checklist](../../docs/release-checklist.md).
+See the bundled [validation boundaries](docs/validation-boundaries.md),
+[migration guide](docs/migration-v1-to-v2.md),
+[release checklist](docs/release-checklist.md), and
+[workflow planning guide](docs/workflow-planning.md).
+Install `jsonschema>=4.18,<5` and `pytest>=8,<9` for these checks.
+The dependency-free self-test without `--release` reports `smoke_passed` only;
+it does not establish release readiness.
 
 ## Safety floor
 

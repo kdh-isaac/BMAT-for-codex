@@ -17,7 +17,7 @@ CONTRACTS = SKILL_ROOT / "contracts"
 SOURCE_CHECK = SKILL_ROOT / "scripts" / "bmat_source_check.py"
 CLAIM_CHECK = SKILL_ROOT / "scripts" / "bmat_claim_support_check.py"
 NOW = "2026-07-10T00:00:00Z"
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 RUN_ID = "run-v2-test"
 
 

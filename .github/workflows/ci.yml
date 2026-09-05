@@ -201,3 +201,37 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $status = git status --porcelain
           if ($status) { throw "CI commands modified the checkout" }
+
+  installed-package:
+    name: Installed package / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install validation dependencies
+        run: python -m pip install "jsonschema>=4.18,<5" "pytest>=8,<9" "tomli>=2,<3"
+      - name: Validate only the distributed plugin, outside its repository
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          import shutil
+          import subprocess
+          import sys
+          import tempfile
+
+          with tempfile.TemporaryDirectory(prefix="bmat-installed-", dir=os.environ["RUNNER_TEMP"]) as tmp:
+              plugin = Path(tmp) / "installed plugin"
+              shutil.copytree("plugins/biomedical-agent-teams", plugin)
+              skill = Path("skills/biomedical-agent-teams")
+              subprocess.run([sys.executable, "-B", str(skill / "scripts/bmat_selftest.py"),
+                              "--root", ".", "--release"], cwd=plugin, check=True)
+              subprocess.run([sys.executable, "-B", "-m", "pytest", "-p", "no:cacheprovider",
+                              str(skill / "tests"), "-q"], cwd=plugin, check=True)

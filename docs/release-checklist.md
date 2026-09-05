@@ -1,4 +1,4 @@
-# BMAT v1.2.0 clean-checkout release checklist
+# BMAT v1.2.1 clean-checkout release checklist
 
 The release gate is designed to run offline after Python test dependencies are
 installed. It does not call a live model, browse biomedical databases, or

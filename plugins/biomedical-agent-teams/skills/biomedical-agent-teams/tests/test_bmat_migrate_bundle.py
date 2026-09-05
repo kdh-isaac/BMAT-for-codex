@@ -355,7 +355,7 @@ def test_v2_artifact_round_trip_is_byte_stable(tmp_path: Path) -> None:
     payload = {
         "schema_version": "2.0",
         "verification_id": "sv-v2",
-        "plugin_version": "1.2.0",
+        "plugin_version": "1.2.1",
         "workflow_run_id": "run-v2",
         "checked_at": "2026-07-10T00:00:00Z",
         "rows": [
