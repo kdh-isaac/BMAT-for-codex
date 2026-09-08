@@ -1,0 +1,19 @@
+{
+  "text_ref": "evidence/source-S-001.txt",
+  "text_sha256": "dff21058422ace53b7d10ea0c9fac63e222cb671a965319ca065dd0d83c766eb",
+  "original_snapshot_sha256": "dff21058422ace53b7d10ea0c9fac63e222cb671a965319ca065dd0d83c766eb",
+  "normalization": "NFC-LF",
+  "offset_unit": "unicode-codepoint",
+  "extractor": "identity-text",
+  "extractor_version": "1",
+  "segments": [
+    {
+      "locator": "line 1",
+      "section": "bounded claim",
+      "paragraph_or_table": "paragraph 1",
+      "sentence_or_cell": "sentence 1",
+      "start": 0,
+      "end": 104
+    }
+  ]
+}

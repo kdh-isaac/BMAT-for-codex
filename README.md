@@ -1,7 +1,7 @@
 # BMAT for Codex
 
 BMAT for Codex is a Codex-native biomedical workflow router with auditable,
-validator-backed artifact bundles. Current release: `1.2.1`.
+validator-backed artifact bundles. Current release: `1.2.2`.
 
 BMAT selects one command recipe, records runtime and evidence boundaries, and
 coordinates only the specialist lanes needed for the request. It supports
@@ -57,7 +57,7 @@ decision axes with explicit dependencies and a single merge owner.
 
 ```mermaid
 flowchart TD
-    accTitle: BMAT v1.2.1 Workflow Structure
+    accTitle: BMAT v1.2.2 Workflow Structure
     accDescr: End-to-end BMAT routing from runtime preflight and lead-controlled lane selection through claim-ledger synthesis, independent review, integrity binding, release validation, and honest final labeling.
     request["Research question or project goal"] --> router["BMAT router<br/>select command alias"]
     router --> preflight["Runtime, scope, source, and strategy lock<br/>S0 preflight, risk, budget, and label ceiling"]
@@ -208,3 +208,11 @@ The canonical package inventory is machine-readable in
 `plugins/biomedical-agent-teams/skills/biomedical-agent-teams/source-manifest.json`.
 Do not use README counts as release truth; `bmat_package_check.py` compares the
 manifest with the actual tree.
+
+## 1.2.2 supervised integrity patch
+
+[Current release contract](docs/release-integrity-1.2.2.md): required review coverage, final snapshot and
+content mapping, source excerpt/locator checks, replayable tournament arithmetic,
+and explicit writer/pre-execution stages. Compact defaults and the 38-role,
+six-alias structure are unchanged. Validators check process consistency; the
+researcher retains scientific judgment.

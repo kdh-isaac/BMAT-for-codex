@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "validation_id": "post-write-release-fixture-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "workflow_run_id": "release-fixture-run-001",
   "checked_at": "2026-07-10T01:08:01Z",
   "final_validator_verdict": "pass",
@@ -19,5 +19,34 @@
   "excluded_claim_handling": "No excluded claims are rendered.",
   "independent_review_status": "Hash-bound external-tool review REVIEW-EXT-001 completed successfully.",
   "minimal_required_corrections": [],
-  "release_ready_claim_strength": "high-confidence within the bounded synthetic validator scenario"
+  "release_ready_claim_strength": "high-confidence within the bounded synthetic validator scenario",
+  "reviewed_final_ref": "final.md",
+  "reviewed_final_sha256": "ca3937dbf3b22c3d5c957045852222ff77e41934caf97f5339d9db21ddb4f418",
+  "reviewed_ledger_ref": "claim_ledger.json",
+  "reviewed_ledger_sha256": "0ab4a0c1e355d981eda25af4abcd326234ac32503c61aa8e02ca8c6fede51742",
+  "coverage_review_instance_id": "REVIEW-EXT-001",
+  "wording_policy": "literal",
+  "content_coverage": [
+    {
+      "block_id": "B0001",
+      "block_sha256": "cf35b2612dd4752a645f234407ff7ec9ace5259b3639ed9e6574782696884143",
+      "classification": "non-claim",
+      "claim_ids": [],
+      "reason": "Synthetic fixture: report framing and process label"
+    },
+    {
+      "block_id": "B0002",
+      "block_sha256": "4099a2e72f1d1248c9415c17c55da0081709f53b382a796d943f495c0524ecc7",
+      "classification": "non-claim",
+      "claim_ids": [],
+      "reason": "Synthetic fixture: report framing and process label"
+    },
+    {
+      "block_id": "B0003",
+      "block_sha256": "81ef315fbe4bf8a3966d589d580a32f6ac8e4d36427a8830b6d980a805f7e935",
+      "classification": "non-claim",
+      "claim_ids": [],
+      "reason": "Synthetic fixture: report framing and process label"
+    }
+  ]
 }

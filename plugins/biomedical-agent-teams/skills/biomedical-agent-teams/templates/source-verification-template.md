@@ -6,7 +6,7 @@ Use this artifact as `source_verification.json` after running `bmat_source_check
 {
   "schema_version": "1.0",
   "verification_id": "sv-<workflow_run_id>",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "workflow_run_id": "<workflow_run_id>",
   "checked_at": "YYYY-MM-DDTHH:MM:SSZ",
   "rows": [

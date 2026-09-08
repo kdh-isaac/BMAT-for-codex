@@ -23,3 +23,11 @@ Return a structured spawned-review report with:
 Do not treat cell-level tests as donor-level evidence. For cross-sample
 differential expression, require a donor/sample-aware pseudobulk or an explicit
 downgrade that labels the result descriptive.
+
+
+When assigned the explicit omics `S2_execute` lane in run mode, the lead may
+use this existing role inline to perform the bounded track analysis after setup
+and smoke gates pass. Record executed commands, versions, inputs, derived
+artifacts, and failures. Keep raw data read-only. A spawned review template
+retains its review-only scope; do not infer execution permission from assignment
+to that template. Plan/audit assignments do not perform new full analysis.

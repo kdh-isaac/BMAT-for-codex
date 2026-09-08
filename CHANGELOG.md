@@ -2,6 +2,19 @@
 
 All notable BMAT-for-Codex changes are recorded here.
 
+## 1.2.2 - 2026-09-08
+
+- Bind required review checks to actual review scope and current input hashes;
+  permit one review to cover multiple requirements without extra model calls.
+- Bind post-write review to final/ledger snapshots and complete content-block maps.
+- Verify exact quotation offsets and extraction locator maps; preserve distinct
+  summary, human-verification, and unverified routes.
+- Share order-independent DAG validation; add writer and omics pre-execution gates.
+- Recompute tournament means, dispersion, alternate-order stability, and Elo;
+  retain a qualitative route and explicit researcher ranking overrides.
+- Keep schema 2.0 parsing compatibility while enforcing current release policy.
+- Preserve compact defaults, 38 roles, six aliases, and researcher supervision.
+
 ## 1.2.1 - 2026-09-05
 
 - Reject missing declared release artifacts and missing/draft hypothesis tournaments.

@@ -339,6 +339,8 @@ def default_review_artifact_manifest(run_id: str, version: str) -> dict[str, Any
 
 
 def selected_omics_track(args: argparse.Namespace) -> str:
+    if args.track and args.alias != 'omics-analysis-team':
+        raise SystemExit('--track is only valid for omics-analysis-team; no mixed-alias artifacts were written.')
     if args.track:
         return args.track
     if args.alias == "omics-analysis-team":
@@ -550,6 +552,17 @@ def enrich_payloads(payloads: dict[str, dict[str, Any] | str], args: argparse.Na
             run_state_note["execution_strategy"] = "blocked"
     if omics_track_locked:
         workflow_dag["track"] = omics_track
+    if args.alias == 'omics-analysis-team':
+        for node in workflow_dag['nodes']:
+            if node.get('phase') == 'execute':
+                node['agent'] = ('tenx-singlecell-specialist' if omics_track.startswith('tenx-') else
+                                 'scrna-qc-specialist' if omics_track == 'single-cell-other' else
+                                 'bulk-rnaseq-pipeline-specialist' if omics_track == 'bulk-rnaseq' else
+                                 'life-science-lead-scientist')
+                if args.mode in {'plan', 'audit'}:
+                    node['phase'] = 'analysis-plan' if args.mode == 'plan' else 'result-audit'
+                    node['agent'] = 'public-omics-analyst' if args.mode == 'plan' else 'omics-provenance-validator'
+                    node['outputs'] = [o for o in node['outputs'] if o != 'analysis_artifacts']
 
     domain_pack_root = DOMAIN_PACKS_ROOT / args.domain_pack
     domain_profile = json.loads((domain_pack_root / "domain-pack.json").read_text(encoding="utf-8"))

@@ -55,6 +55,8 @@
     "limitations"
   ],
   "properties": {
+    "covered_node_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "covered_check_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
     "schema_version": { "const": "2.0" },
     "workflow_run_id": { "$ref": "#/$defs/nonEmptyString" },
     "plugin_version": { "$ref": "#/$defs/semanticVersion" },

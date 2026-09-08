@@ -1,6 +1,6 @@
 name = "bmat-causal-inference-confounder-analyst"
 agent_id = "causal-inference-confounder-analyst"
-version = "1.2.1"
+version = "1.2.2"
 description = "Template for a Codex reviewer that checks causal language, confounding, endpoint definition, and observational-data limits."
 role_prompt = "../agents/causal-inference-confounder-analyst.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"
@@ -54,6 +54,8 @@ required_output_fields = [
   "output_artifact",
   "output_sha256",
   "checks_run",
+  "covered_node_ids",
+  "covered_check_ids",
   "changed_claim_ids",
   "independence_class",
   "independent_review_eligible",

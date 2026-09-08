@@ -74,7 +74,7 @@ def test_idea_quick_is_ideation_but_standard_scaffolds_empty_draft(tmp_path):
 @pytest.mark.parametrize("kind", ["array", "scalar", "null"])
 def test_manifest_accepts_general_json_data(kind, tmp_path):
     data = {"array": [{"gene": "EXAMPLE", "score": 0.5}], "scalar": 42, "null": None}[kind]
-    (tmp_path / "run_state.json").write_text(json.dumps({"run_id": "test", "plugin_version": "1.2.1"}))
+    (tmp_path / "run_state.json").write_text(json.dumps({"run_id": "test", "plugin_version": "1.2.2"}))
     (tmp_path / "analysis.json").write_text(json.dumps(data))
     result = run_script("bmat_bundle_manifest.py", "--bundle", tmp_path)
     assert result.returncode == 0, result.stderr
@@ -85,7 +85,7 @@ def test_manifest_accepts_general_json_data(kind, tmp_path):
 
 
 def test_manifest_still_rejects_array_in_contract_file(tmp_path):
-    (tmp_path / "run_state.json").write_text(json.dumps({"run_id": "test", "plugin_version": "1.2.1"}))
+    (tmp_path / "run_state.json").write_text(json.dumps({"run_id": "test", "plugin_version": "1.2.2"}))
     (tmp_path / "claim_ledger.json").write_text("[]")
     result = run_script("bmat_bundle_manifest.py", "--bundle", tmp_path)
     assert result.returncode != 0
@@ -109,9 +109,11 @@ def test_release_rejects_missing_or_draft_tournament_in_complete_fixture(tmp_pat
                plugin_version=state["plugin_version"], created_at=state["created_at"])
     state["workflow_dag_id"] = dag["workflow_id"]
     state["stages"] = [{"id": n["id"], "required": True, "status": "pass",
-                        "evidence": "Synthetic regression mutation only"} for n in dag["nodes"]]
+                        "depends_on": n.get("requires", []), "evidence": "Synthetic regression mutation only"} for n in dag["nodes"]]
     (bundle / "run_state.json").write_text(json.dumps(state), encoding="utf-8")
     (bundle / "workflow_dag.json").write_text(json.dumps(dag), encoding="utf-8")
+    from fixture_integrity import cover_workflow
+    cover_workflow(bundle, dag)
     if draft:
         tournament = bmat_run.default_hypothesis_tournament(state["run_id"], state["plugin_version"], "test", "generic-biomedical")
         (bundle / "hypothesis_tournament.json").write_text(json.dumps(tournament), encoding="utf-8")

@@ -106,3 +106,6 @@ priority separate. Do not collapse judge disagreement into the aggregate score.
 - State same-model correlation and incomplete independence explicitly.
 - A prioritized candidate still requires source support, experiment design,
   human scientific review, and biological validation.
+
+Current release/Full fields and worked fixture references: [1.2.2 integrity contract](../../../docs/release-integrity-1.2.2.md).
+Preserve actual observations; template placeholders and scaffold defaults are not completed checks.

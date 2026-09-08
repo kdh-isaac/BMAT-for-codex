@@ -1,10 +1,10 @@
 ---
 name: biomedical-agent-teams
 description: >
-  BMAT for Codex v1.2.1 router for biomedical evidence audit, public omics,
+  BMAT for Codex v1.2.2 router for biomedical evidence audit, public omics,
   hypothesis tournaments, experiment design, translational scouting, and
   validator-backed v2 workflow bundles.
-version: "1.2.1"
+version: "1.2.2"
 ---
 
 # Biomedical Agent Teams Router
@@ -204,3 +204,8 @@ Also run the deterministic sample-model gate, metadata-only public-omics smoke,
 release fixture validation, and migration regression tests on a clean tree.
 Supported release Python versions are 3.10-3.13. Do not run live network
 resolution, live models, or raw-data downloads in CI.
+
+For release/Full output, lazy-load `../../docs/release-integrity-1.2.2.md`.
+It defines required review coverage, final/ledger binding, extraction locators,
+and arithmetic replay. Do not load this detailed contract for ordinary compact
+work. Logical writer/reviewer stages do not require additional model calls.

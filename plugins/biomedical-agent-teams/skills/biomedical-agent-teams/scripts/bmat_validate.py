@@ -26,6 +26,7 @@ from bmat_artifacts import (
 )
 import bmat_workflow_policy as workflow_policy
 import bmat_tournament_check as tournament_policy
+import bmat_release_integrity as integrity_policy
 
 try:
     import bmat_experiment_design_check as experiment_design_v2
@@ -901,7 +902,7 @@ def validate_hypothesis_tournament_policy(
                 "Draft tournament contains no executed judgments or ranking",
                 OPTIONAL_BUNDLE_FILES["hypothesis_tournament"]))
         return
-    for item in tournament_policy.check(tournament, artifacts.get("run_state")):
+    for item in tournament_policy.check(tournament, artifacts.get("run_state"), artifact_base_dir(artifacts)):
         findings.append(Finding(item.level, item.code, item.message, item.path))
 
 
@@ -2526,7 +2527,7 @@ def validate_release_claim_profile_policy(artifacts: dict[str, Any], findings: l
                     Finding("ERROR", "HIGH_CONFIDENCE_REQUIRES_SUPPORT_AND_SCOPE", f"{cid} requires all seven scope dimensions to be match or not-applicable", "claim_ledger.json")
                 )
             allowed = normalized_text(claim.get("allowed_final_wording"))
-            if allowed and allowed not in final_norm:
+            if allowed and allowed not in final_norm and not reviewed_paraphrase(artifacts, cid):
                 findings.append(
                     Finding("ERROR", "HIGH_CONFIDENCE_WORDING_NOT_IN_FINAL", f"{cid} allowed_final_wording is absent from final.md", "claim_ledger.json")
                 )
@@ -3252,6 +3253,9 @@ def validate_workflow_dag_policy(artifacts: dict[str, Any], findings: list[Findi
         return
     if not isinstance(workflow_dag, dict):
         return
+    registry = json.loads((Path(__file__).resolve().parents[1] / 'agent-registry.json').read_text(encoding='utf-8'))
+    for code, message in workflow_policy.graph_errors(workflow_dag, {row['agent_id'] for row in registry['agents']}):
+        findings.append(Finding('ERROR', code, message, 'workflow_dag.json'))
     alias = str(workflow_dag.get("alias", "")).strip()
     if alias and alias != str(run_state.get("alias", "")).strip():
         findings.append(
@@ -3338,6 +3342,19 @@ def validate_workflow_dag_policy(artifacts: dict[str, Any], findings: list[Findi
         if not isinstance(node, dict):
             continue
         node_id = str(node.get("id", "")).strip()
+        stage = next((s for s in run_state.get('stages', []) if isinstance(s, dict) and s.get('id') == node_id), None)
+        if stage is not None and set(stage.get('depends_on', [])) != set(node.get('requires', [])):
+            findings.append(Finding('ERROR', 'WORKFLOW_DAG_STAGE_DEPENDENCY_MISMATCH',
+                                    f'{node_id}: run-state dependencies must match the DAG.', 'run_state.json'))
+        if stage is not None and stage.get('status') in {'pass', 'pass-with-caveats'}:
+            states = {s.get('id'): s.get('status') for s in run_state.get('stages', []) if isinstance(s, dict)}
+            if any(states.get(dep) not in PASSING_STAGE_STATUS for dep in node.get('requires', [])):
+                findings.append(Finding('ERROR', 'WORKFLOW_DAG_DEPENDENCY_NOT_PASSED',
+                                        f'{node_id}: a completed stage depends on unfinished work.', 'run_state.json'))
+        if alias == 'omics-analysis-team' and run_state_mode in {'plan', 'audit'} and (
+                node.get('phase') == 'execute' or 'analysis_artifacts' in node.get('outputs', [])):
+            findings.append(Finding('ERROR', 'OMICS_MODE_EXECUTION_FORBIDDEN',
+                                    'Plan/audit workflows must not claim new analysis execution.', 'workflow_dag.json'))
         if node.get("blocking") is True and node_id and node_id not in stage_ids:
             findings.append(
                 Finding(
@@ -3347,6 +3364,20 @@ def validate_workflow_dag_policy(artifacts: dict[str, Any], findings: list[Findi
                     OPTIONAL_BUNDLE_FILES["workflow_dag"],
                 )
             )
+
+    if alias == 'omics-analysis-team' and run_state_mode == 'run':
+        states = {s.get('id'): s.get('status') for s in run_state.get('stages', []) if isinstance(s, dict)}
+        if states.get('S2_execute') in {'pass', 'pass-with-caveats'}:
+            nodes = {n.get('id'): n for n in workflow_dag.get('nodes', []) if isinstance(n, dict)}
+            seen, pending = set(), list(nodes.get('S2_execute', {}).get('requires', []))
+            while pending:
+                key = pending.pop()
+                if key not in seen:
+                    seen.add(key)
+                    pending.extend(nodes.get(key, {}).get('requires', []))
+            if any(key not in seen or states.get(key) not in {'pass', 'pass-with-caveats'} for key in ('S1_setup', 'S1_smoke')):
+                findings.append(Finding('ERROR', 'OMICS_PREEXECUTION_GATE_REQUIRED',
+                                        'Completed inference requires upstream setup and smoke checks that passed.', 'run_state.json'))
 
 
 def validate_full_protocol(
@@ -3802,7 +3833,7 @@ def validate_final_wording(artifacts: dict[str, Any], findings: list[Finding]) -
         if not allowed:
             continue
         if audit_status in {"pass", "pass-with-caveats"} and is_high_confidence_claim(claim):
-            if normalized_text(allowed) not in final_norm:
+            if normalized_text(allowed) not in final_norm and not reviewed_paraphrase(artifacts, claim_id):
                 findings.append(
                     Finding(
                         "ERROR",
@@ -3810,6 +3841,27 @@ def validate_final_wording(artifacts: dict[str, Any], findings: list[Finding]) -
                         f"{claim_id} is high-confidence but final text does not use allowed_final_wording",
                     )
                 )
+
+
+def reviewed_paraphrase(artifacts: dict[str, Any], cid: str) -> bool:
+    post = artifacts.get('post_write_validation') or {}
+    root = artifact_base_dir(artifacts)
+    if not isinstance(post, dict) or post.get('wording_policy') != 'reviewed-paraphrase' or root is None:
+        return False
+    return (not integrity_policy.final_coverage(artifacts, root)
+            and any(cid in r.get('claim_ids', []) for r in integrity_policy.rows(post, 'content_coverage')))
+
+
+def validate_current_release_integrity(artifacts: dict[str, Any], findings: list[Finding]) -> None:
+    root = artifact_base_dir(artifacts)
+    if root is None:
+        findings.append(Finding('ERROR', 'RELEASE_INTEGRITY_BASE_REQUIRED', 'Current release checks require local artifact paths.'))
+        return
+    checks = integrity_policy.review_coverage(artifacts, root, Path(__file__).resolve().parents[1])
+    checks += integrity_policy.final_coverage(artifacts, root)
+    checks += integrity_policy.source_spans(artifacts.get('source_corpus'), root, artifacts.get('review_artifact_manifest'))
+    for code, message in checks:
+        findings.append(Finding('ERROR', code, message, fix_hint='Complete the current-policy check on preserved inputs; do not invent missing legacy evidence.'))
 
 
 def validate_post_write_release(artifacts: dict[str, Any], findings: list[Finding]) -> None:
@@ -3865,6 +3917,8 @@ def validate_policies(
     validate_semantic_scope_policy(artifacts, findings)
     validate_final_wording(artifacts, findings)
     validate_post_write_release(artifacts, findings)
+    if release or FULL_LABEL in declared_workflow_labels(artifacts, required_label):
+        validate_current_release_integrity(artifacts, findings)
     if release:
         validate_release_mode_policy(artifacts, findings, required_label=required_label)
 

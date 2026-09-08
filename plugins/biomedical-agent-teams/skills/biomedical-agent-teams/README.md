@@ -1,6 +1,6 @@
 # Biomedical Agent Teams skill
 
-BMAT v1.2.1 is a Codex-native biomedical workflow router. `SKILL.md` selects
+BMAT v1.2.2 is a Codex-native biomedical workflow router. `SKILL.md` selects
 one command recipe; the recipe loads only its required agents, references,
 contracts, templates, scripts, domain pack, and workflow DAG.
 
@@ -146,3 +146,11 @@ clean-checkout release checklist under `docs/`.
   hashes, or validation results.
 - Preserve contradictions, negative findings, exclusions, and limitations.
 - Treat clinical outputs as research support requiring clinician review.
+
+## 1.2.2 supervised integrity patch
+
+[Current release contract](../../docs/release-integrity-1.2.2.md): required review coverage, final snapshot and
+content mapping, source excerpt/locator checks, replayable tournament arithmetic,
+and explicit writer/pre-execution stages. Compact defaults and the 38-role,
+six-alias structure are unchanged. Validators check process consistency; the
+researcher retains scientific judgment.

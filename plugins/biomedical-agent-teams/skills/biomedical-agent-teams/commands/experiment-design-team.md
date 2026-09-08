@@ -185,3 +185,12 @@ claims; unknown claims must remain explicitly limited.
 10. expected outcomes, alternatives, feasibility, and go/no-go gates
 11. claim/provenance, independent-review, and validator status
 12. final workflow label and structured skipped gates
+
+## Current release coverage
+
+For release/Full bundles, follow [the 1.2.2 integrity contract](../../../docs/release-integrity-1.2.2.md).
+Use the selected workflow's required check IDs and exact input hashes; one real
+review may cover multiple nodes. Freeze the ledger and final candidate before
+post-write review, map every content block, and validate after generating the
+manifest. Writer and reviewer are distinct logical stages; compact work does
+not require separate model calls. Skipped required work retains a lower label.

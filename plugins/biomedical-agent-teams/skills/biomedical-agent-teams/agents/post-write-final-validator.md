@@ -43,3 +43,12 @@ Return contract:
 7. `excluded_claim_handling`
 8. `minimal_required_corrections`
 9. `release_ready_claim_strength`
+
+
+Release/Full return fields also include the reviewed final and ledger refs/hashes,
+`coverage_review_instance_id`, `wording_policy`, and ordered `content_coverage`.
+Actually inspect every block for misclassified non-claims and missing claim IDs;
+a table or paragraph can contain multiple claims. Report `final.coverage` and
+`final.scope` in both `checks_run` and `covered_check_ids`, with the covered DAG
+node ID. The lead serializes the returned read-only review. Do not certify a
+candidate that changed after inspection. Hash agreement is not semantic truth.

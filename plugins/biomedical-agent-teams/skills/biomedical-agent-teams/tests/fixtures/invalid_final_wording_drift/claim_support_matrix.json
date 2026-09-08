@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "support_matrix_id": "claim-support-release-fixture-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "workflow_run_id": "release-fixture-run-001",
   "created_at": "2026-07-10T01:07:00Z",
   "rows": [
@@ -26,7 +26,7 @@
       "review_actor_id": "citation-verifier",
       "review_instance_id": "REVIEW-EXT-001",
       "review_artifact_ref": "review/external-tool-review.md",
-      "review_artifact_sha256": "427719a6f972d3fb998d5bd86fb2d2b07acff357dcc726565e2a878a6ce6e897",
+      "review_artifact_sha256": "9cfba30e2c0a45bff7b3b7050d52f8349661aaf83225219bc99824c5f35a5b4e",
       "independent_review_required": true,
       "release_eligible": true,
       "limitations": "Release eligibility applies only to the bounded provenance-regression claim."

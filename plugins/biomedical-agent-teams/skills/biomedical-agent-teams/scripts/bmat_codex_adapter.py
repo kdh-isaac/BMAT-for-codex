@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--command-timeout-seconds", type=int, default=120, help="Timeout for the optional Codex command.")
     parser.add_argument("--validator-timeout-seconds", type=int, default=60, help="Timeout for the validator command.")
     parser.add_argument("--dry-run", action="store_true", help="Create and validate scaffold artifacts only.")
+    parser.add_argument("--release", action="store_true", help="Run the final release gate after manifest generation; a scaffold cannot qualify.")
     parser.add_argument("--force", action="store_true")
     return parser.parse_args()
 
@@ -212,6 +213,16 @@ def main() -> int:
 
     if command_exit:
         return command_exit
+    if args.release:
+        # No bundle writes follow this final check. Its output goes to the caller,
+        # avoiding a validator-log/manifest hash cycle.
+        result = run_capture(
+            [sys.executable, "-B", str(VALIDATOR), "--bundle", str(args.out), "--release", "--check-tool-ledger"],
+            timeout_seconds=args.validator_timeout_seconds,
+        )
+        print(result['stdout'], end='')
+        print(result['stderr'], end='', file=sys.stderr)
+        return result['returncode']
     return validator_result["returncode"]
 
 

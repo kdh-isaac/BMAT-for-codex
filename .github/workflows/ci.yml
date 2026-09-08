@@ -73,7 +73,7 @@ jobs:
       - name: Package, manifest-count, and self-test gates
         run: |
           python -B plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
-          python -B plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams
+          python -B plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams --release
 
       - name: Golden schema and strict offline gate
         run: |
@@ -152,7 +152,7 @@ jobs:
         run: |
           python -B plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_package_check.py --root plugins/biomedical-agent-teams
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -B plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams
+          python -B plugins/biomedical-agent-teams/skills/biomedical-agent-teams/scripts/bmat_selftest.py --root plugins/biomedical-agent-teams --release
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Windows CLI help surfaces
@@ -191,7 +191,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -B plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/run_golden_eval.py --tasks plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/golden_tasks.jsonl --outputs plugins/biomedical-agent-teams/skills/biomedical-agent-teams/evals/sample_outputs.jsonl --strict --gate
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -B -m pytest -p no:cacheprovider plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests/test_bmat_init_bundle.py plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests/test_bmat_package_check.py -q
+          python -B -m pytest -p no:cacheprovider plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests/test_bmat_init_bundle.py plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests/test_bmat_package_check.py plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests/test_bmat_122_regressions.py plugins/biomedical-agent-teams/skills/biomedical-agent-teams/tests/test_bmat_tournament_v2.py -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Confirm tests did not dirty the checkout

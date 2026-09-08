@@ -100,7 +100,7 @@ def test_release_surface_text_files_are_bom_free() -> None:
 def test_version_aligned_in_primary_metadata() -> None:
     version = (SKILL_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
-    assert version == "1.2.1"
+    assert version == "1.2.2"
     assert read_json(SKILL_ROOT / "manifest.json")["version"] == version
     assert read_json(SKILL_ROOT / "manifest.json")["adapter_version"] == version
     assert read_json(SKILL_ROOT / "source-manifest.json")["version"] == version
@@ -165,6 +165,7 @@ def test_manifest_lists_release_resources() -> None:
         "new_in_v1_1_1",
         "new_in_v1_2_0",
         "new_in_v1_2_1",
+        "new_in_v1_2_2",
     ]
     assert (
         "runtime-capability-preflight-canonical-artifact-name"
@@ -319,7 +320,7 @@ def valid_results_integration_payload() -> dict:
     return {
         "schema_version": "2.0",
         "integration_id": "RI-TEST-001",
-        "plugin_version": "1.2.1",
+        "plugin_version": "1.2.2",
         "workflow_run_id": "run-test-v2",
         "created_at": "2026-07-10T00:00:00Z",
         "source_corpus_lock": "locked",
@@ -384,7 +385,7 @@ def test_source_corpus_requires_evidence_spans_for_included_sources() -> None:
     payload = {
         "schema_version": "2.0",
         "corpus_id": "corpus-test",
-        "plugin_version": "1.2.1",
+        "plugin_version": "1.2.2",
         "workflow_run_id": "run-test-v2",
         "created_at": "2026-07-10T00:00:00Z",
         "query_or_origin": "synthetic schema regression fixture",

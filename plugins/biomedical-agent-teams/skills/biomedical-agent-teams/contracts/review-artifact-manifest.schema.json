@@ -97,6 +97,8 @@
         "limitations"
       ],
       "properties": {
+    "covered_node_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "covered_check_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
         "instance_id": { "$ref": "#/$defs/nonEmptyString" },
         "agent_id": { "$ref": "#/$defs/nonEmptyString" },
         "actor_type": {

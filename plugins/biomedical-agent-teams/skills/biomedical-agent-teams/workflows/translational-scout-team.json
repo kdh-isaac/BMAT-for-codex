@@ -8,43 +8,102 @@
     {
       "id": "S0_context_lock",
       "agent": "protocol-context-locker",
-      "outputs": ["runtime_capability_preflight", "workflow_run"],
-      "blocking": true
+      "outputs": [
+        "runtime_capability_preflight",
+        "workflow_run"
+      ],
+      "blocking": true,
+      "phase": "context"
     },
     {
       "id": "S1_sources",
       "agent": "clinical-trial-operations-scout",
-      "requires": ["S0_context_lock"],
-      "outputs": ["source_corpus", "source_verification", "results_integration"],
-      "blocking": true
+      "requires": [
+        "S0_context_lock"
+      ],
+      "outputs": [
+        "source_corpus",
+        "source_verification",
+        "results_integration"
+      ],
+      "blocking": true,
+      "phase": "specialist"
     },
     {
       "id": "S2_ip_regulatory",
       "agent": "grant-ip-landscape-scout",
-      "requires": ["S1_sources"],
-      "outputs": ["stage_evaluation", "claim_ledger", "claim_support_matrix"],
-      "blocking": true
+      "requires": [
+        "S1_sources"
+      ],
+      "outputs": [
+        "stage_evaluation",
+        "claim_ledger",
+        "claim_support_matrix"
+      ],
+      "blocking": true,
+      "phase": "specialist"
     },
     {
       "id": "S3_safety",
       "agent": "safety-ethics-privacy-dual-use-auditor",
-      "requires": ["S2_ip_regulatory"],
-      "outputs": ["stage_evaluation"],
+      "requires": [
+        "S2_ip_regulatory"
+      ],
+      "outputs": [
+        "stage_evaluation"
+      ],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/safety-ethics-privacy-dual-use-auditor.toml",
-      "independence_required": true
+      "independence_required": true,
+      "phase": "review",
+      "required_checks": [
+        "safety.scope"
+      ],
+      "required_input_refs": [
+        "claim_ledger.json",
+        "source_corpus.json"
+      ]
+    },
+    {
+      "id": "W_write",
+      "agent": "scientific-writer-citation-agent",
+      "phase": "write",
+      "requires": [
+        "S3_safety"
+      ],
+      "outputs": [
+        "final_text"
+      ],
+      "blocking": true
     },
     {
       "id": "S4_post_write",
       "agent": "post-write-final-validator",
-      "requires": ["S3_safety"],
-      "outputs": ["post_write_validation", "review_artifact_manifest", "final_text"],
+      "requires": [
+        "W_write"
+      ],
+      "outputs": [
+        "post_write_validation",
+        "review_artifact_manifest"
+      ],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/post-write-final-validator.toml",
-      "independence_required": true
+      "independence_required": true,
+      "phase": "post-write",
+      "required_checks": [
+        "final.coverage",
+        "final.scope"
+      ],
+      "required_input_refs": [
+        "claim_ledger.json",
+        "final.md"
+      ]
     }
   ],
-  "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
+  "release_gates": [
+    "bmat_validate",
+    "bmat_tool_ledger_check"
+  ]
 }

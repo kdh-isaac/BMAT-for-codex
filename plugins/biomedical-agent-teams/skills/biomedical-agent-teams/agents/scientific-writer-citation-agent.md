@@ -45,3 +45,12 @@ Return contract:
 7. `workflow_label`
 
 Do not edit files unless the lead explicitly asks and the active permission context allows it.
+
+
+Release/Full handoff: create the frozen `final.md` candidate from the completed
+ledger at `W_write`, before post-write review. Provide the exact final and ledger
+hashes and a proposed ordered content-block map for the reviewer. Map hypotheses
+and interpretations to ledger claims too. Natural paraphrases require explicit
+`reviewed-paraphrase` scope review; do not silently strengthen allowed wording.
+After review corrections, freeze and re-review changed inputs before release.
+See `../../../docs/release-integrity-1.2.2.md` for the binding contract.

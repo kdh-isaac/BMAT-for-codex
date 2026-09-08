@@ -14,6 +14,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
+import bmat_release_integrity
+
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = SKILL_ROOT / "contracts"
@@ -371,6 +373,9 @@ def main() -> int:
     sources_by_id = {str(row.get("source_id", "")).strip(): row for row in sources}
     verification_by_source = {str(row.get("source_id", "")).strip(): row for row in verification_rows}
     reviews_by_id = {str(row.get("instance_id", "")).strip(): row for row in review_instances}
+    if args.release:
+        for code, message in bmat_release_integrity.source_spans(artifacts['source_corpus'], bundle, artifacts['review_artifact_manifest']):
+            findings.append(Finding('ERROR', code, message, str(paths['source_corpus'])))
 
     for label, rows, key, code in (
         ("claim", claims, "claim_id", "DUPLICATE_CLAIM_ID"),

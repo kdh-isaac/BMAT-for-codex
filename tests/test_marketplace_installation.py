@@ -16,5 +16,5 @@ def test_marketplace_entry_resolves_versioned_plugin_metadata() -> None:
         "source": "local",
         "path": "./plugins/biomedical-agent-teams",
     }
-    assert read_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")["version"] == "1.2.1"
+    assert read_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")["version"] == "1.2.2"
 

@@ -1,6 +1,6 @@
 # Biomedical Agent Teams plugin
 
-Codex Desktop wrapper for BMAT v1.2.1. The plugin is a lightweight router plus
+Codex Desktop wrapper for BMAT v1.2.2. The plugin is a lightweight router plus
 auditable command recipes, contracts, specialist prompts, deterministic
 checkers, and offline regression cases.
 
@@ -20,7 +20,7 @@ recipe under `commands/` and loads only that recipe's required resources.
 
 ```mermaid
 flowchart LR
-    accTitle: BMAT v1.2.1 Workflow Structure
+    accTitle: BMAT v1.2.2 Workflow Structure
     request["User request"] --> lock["Runtime, scope, source, and strategy lock"]
     lock --> inline["inline_first_selective_review"]
     lock --> team["team_level_selective_dag"]
@@ -46,7 +46,7 @@ Important package surfaces:
 - `skills/biomedical-agent-teams/scripts/bmat_validate.py`: bundle policy and
   release gate.
 
-## v1.2.1 release contract
+## v1.2.2 release contract
 
 Release artifacts use v2 identity fields and bind to one `workflow_run_id` and
 plugin version. Source verification records how identity was checked and keeps
@@ -114,3 +114,11 @@ it does not establish release readiness.
   reasons.
 - Treat BMAT output as research support, not patient-facing advice or
   regulatory approval.
+
+## 1.2.2 supervised integrity patch
+
+[Current release contract](docs/release-integrity-1.2.2.md): required review coverage, final snapshot and
+content mapping, source excerpt/locator checks, replayable tournament arithmetic,
+and explicit writer/pre-execution stages. Compact defaults and the 38-role,
+six-alias structure are unchanged. Validators check process consistency; the
+researcher retains scientific judgment.

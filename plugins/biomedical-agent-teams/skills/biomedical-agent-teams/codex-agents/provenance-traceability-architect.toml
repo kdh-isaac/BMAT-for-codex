@@ -1,6 +1,6 @@
 name = "bmat-provenance-traceability-architect"
 agent_id = "provenance-traceability-architect"
-version = "1.2.1"
+version = "1.2.2"
 description = "Template for a Codex reviewer that audits source, data, code, artifact, and ledger traceability."
 role_prompt = "../agents/provenance-traceability-architect.md"
 output_contract_schema = "../contracts/spawned-agent-output.schema.json"
@@ -54,6 +54,8 @@ required_output_fields = [
   "output_artifact",
   "output_sha256",
   "checks_run",
+  "covered_node_ids",
+  "covered_check_ids",
   "changed_claim_ids",
   "independence_class",
   "independent_review_eligible",

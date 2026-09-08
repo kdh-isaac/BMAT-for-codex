@@ -77,6 +77,76 @@
         "limitations"
       ],
       "properties": {
+      "extraction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "locator_map_ref": {
+            "$ref": "#/$defs/bundlePath"
+          },
+          "locator_map_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "kind": {
+            "enum": [
+              "quotation",
+              "summary",
+              "human-verified",
+              "not-checked"
+            ]
+          },
+          "text_ref": {
+            "$ref": "#/$defs/bundlePath"
+          },
+          "text_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "original_snapshot_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "normalization": {
+            "const": "NFC-LF"
+          },
+          "offset_unit": {
+            "const": "unicode-codepoint"
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "extractor": {
+            "type": "string",
+            "minLength": 1
+          },
+          "extractor_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "supporting_span_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "review_instance_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
         "span_id": { "$ref": "#/$defs/nonEmptyString" },
         "source_id": { "$ref": "#/$defs/nonEmptyString" },
         "source_snapshot_ref": { "$ref": "#/$defs/bundlePath" },

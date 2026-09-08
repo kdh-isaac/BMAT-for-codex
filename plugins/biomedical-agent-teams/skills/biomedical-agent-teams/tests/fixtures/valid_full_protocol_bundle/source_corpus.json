@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "corpus_id": "corpus-release-fixture-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "workflow_run_id": "release-fixture-run-001",
   "created_at": "2026-07-10T01:01:00Z",
   "query_or_origin": "Bundled local source snapshot for deterministic release validation.",
@@ -33,7 +33,21 @@
           "short_evidence_excerpt": "The bundled local receipt supports the conservative validator claim under the stated synthetic scenario.",
           "retrieved_at": "2026-07-10T01:01:00Z",
           "extraction_actor": "local-bmat-validators",
-          "limitations": "The span is intentionally limited to a deterministic provenance regression claim."
+          "limitations": "The span is intentionally limited to a deterministic provenance regression claim.",
+          "extraction": {
+            "kind": "quotation",
+            "text_ref": "evidence/source-S-001.txt",
+            "text_sha256": "dff21058422ace53b7d10ea0c9fac63e222cb671a965319ca065dd0d83c766eb",
+            "original_snapshot_sha256": "dff21058422ace53b7d10ea0c9fac63e222cb671a965319ca065dd0d83c766eb",
+            "normalization": "NFC-LF",
+            "offset_unit": "unicode-codepoint",
+            "start": 0,
+            "end": 104,
+            "extractor": "identity-text",
+            "extractor_version": "1",
+            "locator_map_ref": "evidence/SPAN-S-001-001-locator.json",
+            "locator_map_sha256": "1374081e96aa4f9983e2105303300a5f630eb9a1ad3f5db19481fec5720d520c"
+          }
         }
       ]
     }

@@ -1,7 +1,7 @@
 {
   "name": "biomedical-agent-teams",
-  "version": "1.2.1",
-  "adapter_version": "1.2.1",
+  "version": "1.2.2",
+  "adapter_version": "1.2.2",
   "upstream_suite": "biomedical-agent-teams",
   "codex_adapter": true,
   "agent_count": 38,
@@ -10,7 +10,7 @@
   "template_count": 21,
   "contract_count": 25,
   "reference_count": 10,
-  "script_count": 20,
+  "script_count": 22,
   "test_fixture_count": 12,
   "eval_count": 3,
   "golden_task_count": 56,

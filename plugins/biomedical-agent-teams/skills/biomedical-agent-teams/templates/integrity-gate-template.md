@@ -51,3 +51,6 @@ Use `references/biomedical-failure-modes.md`.
 | priority | correction | required_before_release |
 |---|---|---|
 | P0/P1/P2 |  | yes / no |
+
+Current release/Full fields and worked fixture references: [1.2.2 integrity contract](../../../docs/release-integrity-1.2.2.md).
+Preserve actual observations; template placeholders and scaffold defaults are not completed checks.

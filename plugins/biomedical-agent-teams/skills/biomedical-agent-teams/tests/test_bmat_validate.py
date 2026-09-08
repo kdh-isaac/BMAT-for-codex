@@ -78,6 +78,10 @@ def sha256_file(path: Path) -> str:
 
 def refresh_release_receipts(bundle: Path) -> None:
     """Rebind hashes after a test intentionally rewrites valid release inputs."""
+    post = read_json(bundle / "post_write_validation.json")
+    post["reviewed_final_sha256"] = sha256_file(bundle / "final.md")
+    post["reviewed_ledger_sha256"] = sha256_file(bundle / "claim_ledger.json")
+    write_json(bundle / "post_write_validation.json", post)
     source_verification_path = bundle / "source_verification.json"
     if source_verification_path.exists():
         source_verification = read_json(source_verification_path)
@@ -232,6 +236,8 @@ def prefix_utf8_bom(path: Path) -> None:
 
 
 def add_valid_team_dag(run_state: dict[str, object]) -> None:
+    for stage in run_state["stages"]:
+        stage["depends_on"] = {"S0": [], "S1": ["S0"], "S3": ["S1"]}[stage["id"]]
     run_state["execution_strategy"] = "team_level_selective_dag"
     run_state["team_spawn_lanes"] = [
         {
@@ -357,7 +363,7 @@ def write_single_cell_other_omics_manifest(bundle: Path) -> None:
     manifest = {
         "schema_version": "2.0",
         "analysis_id": "omics-fixture",
-        "plugin_version": run_state.get("plugin_version", "1.2.1"),
+        "plugin_version": run_state.get("plugin_version", "1.2.2"),
         "workflow_run_id": run_state.get("run_id", "omics-run-fixture"),
         "created_at": "2026-07-10T02:01:00Z",
         "track": "single-cell-other",
@@ -422,7 +428,7 @@ def valid_tenx_manifest(track: str) -> dict[str, object]:
     manifest: dict[str, object] = {
         "schema_version": "2.0",
         "analysis_id": "omics-test",
-        "plugin_version": "1.2.1",
+        "plugin_version": "1.2.2",
         "workflow_run_id": "release-fixture-run-001",
         "created_at": "2026-07-10T02:01:00Z",
         "track": track,

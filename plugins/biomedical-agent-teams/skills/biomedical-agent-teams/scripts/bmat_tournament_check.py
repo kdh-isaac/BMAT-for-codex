@@ -9,6 +9,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+import bmat_tournament_math
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -33,8 +35,12 @@ def read_json(path: Path) -> dict[str, Any]:
     return payload
 
 
-def check(payload: dict[str, Any], run_state: dict[str, Any] | None = None) -> list[Finding]:
+def check(payload: dict[str, Any], run_state: dict[str, Any] | None = None, bundle: Path | None = None) -> list[Finding]:
     findings: list[Finding] = []
+    if payload.get('status') == 'draft':
+        return [Finding('ERROR', 'TOURNAMENT_DRAFT_NOT_RELEASE_ELIGIBLE', 'No tournament execution is recorded.')]
+    findings.extend(Finding('ERROR', code, message) for code, message in bmat_tournament_math.checks(payload, bundle))
+    qualitative_only = payload.get('aggregation', {}).get('method') == 'qualitative'
     candidates = [row for row in payload.get("candidates", []) if isinstance(row, dict)]
     hypothesis_ids = [str(row.get("hypothesis_id", "")).strip() for row in candidates]
     blinded_ids = [str(row.get("blinded_candidate_id", "")).strip() for row in candidates]
@@ -49,7 +55,7 @@ def check(payload: dict[str, Any], run_state: dict[str, Any] | None = None) -> l
         findings.append(Finding("ERROR", "TOURNAMENT_RANDOMIZED_ORDER_INCOMPLETE", "randomized order must contain every blinded candidate exactly once"))
     judge_scores = [row for row in payload.get("judge_scores", []) if isinstance(row, dict)]
     score_ids = {str(row.get("blinded_candidate_id", "")) for row in judge_scores}
-    if set(blinded_ids) - score_ids:
+    if set(blinded_ids) - score_ids and not qualitative_only:
         findings.append(Finding("ERROR", "TOURNAMENT_CANDIDATE_MISSING_JUDGE_SCORE", "every candidate requires preserved judge-level scores"))
     seen_judgments: set[tuple[str, str]] = set()
     candidates_by_judge: dict[str, set[str]] = {}
@@ -67,14 +73,14 @@ def check(payload: dict[str, Any], run_state: dict[str, Any] | None = None) -> l
             findings.append(Finding("ERROR", "TOURNAMENT_JUDGE_SCORE_MATRIX_INCOMPLETE", f"judge {judge_id} did not score every blinded candidate exactly once"))
     aggregate_ids = [str(row.get("blinded_candidate_id", "")) for row in payload.get("aggregate_scores", []) if isinstance(row, dict)]
     disagreement_ids = [str(row.get("blinded_candidate_id", "")) for row in payload.get("judge_disagreement", []) if isinstance(row, dict)]
-    if set(aggregate_ids) != expected_blinded_ids or len(aggregate_ids) != len(set(aggregate_ids)):
+    if not qualitative_only and (set(aggregate_ids) != expected_blinded_ids or len(aggregate_ids) != len(set(aggregate_ids))):
         findings.append(Finding("ERROR", "TOURNAMENT_AGGREGATE_SCORE_COVERAGE_INVALID", "aggregate scores must cover each blinded candidate exactly once"))
-    if set(disagreement_ids) != expected_blinded_ids or len(disagreement_ids) != len(set(disagreement_ids)):
+    if not qualitative_only and (set(disagreement_ids) != expected_blinded_ids or len(disagreement_ids) != len(set(disagreement_ids))):
         findings.append(Finding("ERROR", "TOURNAMENT_DISAGREEMENT_COVERAGE_INVALID", "judge disagreement must cover each blinded candidate exactly once"))
-    if payload.get("aggregate_scores") == payload.get("judge_disagreement"):
+    if not qualitative_only and payload.get("aggregate_scores") == payload.get("judge_disagreement"):
         findings.append(Finding("ERROR", "TOURNAMENT_AGGREGATE_DISAGREEMENT_CONFLATED", "aggregate scores and judge disagreement must be distinct outputs"))
     sensitivity = payload.get("order_sensitivity_check", {})
-    if not isinstance(sensitivity, dict) or sensitivity.get("performed") is not True:
+    if not qualitative_only and (not isinstance(sensitivity, dict) or sensitivity.get("performed") is not True):
         findings.append(Finding("ERROR", "TOURNAMENT_ORDER_SENSITIVITY_REQUIRED", "order sensitivity check is required"))
     for candidate in candidates:
         if candidate.get("status") == "merged" and not str(candidate.get("duplicate_collapse_rationale", "")).strip():
@@ -118,7 +124,7 @@ def check(payload: dict[str, Any], run_state: dict[str, Any] | None = None) -> l
         if row.get("rank") == 1 and "novel" in decision_text and not any(term in decision_text for term in ("evidence", "feasib", "assay", "information", "safety", "mechan")):
             findings.append(Finding("ERROR", "TOURNAMENT_NOVELTY_ONLY_WINNER", f"winner {row.get('hypothesis_id')} is justified only by novelty"))
         scores = evidence_scores.get(str(row.get("hypothesis_id", "")), [])
-        if row.get("evidence_strength") == "high" and (not scores or sum(scores) / len(scores) < 0.67):
+        if not qualitative_only and row.get("evidence_strength") == "high" and (not scores or sum(scores) / len(scores) < 0.67):
             findings.append(Finding("ERROR", "TOURNAMENT_UNSUPPORTED_HIGH_EVIDENCE_STRENGTH", f"ranked candidate {row.get('hypothesis_id')} has unsupported high evidence strength"))
         rating_text = str(row.get("rating_interpretation", "")).casefold()
         if (
@@ -141,7 +147,7 @@ def check(payload: dict[str, Any], run_state: dict[str, Any] | None = None) -> l
 def main() -> int:
     args = parse_args()
     run_state = read_json(args.run_state) if args.run_state else None
-    findings = check(read_json(args.tournament), run_state)
+    findings = check(read_json(args.tournament), run_state, args.tournament.parent)
     if args.json:
         print(json.dumps([asdict(item) for item in findings], indent=2))
     else:

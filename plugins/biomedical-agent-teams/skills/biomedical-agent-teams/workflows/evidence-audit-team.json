@@ -8,53 +8,124 @@
     {
       "id": "S0_context_lock",
       "agent": "protocol-context-locker",
-      "outputs": ["runtime_capability_preflight", "workflow_run"],
-      "blocking": true
+      "outputs": [
+        "runtime_capability_preflight",
+        "workflow_run"
+      ],
+      "blocking": true,
+      "phase": "context"
     },
     {
       "id": "S1_source_corpus",
       "agent": "life-science-literature-curator",
-      "requires": ["S0_context_lock"],
-      "outputs": ["source_corpus", "source_verification"],
-      "blocking": true
+      "requires": [
+        "S0_context_lock"
+      ],
+      "outputs": [
+        "source_corpus",
+        "source_verification"
+      ],
+      "blocking": true,
+      "phase": "specialist"
     },
     {
       "id": "S2_claim_ledger",
       "agent": "central-claim-ledger-evidence-graph",
-      "requires": ["S1_source_corpus"],
-      "outputs": ["claim_ledger"],
-      "blocking": true
+      "requires": [
+        "S1_source_corpus"
+      ],
+      "outputs": [
+        "claim_ledger"
+      ],
+      "blocking": true,
+      "phase": "specialist"
     },
     {
       "id": "S3_citation_check",
       "agent": "citation-verifier",
-      "requires": ["S2_claim_ledger"],
-      "outputs": ["results_integration"],
+      "requires": [
+        "S2_claim_ledger"
+      ],
+      "outputs": [
+        "results_integration"
+      ],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/citation-verifier.toml",
-      "independence_required": true
+      "independence_required": true,
+      "phase": "review",
+      "required_checks": [
+        "citation.identity"
+      ],
+      "required_input_refs": [
+        "claim_ledger.json",
+        "source_corpus.json",
+        "source_verification.json"
+      ]
     },
     {
       "id": "S4_contradiction_check",
       "agent": "contradiction-red-team",
-      "requires": ["S3_citation_check"],
-      "outputs": ["stage_evaluation", "claim_support_matrix"],
+      "requires": [
+        "S3_citation_check"
+      ],
+      "outputs": [
+        "stage_evaluation",
+        "claim_support_matrix"
+      ],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/contradiction-red-team.toml",
-      "independence_required": true
+      "independence_required": true,
+      "phase": "review",
+      "required_checks": [
+        "claims.contradictions",
+        "claims.scope"
+      ],
+      "required_input_refs": [
+        "claim_ledger.json",
+        "source_corpus.json"
+      ]
+    },
+    {
+      "id": "W_write",
+      "agent": "scientific-writer-citation-agent",
+      "phase": "write",
+      "requires": [
+        "S4_contradiction_check"
+      ],
+      "outputs": [
+        "final_text"
+      ],
+      "blocking": true
     },
     {
       "id": "S5_post_write",
       "agent": "post-write-final-validator",
-      "requires": ["S4_contradiction_check"],
-      "outputs": ["post_write_validation", "review_artifact_manifest", "final_text"],
+      "requires": [
+        "W_write"
+      ],
+      "outputs": [
+        "post_write_validation",
+        "review_artifact_manifest"
+      ],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/post-write-final-validator.toml",
-      "independence_required": true
+      "independence_required": true,
+      "phase": "post-write",
+      "required_checks": [
+        "final.coverage",
+        "final.scope"
+      ],
+      "required_input_refs": [
+        "claim_ledger.json",
+        "final.md"
+      ]
     }
   ],
-  "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
+  "release_gates": [
+    "bmat_validate",
+    "bmat_tool_ledger_check"
+  ]
 }

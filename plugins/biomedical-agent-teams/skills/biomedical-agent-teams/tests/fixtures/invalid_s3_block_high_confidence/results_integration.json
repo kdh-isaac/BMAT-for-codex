@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "integration_id": "results-integration-release-fixture-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "workflow_run_id": "release-fixture-run-001",
   "created_at": "2026-07-10T01:07:01Z",
   "source_corpus_lock": "corpus-release-fixture-001",

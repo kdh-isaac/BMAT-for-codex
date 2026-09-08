@@ -29,22 +29,69 @@
     "final_ranking"
   ],
   "properties": {
-    "schema_version": { "const": "2.0" },
-    "status": { "type": "string", "enum": ["draft", "complete"] },
-    "tournament_id": { "type": "string" },
-    "plugin_version": { "type": "string", "minLength": 1 },
-    "workflow_run_id": { "type": "string", "minLength": 1 },
-    "created_at": { "type": "string", "format": "date-time" },
-    "selected_domain_pack": { "type": "string", "enum": ["generic-biomedical", "cell-therapy", "immuno-oncology"] },
-    "context_lock": { "type": "string" },
+    "schema_version": {
+      "const": "2.0"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "complete"
+      ]
+    },
+    "tournament_id": {
+      "type": "string"
+    },
+    "plugin_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workflow_run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "selected_domain_pack": {
+      "type": "string",
+      "enum": [
+        "generic-biomedical",
+        "cell-therapy",
+        "immuno-oncology"
+      ]
+    },
+    "context_lock": {
+      "type": "string"
+    },
     "candidate_order_randomization": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["method", "seed", "randomized_order"],
+      "required": [
+        "method",
+        "seed",
+        "randomized_order"
+      ],
       "properties": {
-        "method": { "type": "string", "minLength": 1 },
-        "seed": { "type": ["integer", "null"] },
-        "randomized_order": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "randomized_order": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     },
     "judge_scores": {
@@ -69,23 +116,76 @@
           "rationale"
         ],
         "properties": {
-          "judgment_id": { "type": "string", "minLength": 1 },
-          "judge_id": { "type": "string", "minLength": 1 },
+          "judgment_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "judge_id": {
+            "type": "string",
+            "minLength": 1
+          },
           "independence_class": {
             "type": "string",
-            "enum": ["same-model-self-review", "same-model-separate-context", "separate-model", "external-tool", "human"]
+            "enum": [
+              "same-model-self-review",
+              "same-model-separate-context",
+              "separate-model",
+              "external-tool",
+              "human"
+            ]
           },
-          "blinded_candidate_id": { "type": "string", "minLength": 1 },
-          "presentation_order": { "type": "integer", "minimum": 1 },
-          "novelty": { "type": "number", "minimum": 0, "maximum": 1 },
-          "evidence_strength": { "type": "number", "minimum": 0, "maximum": 1 },
-          "mechanistic_specificity": { "type": "number", "minimum": 0, "maximum": 1 },
-          "assayability": { "type": "number", "minimum": 0, "maximum": 1 },
-          "feasibility": { "type": "number", "minimum": 0, "maximum": 1 },
-          "safety": { "type": "number", "minimum": 0, "maximum": 1 },
-          "expected_information_gain": { "type": "number", "minimum": 0, "maximum": 1 },
-          "execution_priority": { "type": "number", "minimum": 0, "maximum": 1 },
-          "rationale": { "type": "string", "minLength": 1 }
+          "blinded_candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "presentation_order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "novelty": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "evidence_strength": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "mechanistic_specificity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "assayability": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "feasibility": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "safety": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "expected_information_gain": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "execution_priority": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
@@ -94,12 +194,30 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["blinded_candidate_id", "aggregate_score", "evidence_strength", "execution_priority"],
+        "required": [
+          "blinded_candidate_id",
+          "aggregate_score",
+          "evidence_strength",
+          "execution_priority"
+        ],
         "properties": {
-          "blinded_candidate_id": { "type": "string", "minLength": 1 },
-          "aggregate_score": { "type": "number" },
-          "evidence_strength": { "type": "number", "minimum": 0, "maximum": 1 },
-          "execution_priority": { "type": "number", "minimum": 0, "maximum": 1 }
+          "blinded_candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aggregate_score": {
+            "type": "number"
+          },
+          "evidence_strength": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "execution_priority": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
         }
       }
     },
@@ -108,61 +226,286 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["blinded_candidate_id", "method", "evidence_strength_dispersion", "execution_priority_dispersion"],
+        "required": [
+          "blinded_candidate_id",
+          "method",
+          "evidence_strength_dispersion",
+          "execution_priority_dispersion"
+        ],
         "properties": {
-          "blinded_candidate_id": { "type": "string", "minLength": 1 },
-          "method": { "type": "string", "minLength": 1 },
-          "evidence_strength_dispersion": { "type": "number", "minimum": 0 },
-          "execution_priority_dispersion": { "type": "number", "minimum": 0 }
+          "blinded_candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "range",
+              "population-sd"
+            ]
+          },
+          "evidence_strength_dispersion": {
+            "type": "number",
+            "minimum": 0
+          },
+          "execution_priority_dispersion": {
+            "type": "number",
+            "minimum": 0
+          }
         }
       }
     },
     "order_sensitivity_check": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["performed", "alternate_seed", "rank_stability", "limitations"],
+      "required": [
+        "performed",
+        "alternate_seed",
+        "rank_stability",
+        "limitations"
+      ],
       "properties": {
-        "performed": { "type": "boolean" },
-        "alternate_seed": { "type": ["integer", "null"] },
-        "rank_stability": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-        "limitations": { "type": "string", "minLength": 1 }
+        "performed": {
+          "type": "boolean"
+        },
+        "alternate_seed": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "rank_stability": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "limitations": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alternate_order": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "alternate_judge_scores": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "judgment_id",
+              "judge_id",
+              "independence_class",
+              "blinded_candidate_id",
+              "presentation_order",
+              "novelty",
+              "evidence_strength",
+              "mechanistic_specificity",
+              "assayability",
+              "feasibility",
+              "safety",
+              "expected_information_gain",
+              "execution_priority",
+              "rationale"
+            ],
+            "properties": {
+              "judgment_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "judge_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "independence_class": {
+                "type": "string",
+                "enum": [
+                  "same-model-self-review",
+                  "same-model-separate-context",
+                  "separate-model",
+                  "external-tool",
+                  "human"
+                ]
+              },
+              "blinded_candidate_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "presentation_order": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "novelty": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "evidence_strength": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "mechanistic_specificity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "assayability": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "feasibility": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "safety": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "expected_information_gain": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "execution_priority": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "alternate_ranking": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "metric": {
+          "const": "pairwise-order-agreement"
+        },
+        "review_artifact_ref": {
+          "type": "string"
+        },
+        "review_artifact_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
       }
     },
     "ranking_uncertainty": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["method", "summary", "limitations"],
+      "required": [
+        "method",
+        "summary",
+        "limitations"
+      ],
       "properties": {
-        "method": { "type": "string", "enum": ["bootstrap", "permutation", "qualitative", "not-run"] },
-        "resamples": { "type": ["integer", "null"], "minimum": 1 },
-        "summary": { "type": "string", "minLength": 1 },
-        "limitations": { "type": "string", "minLength": 1 }
+        "method": {
+          "type": "string",
+          "enum": [
+            "bootstrap",
+            "permutation",
+            "qualitative",
+            "not-run"
+          ]
+        },
+        "resamples": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limitations": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
-    "same_model_correlated_judgment_limitation": { "type": "string", "minLength": 1 },
-    "winner_interpretation_boundary": { "type": "string", "minLength": 1 },
-    "iteration_budget": { "type": "integer", "minimum": 1 },
+    "same_model_correlated_judgment_limitation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "winner_interpretation_boundary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "iteration_budget": {
+      "type": "integer",
+      "minimum": 1
+    },
     "compute_budget_status": {
       "type": "string",
-      "enum": ["within-budget", "budget-exhausted", "not-tracked"]
+      "enum": [
+        "within-budget",
+        "budget-exhausted",
+        "not-tracked"
+      ]
     },
     "candidates": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["hypothesis_id", "blinded_candidate_id", "hypothesis", "status"],
+        "required": [
+          "hypothesis_id",
+          "blinded_candidate_id",
+          "hypothesis",
+          "status"
+        ],
         "properties": {
-          "hypothesis_id": { "type": "string" },
-          "blinded_candidate_id": { "type": "string", "minLength": 1 },
-          "hypothesis": { "type": "string" },
-          "cluster_id": { "type": "string" },
+          "hypothesis_id": {
+            "type": "string"
+          },
+          "blinded_candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hypothesis": {
+            "type": "string"
+          },
+          "cluster_id": {
+            "type": "string"
+          },
           "status": {
             "type": "string",
-            "enum": ["active", "merged", "held", "discarded", "winner"]
+            "enum": [
+              "active",
+              "merged",
+              "held",
+              "discarded",
+              "winner"
+            ]
           },
-          "notes": { "type": "string" },
-          "duplicate_collapse_rationale": { "type": "string" }
+          "notes": {
+            "type": "string"
+          },
+          "duplicate_collapse_rationale": {
+            "type": "string"
+          }
         }
       }
     },
@@ -171,14 +514,33 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["iteration_id", "input_guidance", "output_summary", "stop_decision"],
+        "required": [
+          "iteration_id",
+          "input_guidance",
+          "output_summary",
+          "stop_decision"
+        ],
         "properties": {
-          "iteration_id": { "type": "string" },
-          "input_guidance": { "type": "string" },
-          "output_summary": { "type": "string" },
-          "new_candidate_count": { "type": "integer", "minimum": 0 },
-          "active_candidate_count": { "type": "integer", "minimum": 0 },
-          "stop_decision": { "type": "string" }
+          "iteration_id": {
+            "type": "string"
+          },
+          "input_guidance": {
+            "type": "string"
+          },
+          "output_summary": {
+            "type": "string"
+          },
+          "new_candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active_candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stop_decision": {
+            "type": "string"
+          }
         }
       }
     },
@@ -187,9 +549,15 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["round_id", "round_type", "output_summary"],
+        "required": [
+          "round_id",
+          "round_type",
+          "output_summary"
+        ],
         "properties": {
-          "round_id": { "type": "string" },
+          "round_id": {
+            "type": "string"
+          },
           "round_type": {
             "type": "string",
             "enum": [
@@ -206,7 +574,9 @@
               "kill-test-design"
             ]
           },
-          "output_summary": { "type": "string" }
+          "output_summary": {
+            "type": "string"
+          }
         }
       }
     },
@@ -215,41 +585,105 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["match_id", "candidate_a", "candidate_b", "outcome"],
+        "required": [
+          "match_id",
+          "candidate_a",
+          "candidate_b",
+          "outcome"
+        ],
         "properties": {
-          "match_id": { "type": "string" },
-          "candidate_a": { "type": "string" },
-          "candidate_b": { "type": "string" },
-          "winner_id": { "type": "string" },
-          "loser_id": { "type": "string" },
+          "match_id": {
+            "type": "string"
+          },
+          "candidate_a": {
+            "type": "string"
+          },
+          "candidate_b": {
+            "type": "string"
+          },
+          "winner_id": {
+            "type": "string"
+          },
+          "loser_id": {
+            "type": "string"
+          },
           "outcome": {
             "type": "string",
-            "enum": ["a_wins", "b_wins", "tie", "no_decision"]
+            "enum": [
+              "a_wins",
+              "b_wins",
+              "tie",
+              "no_decision"
+            ]
           },
-          "rationale": { "type": "string" }
+          "rationale": {
+            "type": "string"
+          }
         }
       }
     },
     "ranking_model": {
       "type": "string",
-      "enum": ["qualitative", "elo", "bradley-terry", "bayesian-qualitative", "not-applicable"]
+      "enum": [
+        "qualitative",
+        "elo",
+        "bradley-terry",
+        "bayesian-qualitative",
+        "not-applicable",
+        "weighted-score"
+      ]
     },
-    "qualitative_ranking": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-    "model_based_ranking": { "type": "array", "items": { "type": "string" } },
+    "qualitative_ranking": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "model_based_ranking": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "rating_table": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["hypothesis_id", "rating", "matches", "rating_interpretation"],
+        "required": [
+          "hypothesis_id",
+          "rating",
+          "matches",
+          "rating_interpretation"
+        ],
         "properties": {
-          "hypothesis_id": { "type": "string" },
-          "rating": { "type": "number" },
-          "matches": { "type": "integer", "minimum": 0 },
-          "wins": { "type": "integer", "minimum": 0 },
-          "losses": { "type": "integer", "minimum": 0 },
-          "ties": { "type": "integer", "minimum": 0 },
-          "rating_interpretation": { "type": "string" }
+          "hypothesis_id": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "matches": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "losses": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rating_interpretation": {
+            "type": "string"
+          }
         }
       }
     },
@@ -265,24 +699,42 @@
           "stop_or_continue_recommendation"
         ],
         "properties": {
-          "iteration_id": { "type": "string" },
+          "iteration_id": {
+            "type": "string"
+          },
           "recurring_weakness_patterns": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "unsupported_claim_patterns": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
-          "novelty_vs_feasibility_tension": { "type": "string" },
+          "novelty_vs_feasibility_tension": {
+            "type": "string"
+          },
           "contradiction_or_safety_patterns": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
-          "generation_guidance_for_next_round": { "type": "string" },
-          "ranking_sensitivity_notes": { "type": "string" },
-          "research_overview": { "type": "string" },
-          "stop_or_continue_recommendation": { "type": "string" }
+          "generation_guidance_for_next_round": {
+            "type": "string"
+          },
+          "ranking_sensitivity_notes": {
+            "type": "string"
+          },
+          "research_overview": {
+            "type": "string"
+          },
+          "stop_or_continue_recommendation": {
+            "type": "string"
+          }
         }
       }
     },
@@ -291,9 +743,16 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["iteration_id", "criterion", "decision", "rationale"],
+        "required": [
+          "iteration_id",
+          "criterion",
+          "decision",
+          "rationale"
+        ],
         "properties": {
-          "iteration_id": { "type": "string" },
+          "iteration_id": {
+            "type": "string"
+          },
           "criterion": {
             "type": "string",
             "enum": [
@@ -307,9 +766,16 @@
           },
           "decision": {
             "type": "string",
-            "enum": ["continue", "stop", "block", "not-applicable"]
+            "enum": [
+              "continue",
+              "stop",
+              "block",
+              "not-applicable"
+            ]
           },
-          "rationale": { "type": "string" }
+          "rationale": {
+            "type": "string"
+          }
         }
       }
     },
@@ -318,19 +784,94 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["rank", "hypothesis_id", "verdict", "rationale", "evidence_strength", "execution_priority"],
+        "required": [
+          "rank",
+          "hypothesis_id",
+          "verdict",
+          "rationale",
+          "evidence_strength",
+          "execution_priority"
+        ],
         "properties": {
-          "rank": { "type": "integer", "minimum": 1 },
-          "hypothesis_id": { "type": "string" },
-          "verdict": { "type": "string" },
-          "rationale": { "type": "string" },
-          "rating": { "type": "number" },
-          "rating_interpretation": { "type": "string" },
-          "evidence_strength": { "type": "string", "enum": ["low", "moderate", "high", "not-assessed"] },
-          "execution_priority": { "type": "string", "enum": ["low", "moderate", "high", "not-assessed"] },
-          "expected_information_gain": { "type": "string" }
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "hypothesis_id": {
+            "type": "string"
+          },
+          "verdict": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "rating_interpretation": {
+            "type": "string"
+          },
+          "evidence_strength": {
+            "type": "string",
+            "enum": [
+              "low",
+              "moderate",
+              "high",
+              "not-assessed"
+            ]
+          },
+          "execution_priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "moderate",
+              "high",
+              "not-assessed"
+            ]
+          },
+          "expected_information_gain": {
+            "type": "string"
+          }
         }
       }
+    },
+    "aggregation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "mean",
+            "weighted-mean",
+            "qualitative"
+          ]
+        },
+        "axis_weights": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "judge_weights": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      }
+    },
+    "ranking_override_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "elo_input": {
+      "type": "object"
     }
   },
   "allOf": [
@@ -413,15 +954,9 @@
       },
       "else": {
         "properties": {
-          "judge_scores": {
-            "minItems": 1
-          },
-          "aggregate_scores": {
-            "minItems": 1
-          },
-          "judge_disagreement": {
-            "minItems": 1
-          },
+          "judge_scores": {},
+          "aggregate_scores": {},
+          "judge_disagreement": {},
           "candidates": {
             "minItems": 2
           },
@@ -436,14 +971,49 @@
           },
           "candidate_order_randomization": {
             "properties": {
-              "seed": {
-                "type": "integer"
-              },
               "randomized_order": {
                 "minItems": 2
               }
             }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          {
+            "properties": {
+              "aggregation": {
+                "properties": {
+                  "method": {
+                    "const": "qualitative"
+                  }
+                },
+                "required": [
+                  "method"
+                ]
+              }
+            },
+            "required": [
+              "aggregation"
+            ]
           },
+          {
+            "properties": {
+              "status": {
+                "const": "draft"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        ]
+      },
+      "then": {},
+      "else": {
+        "properties": {
           "order_sensitivity_check": {
             "properties": {
               "performed": {
@@ -454,6 +1024,13 @@
               },
               "rank_stability": {
                 "type": "number"
+              }
+            }
+          },
+          "candidate_order_randomization": {
+            "properties": {
+              "seed": {
+                "type": "integer"
               }
             }
           }

@@ -9,7 +9,7 @@ placeholders, unsafe operational detail, and stale or mismatched artifact hashes
 {
   "schema_version": "2.0",
   "design_id": "exp-run-example-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "workflow_run_id": "run-example-001",
   "created_at": "2026-07-10T00:00:00Z",
   "design_stage": "exploratory",

@@ -36,7 +36,7 @@ state.
 ## 1.2 Release-Gate Artifacts
 
 For `standard`, `deep`, `audit`, generated-file, team-DAG, or source-backed
-outputs, keep the 1.2.1 hard-gate artifacts aligned with the narrative:
+outputs, keep the 1.2.2 hard-gate artifacts aligned with the narrative:
 
 - Use `lead_decision.json` for source-backed `standard`, `deep`, `audit`,
   team-DAG, or full-protocol runs before release; it must match the selected
@@ -231,3 +231,12 @@ audit bundle:
 20. spawned reviewer status, including actual `spawned_agent_instances` or
     explicit skipped-core-reviewer downgrade reason
 21. final workflow label and skipped gates with reasons
+
+## Current release coverage
+
+For release/Full bundles, follow [the 1.2.2 integrity contract](../../../docs/release-integrity-1.2.2.md).
+Use the selected workflow's required check IDs and exact input hashes; one real
+review may cover multiple nodes. Freeze the ledger and final candidate before
+post-write review, map every content block, and validate after generating the
+manifest. Writer and reviewer are distinct logical stages; compact work does
+not require separate model calls. Skipped required work retains a lower label.

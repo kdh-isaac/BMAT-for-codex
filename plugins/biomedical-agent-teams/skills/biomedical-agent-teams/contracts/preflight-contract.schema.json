@@ -32,6 +32,44 @@
     "post_team_audit_plan"
   ],
   "properties": {
+    "required_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "required_checks",
+          "required_input_refs",
+          "independence_required"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required_checks": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_input_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "independence_required": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "schema_version": { "const": "2.0" },
     "runtime_capability_preflight_id": {
       "type": "string"

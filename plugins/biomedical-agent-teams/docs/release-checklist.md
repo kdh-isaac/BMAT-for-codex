@@ -13,3 +13,10 @@ These checks exercise package mechanics and synthetic fixtures only. Run
 bmat_validate.py --release against each completed research bundle as well.
 Source checkout CI additionally runs marketplace integration tests and the
 Python 3.10-3.13 Ubuntu/Windows matrix.
+
+## Current 1.2.2 policy
+
+See [the supervised release integrity contract](release-integrity-1.2.2.md).
+Schema 2.0 remains readable; current release/Full validation requires the new
+review, final-snapshot, and extraction bindings. Do not synthesize missing
+verification records when migrating older bundles.

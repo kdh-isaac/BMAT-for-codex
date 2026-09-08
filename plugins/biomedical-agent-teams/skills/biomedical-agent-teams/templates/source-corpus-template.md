@@ -22,3 +22,6 @@ identity and retrieval context before the final claim ledger is written.
 - Every `included` source must carry at least one `evidence_spans[]` entry with
   `span_id`, `location`, and a scope note; use `evidence_span_ref` from claim
   ledger evidence edges to point back to the source row.
+
+Current release/Full fields and worked fixture references: [1.2.2 integrity contract](../../../docs/release-integrity-1.2.2.md).
+Preserve actual observations; template placeholders and scaffold defaults are not completed checks.

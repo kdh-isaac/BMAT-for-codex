@@ -39,3 +39,11 @@ Return contract:
 6. `figures_and_processed_h5ad`
 7. `pseudoreplication_or_batch_risks`
 8. `handoff_to_pathway_code_and_provenance_review`
+
+
+When assigned the explicit omics `S2_execute` lane in run mode, the lead may
+use this existing role inline to perform the bounded track analysis after setup
+and smoke gates pass. Record executed commands, versions, inputs, derived
+artifacts, and failures. Keep raw data read-only. A spawned review template
+retains its review-only scope; do not infer execution permission from assignment
+to that template. Plan/audit assignments do not perform new full analysis.

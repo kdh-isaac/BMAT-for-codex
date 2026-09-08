@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import bmat_workflow_policy
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -499,13 +501,8 @@ def validate_workflow_dags(skill_root: Path, findings: list[Finding]) -> None:
                     findings.append(
                         Finding("ERROR", "WORKFLOW_DAG_AGENT_NOT_SPAWNABLE", f"{node_id} marks non-spawnable agent {agent_id}", str(path))
                     )
-            requires = node.get("requires", [])
-            if isinstance(requires, list):
-                for dependency in requires:
-                    if str(dependency) not in node_ids:
-                        findings.append(
-                            Finding("ERROR", "WORKFLOW_DAG_DEPENDENCY_ORDER_INVALID", f"{node_id} depends on unknown or later node {dependency}", str(path))
-                        )
+        for code, message in bmat_workflow_policy.graph_errors(dag, set(agents)):
+            findings.append(Finding('ERROR', code, message, str(path)))
     missing = sorted(expected_aliases - seen_aliases)
     if missing:
         findings.append(

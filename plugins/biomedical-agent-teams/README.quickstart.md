@@ -1,6 +1,6 @@
 # Biomedical Agent Teams quick start
 
-BMAT v1.2.1 is installed through the Codex plugin browser.
+BMAT v1.2.2 is installed through the Codex plugin browser.
 
 ```bash
 codex plugin marketplace add kdh-isaac/BMAT-for-codex --ref main
@@ -40,3 +40,7 @@ For the installed release checks, install `jsonschema>=4.18,<5` and run:
 ```bash
 python skills/biomedical-agent-teams/scripts/bmat_selftest.py --root . --release
 ```
+
+For required review coverage, final/ledger snapshots, and source locator maps,
+see the [1.2.2 integrity contract](docs/release-integrity-1.2.2.md).
+Compact work remains inline-first; release validation does not certify scientific truth.

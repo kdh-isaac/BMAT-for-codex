@@ -40,3 +40,10 @@ The default self-test is a dependency-free smoke. Its smoke_passed status is
 separate from release_passed. An artifact release still requires running
 bmat_validate.py --release on that artifact bundle, not just package fixtures.
 Repository marketplace tests are maintained outside the installed test suite.
+
+## Current 1.2.2 policy
+
+See [the supervised release integrity contract](release-integrity-1.2.2.md).
+Schema 2.0 remains readable; current release/Full validation requires the new
+review, final-snapshot, and extraction bindings. Do not synthesize missing
+verification records when migrating older bundles.

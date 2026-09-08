@@ -17,7 +17,7 @@ CONTRACTS = SKILL_ROOT / "contracts"
 SOURCE_CHECK = SKILL_ROOT / "scripts" / "bmat_source_check.py"
 CLAIM_CHECK = SKILL_ROOT / "scripts" / "bmat_claim_support_check.py"
 NOW = "2026-07-10T00:00:00Z"
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 RUN_ID = "run-v2-test"
 
 
@@ -269,6 +269,19 @@ def build_bundle(tmp_path: Path) -> tuple[Path, dict[str, dict]]:
             ],
         },
     }
+    span = payloads["source_corpus.json"]["sources"][0]["evidence_spans"][0]
+    snapshot_text = (bundle / "evidence/source.json").read_text(encoding="utf-8")
+    start = snapshot_text.index(excerpt)
+    extraction = {"kind": "quotation", "text_ref": "evidence/source.json", "text_sha256": snapshot_sha,
+                  "original_snapshot_sha256": snapshot_sha, "normalization": "NFC-LF",
+                  "offset_unit": "unicode-codepoint", "start": start, "end": start + len(excerpt),
+                  "extractor": "identity-text", "extractor_version": "1"}
+    mapping = {k: v for k, v in extraction.items() if k not in {"kind", "start", "end"}}
+    mapping["segments"] = [{**{k:span[k] for k in ("locator", "section", "paragraph_or_table", "sentence_or_cell")},
+                            "start": start, "end": start + len(excerpt)}]
+    extraction["locator_map_ref"] = "evidence/locator.json"
+    extraction["locator_map_sha256"] = write_json(bundle / "evidence/locator.json", mapping)
+    span["extraction"] = extraction
     for name, payload in payloads.items():
         write_json(bundle / name, payload)
     return bundle, payloads

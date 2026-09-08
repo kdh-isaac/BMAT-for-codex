@@ -20,6 +20,55 @@
     "release_ready_claim_strength"
   ],
   "properties": {
+    "reviewed_final_ref": {"const": "final.md"},
+    "reviewed_final_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "reviewed_ledger_ref": {"const": "claim_ledger.json"},
+    "reviewed_ledger_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "coverage_review_instance_id": {"type": "string", "minLength": 1},
+    "wording_policy": {"enum": ["literal", "reviewed-paraphrase"]},
+    "content_coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "block_id",
+          "block_sha256",
+          "classification",
+          "claim_ids",
+          "reason"
+        ],
+        "properties": {
+          "block_id": {
+            "type": "string",
+            "pattern": "^B[0-9]{4,}$"
+          },
+          "block_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "classification": {
+            "enum": [
+              "claim",
+              "heading",
+              "formatting",
+              "non-claim"
+            ]
+          },
+          "claim_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "schema_version": { "const": "2.0" },
     "validation_id": { "type": "string", "minLength": 1 },
     "plugin_version": { "type": "string", "minLength": 1 },

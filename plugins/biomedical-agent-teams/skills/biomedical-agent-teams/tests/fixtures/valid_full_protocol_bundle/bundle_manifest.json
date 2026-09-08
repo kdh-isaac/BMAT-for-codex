@@ -1,31 +1,31 @@
 {
   "schema_version": "2.0",
   "manifest_id": "bundle-release-fixture-run-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "workflow_run_id": "release-fixture-run-001",
-  "generated_at": "2026-09-05T10:17:32Z",
+  "generated_at": "2026-09-08T05:14:35Z",
   "entries": [
     {
       "artifact_type": "claim_ledger",
       "path": "claim_ledger.json",
-      "sha256": "45b4fb88db0d74c522c110c9ac94c9b65dfda1e54bb60f52370fb142ec4717f1",
+      "sha256": "0ab4a0c1e355d981eda25af4abcd326234ac32503c61aa8e02ca8c6fede51742",
       "size_bytes": 1707,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": true,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "claim_support_matrix",
       "path": "claim_support_matrix.json",
-      "sha256": "663308da4671e05f508f46caf98b806e2d1cd8afcd7b8b85b33bba71a8cd8028",
+      "sha256": "95eaefa7db23c280ab9ad798f2755f5b72e8c68a53fa69d649d335d4bc20eb6a",
       "size_bytes": 1385,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "source_S_001",
@@ -33,10 +33,21 @@
       "sha256": "dff21058422ace53b7d10ea0c9fac63e222cb671a965319ca065dd0d83c766eb",
       "size_bytes": 105,
       "schema_version": "not-applicable",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
+    },
+    {
+      "artifact_type": "SPAN_S_001_001_locator",
+      "path": "evidence/SPAN-S-001-001-locator.json",
+      "sha256": "1374081e96aa4f9983e2105303300a5f630eb9a1ad3f5db19481fec5720d520c",
+      "size_bytes": 568,
+      "schema_version": "not-applicable",
+      "plugin_version": "1.2.2",
+      "workflow_run_id": "release-fixture-run-001",
+      "required_for_release": false,
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "final",
@@ -44,153 +55,153 @@
       "sha256": "8eb055362c38eab00bbdec5dc0457a88bc7a47c8c95ee3d5d340a9a0fa3566fe",
       "size_bytes": 275,
       "schema_version": "not-applicable",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": true,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "lead_decision",
       "path": "lead_decision.json",
-      "sha256": "d0237c9471a85055e3234605d72a10921408c0c0e7430e2cc4d175e0f5e1c4cd",
+      "sha256": "a1ddd2f3619c28d78a095b15502854a7ff1bc0260e399158142fb8aa507228c5",
       "size_bytes": 1576,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "post_write_validation",
       "path": "post_write_validation.json",
-      "sha256": "dde03cc350fd13d6e9db243ac38ca715296a4d98a700fcfd4ee101e16b67e10a",
-      "size_bytes": 951,
+      "sha256": "d8c57481caf84bc10de2508b370ddbdb6a98448d38adeddf4b4cc0a0d7f8fa38",
+      "size_bytes": 2083,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": true,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "results_integration",
       "path": "results_integration.json",
-      "sha256": "0f1b4ee4717e426e788fd043d14b58dd4779fd0c8bda9a58a6a0153b01a69dfc",
+      "sha256": "e0f364e850a777aab673b81da62e8d72df2808e7fc839a540970cd5c748468f1",
       "size_bytes": 2428,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "external_tool_review_prompt",
       "path": "review/external-tool-review-prompt.md",
-      "sha256": "1e30fd4683476adbbdf00653167a232c162b52fd9f12e74cd5af4c0ec8f45f05",
-      "size_bytes": 318,
+      "sha256": "adaca75fff873e3e4dd11349585c1b5141313469759634fbed62a7ea02b20784",
+      "size_bytes": 561,
       "schema_version": "not-applicable",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "external_tool_review",
       "path": "review/external-tool-review.md",
-      "sha256": "427719a6f972d3fb998d5bd86fb2d2b07acff357dcc726565e2a878a6ce6e897",
-      "size_bytes": 505,
+      "sha256": "9cfba30e2c0a45bff7b3b7050d52f8349661aaf83225219bc99824c5f35a5b4e",
+      "size_bytes": 1119,
       "schema_version": "not-applicable",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "review_runtime_receipt",
       "path": "review/review-runtime-receipt.json",
-      "sha256": "232041c92bcee6bcf64c4b9d60d04367a1cfe826b936b08148bd43e52ab52416",
+      "sha256": "8b6d3675fc63ee191f8ac1c62e7c3df7dfaca262a81da9ab445223b7c293c7cf",
       "size_bytes": 1108,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "review_artifact_manifest",
       "path": "review_artifact_manifest.json",
-      "sha256": "c62fa54dc6707a938553f68bf819e5cd1738d58e57730d1316d391d2c771eb1a",
-      "size_bytes": 2705,
+      "sha256": "e21c63f27ec303723f75fe6ef83f48990fe566ad2d107c1445c28961b6e6d800",
+      "size_bytes": 3244,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "run_state",
       "path": "run_state.json",
-      "sha256": "f92a72a9be32b58e1430020ebb5b29c3b794954fe0f76430e84efcb023093cb3",
+      "sha256": "3fd41866a64cf8391a588bb11dcd9adc416c6cd41b67ebe88b3a3de03d546c54",
       "size_bytes": 2611,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": true,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "runtime_capability_preflight",
       "path": "runtime_capability_preflight.json",
-      "sha256": "2493be79989c373f7ecb22d7761262a837448eeacfac130b01651381f6b187bd",
+      "sha256": "a73b9fd8511e16b56771b2f2dd34051c01ffe7facbf94d14da0057400620f980",
       "size_bytes": 2580,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": true,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "source_corpus",
       "path": "source_corpus.json",
-      "sha256": "1e1ff7dfe6841e4b4e61aedd47ed7807c814cad98388686e3df2b96577611fc3",
-      "size_bytes": 1925,
+      "sha256": "dd83e3d8384751768555b197119cec06acce1aae3a2bd569599c485739c7e6e5",
+      "size_bytes": 2640,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": true,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "source_verification",
       "path": "source_verification.json",
-      "sha256": "30750a515cac2f864ca96fe9c9a6ff3b34e3059e0d408e183d1bc37dcfc8cfb4",
+      "sha256": "d3dcbfa2700015846d373939ef3d29f92f98ebef75ff747bece6ba8b7bcdc9c6",
       "size_bytes": 1291,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "stage_evaluation",
       "path": "stage_evaluation.json",
-      "sha256": "8f38a7fd86d71f56c4be9e623b4d2046d27e90833d3e5c4266ac284211e8fc77",
+      "sha256": "33ef80976b80c0e74620657e6f45d7420a1b9cdd9e104d2ccb51bc8c23910da6",
       "size_bytes": 569,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": true,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     },
     {
       "artifact_type": "tool_call_ledger",
       "path": "tool_call_ledger.json",
-      "sha256": "5b0cb6757043bc69405ff649d6a01235efcd2d9d920456833a74985302615051",
+      "sha256": "dceffcbf3525ef566c702748cafd2c7dd6a5149e922c72fd4397d4cc7d7f884f",
       "size_bytes": 1178,
       "schema_version": "2.0",
-      "plugin_version": "1.2.1",
+      "plugin_version": "1.2.2",
       "workflow_run_id": "release-fixture-run-001",
       "required_for_release": false,
-      "generated_at": "2026-09-05T10:17:32Z"
+      "generated_at": "2026-09-08T05:14:35Z"
     }
   ]
 }

@@ -30,7 +30,7 @@ def valid_tournament() -> dict:
                     "judge_id": judge_id,
                     "independence_class": "same-model-separate-context",
                     "blinded_candidate_id": candidate_id,
-                    "presentation_order": candidate_index,
+                    "presentation_order": 2 if candidate_id == "blind-17" else 1,
                     "novelty": 0.7,
                     "evidence_strength": 0.75 if candidate_id == "blind-17" else 0.55,
                     "mechanistic_specificity": 0.7,
@@ -45,7 +45,7 @@ def valid_tournament() -> dict:
     return {
         "schema_version": "2.0",
         "tournament_id": "tournament-test-v2",
-        "plugin_version": "1.2.1",
+        "plugin_version": "1.2.2",
         "workflow_run_id": "run-test-v2",
         "created_at": "2026-07-10T00:00:00Z",
         "selected_domain_pack": "generic-biomedical",
@@ -55,10 +55,12 @@ def valid_tournament() -> dict:
             "seed": 17,
             "randomized_order": ["blind-42", "blind-17"],
         },
+        "aggregation": {"method": "mean"},
+        "elo_input": {"initial_rating": 1000, "k_factor": 32, "matches": [{"candidate_a": "H-001", "candidate_b": "H-002", "outcome": "a_wins"}]},
         "judge_scores": scores,
         "aggregate_scores": [
-            {"blinded_candidate_id": "blind-17", "aggregate_score": 0.78, "evidence_strength": 0.75, "execution_priority": 0.8},
-            {"blinded_candidate_id": "blind-42", "aggregate_score": 0.58, "evidence_strength": 0.55, "execution_priority": 0.6},
+            {"blinded_candidate_id": "blind-17", "aggregate_score": 0.76875, "evidence_strength": 0.75, "execution_priority": 0.8},
+            {"blinded_candidate_id": "blind-42", "aggregate_score": 0.71875, "evidence_strength": 0.55, "execution_priority": 0.6},
         ],
         "judge_disagreement": [
             {"blinded_candidate_id": "blind-17", "method": "range", "evidence_strength_dispersion": 0.0, "execution_priority_dispersion": 0.0},
@@ -67,6 +69,10 @@ def valid_tournament() -> dict:
         "order_sensitivity_check": {
             "performed": True,
             "alternate_seed": 42,
+            "alternate_order": ["blind-17", "blind-42"],
+            "alternate_judge_scores": [dict(row, presentation_order=3-row["presentation_order"]) for row in scores],
+            "alternate_ranking": ["H-001", "H-002"],
+            "metric": "pairwise-order-agreement",
             "rank_stability": 1.0,
             "limitations": "Two seeded orders cannot exclude all order effects.",
         },

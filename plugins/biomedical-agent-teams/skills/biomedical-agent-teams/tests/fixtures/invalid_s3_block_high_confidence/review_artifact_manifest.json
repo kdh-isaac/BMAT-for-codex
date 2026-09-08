@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "review_manifest_id": "review-manifest-release-fixture-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "workflow_run_id": "release-fixture-run-001",
   "created_at": "2026-07-10T01:07:00Z",
   "review_instances": [
@@ -11,7 +11,7 @@
       "actor_type": "external-tool",
       "provider": "BMAT local validators",
       "model": "bmat-claim-support-check",
-      "model_version": "1.2.1",
+      "model_version": "1.2.2",
       "authoring_provider": "unavailable",
       "authoring_model": "unavailable",
       "authoring_model_version": "unavailable",
@@ -24,23 +24,30 @@
       "input_artifact_refs": [
         "claim_ledger.json",
         "source_corpus.json",
-        "source_verification.json"
+        "source_verification.json",
+        "final.md"
       ],
       "input_artifact_sha256": {
-        "claim_ledger.json": "45b4fb88db0d74c522c110c9ac94c9b65dfda1e54bb60f52370fb142ec4717f1",
-        "source_corpus.json": "1e1ff7dfe6841e4b4e61aedd47ed7807c814cad98388686e3df2b96577611fc3",
-        "source_verification.json": "30750a515cac2f864ca96fe9c9a6ff3b34e3059e0d408e183d1bc37dcfc8cfb4"
+        "claim_ledger.json": "0ab4a0c1e355d981eda25af4abcd326234ac32503c61aa8e02ca8c6fede51742",
+        "source_corpus.json": "dd83e3d8384751768555b197119cec06acce1aae3a2bd569599c485739c7e6e5",
+        "source_verification.json": "d3dcbfa2700015846d373939ef3d29f92f98ebef75ff747bece6ba8b7bcdc9c6",
+        "final.md": "8eb055362c38eab00bbdec5dc0457a88bc7a47c8c95ee3d5d340a9a0fa3566fe"
       },
       "prompt_template_ref": "review/external-tool-review-prompt.md",
-      "prompt_template_sha256": "1e30fd4683476adbbdf00653167a232c162b52fd9f12e74cd5af4c0ec8f45f05",
+      "prompt_template_sha256": "adaca75fff873e3e4dd11349585c1b5141313469759634fbed62a7ea02b20784",
       "output_artifact": "review/external-tool-review.md",
-      "output_sha256": "427719a6f972d3fb998d5bd86fb2d2b07acff357dcc726565e2a878a6ce6e897",
+      "output_sha256": "9cfba30e2c0a45bff7b3b7050d52f8349661aaf83225219bc99824c5f35a5b4e",
       "checks_run": [
         "source snapshot hash",
         "claim-to-source linkage",
         "evidence span ownership",
         "seven-axis scope",
-        "allowed final wording"
+        "allowed final wording",
+        "citation.identity",
+        "claims.contradictions",
+        "claims.scope",
+        "final.coverage",
+        "final.scope"
       ],
       "changed_claim_ids": [
         "CL-001"
@@ -56,8 +63,20 @@
       "started_at": "2026-07-10T01:06:00Z",
       "completed_at": "2026-07-10T01:06:02Z",
       "runtime_receipt_ref": "review/review-runtime-receipt.json",
-      "runtime_receipt_sha256": "232041c92bcee6bcf64c4b9d60d04367a1cfe826b936b08148bd43e52ab52416",
-      "limitations": "The deterministic review establishes contract consistency, not external scientific truth."
+      "runtime_receipt_sha256": "8b6d3675fc63ee191f8ac1c62e7c3df7dfaca262a81da9ab445223b7c293c7cf",
+      "limitations": "The deterministic review establishes contract consistency, not external scientific truth.",
+      "covered_node_ids": [
+        "S3_citation_check",
+        "S4_contradiction_check",
+        "S5_post_write"
+      ],
+      "covered_check_ids": [
+        "citation.identity",
+        "claims.contradictions",
+        "claims.scope",
+        "final.coverage",
+        "final.scope"
+      ]
     }
   ]
 }

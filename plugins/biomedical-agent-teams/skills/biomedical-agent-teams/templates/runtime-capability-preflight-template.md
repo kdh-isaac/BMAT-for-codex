@@ -8,7 +8,7 @@ workflow wording grants unavailable tools.
 |---|---|
 | runtime_id | RCP-YYYYMMDD-001 |
 | codex_client |  |
-| plugin_version | 1.2.1 |
+| plugin_version | 1.2.2 |
 | workspace_root |  |
 | host_os | macOS / Windows / Linux / unknown |
 | path_style | posix / windows / mixed / unknown / not-applicable |
@@ -93,3 +93,6 @@ be run because shell/code execution is unavailable, record
 If spawned subagents are unavailable, downgrade `inline_first_selective_review`
 or `team_level_selective_dag` to `inline_only` or label the independent-review
 claim as not performed.
+
+Current release/Full fields and worked fixture references: [1.2.2 integrity contract](../../../docs/release-integrity-1.2.2.md).
+Preserve actual observations; template placeholders and scaffold defaults are not completed checks.

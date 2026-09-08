@@ -1,6 +1,6 @@
 # Migrating BMAT bundles from v1 to v2
 
-BMAT v1.2.1 release validation requires v2 release artifacts. The migration
+BMAT v1.2.2 release validation requires v2 release artifacts. The migration
 tool performs a conservative structural conversion into a new directory. It
 does not edit the source bundle and does not overwrite an existing destination
 by default.
@@ -72,6 +72,13 @@ values by hand.
 ## Compatibility boundary
 
 Non-release tooling may inspect legacy artifacts to explain migration work, but
-v1 artifacts cannot satisfy the v1.2.1 release gate. Preserve the original v1
+v1 artifacts cannot satisfy the v1.2.2 release gate. Preserve the original v1
 bundle as the audit source and treat the migrated v2 directory as a new derived
 artifact.
+
+## Current 1.2.2 policy
+
+See [the supervised release integrity contract](release-integrity-1.2.2.md).
+Schema 2.0 remains readable; current release/Full validation requires the new
+review, final-snapshot, and extraction bindings. Do not synthesize missing
+verification records when migrating older bundles.

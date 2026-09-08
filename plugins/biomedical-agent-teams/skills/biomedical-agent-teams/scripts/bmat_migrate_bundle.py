@@ -67,7 +67,7 @@ def plugin_version() -> str:
         value = VERSION_FILE.read_text(encoding="utf-8-sig").strip()
     except OSError:
         value = ""
-    return value if SEMVER_RE.fullmatch(value) else "1.2.1"
+    return value if SEMVER_RE.fullmatch(value) else "1.2.2"
 
 
 def nonempty(value: Any, fallback: str) -> str:

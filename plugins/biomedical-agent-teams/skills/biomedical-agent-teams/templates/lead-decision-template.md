@@ -36,3 +36,6 @@ Record dependency-aware command-level teams only when independent decision axes 
 ## Post-Team Audit Plan
 
 Record how team outputs will be merged into the central claim ledger, results integration, post-write validation, and final wording.
+
+Current release/Full fields and worked fixture references: [1.2.2 integrity contract](../../../docs/release-integrity-1.2.2.md).
+Preserve actual observations; template placeholders and scaffold defaults are not completed checks.

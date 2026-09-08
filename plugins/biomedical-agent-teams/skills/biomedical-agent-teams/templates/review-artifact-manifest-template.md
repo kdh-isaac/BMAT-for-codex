@@ -12,7 +12,7 @@ runtime receipt against `contracts/review-runtime-receipt.schema.json`.
   "schema_version": "2.0",
   "review_manifest_id": "BMAT-REVIEW-MANIFEST-20260710-001",
   "workflow_run_id": "BMAT-RUN-20260710-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "created_at": "2026-07-10T09:00:00+09:00",
   "review_instances": [
     {
@@ -45,7 +45,10 @@ runtime receipt against `contracts/review-runtime-receipt.schema.json`.
       "prompt_template_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       "output_artifact": "review/outputs/citation-verifier.md",
       "output_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "covered_node_ids": ["S3_citation_check"],
+      "covered_check_ids": ["citation.identity"],
       "checks_run": [
+        "citation.identity",
         "source identity receipt checked",
         "claim-source and evidence-span linkage checked",
         "allowed final wording checked"
@@ -74,7 +77,7 @@ The referenced `review/receipts/citation-verifier-runtime.json` has this shape:
   "schema_version": "2.0",
   "receipt_id": "BMAT-RUNTIME-RECEIPT-001",
   "workflow_run_id": "BMAT-RUN-20260710-001",
-  "plugin_version": "1.2.1",
+  "plugin_version": "1.2.2",
   "instance_id": "BMAT-REVIEW-001",
   "actor_type": "model",
   "provider": "<runtime-reported-provider>",
@@ -108,3 +111,9 @@ their exact bytes, then write the manifest. If provider/model/session identity
 is unavailable, record `unavailable`, set
 `independent_review_eligible=false`, use a non-independent class, and downgrade
 the final workflow label; never fabricate metadata.
+
+For current release, include every required input listed on the covered nodes,
+including `source_verification.json` for citation review. The above draft-only
+example is not a completed post-write review. A combined final review must bind
+`final.md` and cover `final.coverage` and `final.scope`; see
+[the complete contract](../../../docs/release-integrity-1.2.2.md).

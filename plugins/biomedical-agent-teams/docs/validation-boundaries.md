@@ -62,3 +62,10 @@ Every release-facing result should state, separately:
 
 If a layer was not run, use the structured skip or downgrade fields and lower
 the final label. Free-text confidence language cannot repair a missing receipt.
+
+## Current 1.2.2 policy
+
+See [the supervised release integrity contract](release-integrity-1.2.2.md).
+Schema 2.0 remains readable; current release/Full validation requires the new
+review, final-snapshot, and extraction bindings. Do not synthesize missing
+verification records when migrating older bundles.

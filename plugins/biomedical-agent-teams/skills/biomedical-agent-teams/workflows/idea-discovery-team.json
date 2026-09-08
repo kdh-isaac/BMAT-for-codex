@@ -8,48 +8,103 @@
     {
       "id": "S0_context_lock",
       "agent": "protocol-context-locker",
-      "outputs": ["runtime_capability_preflight", "workflow_run"],
-      "blocking": true
+      "outputs": [
+        "runtime_capability_preflight",
+        "workflow_run"
+      ],
+      "blocking": true,
+      "phase": "context"
     },
     {
       "id": "S1_generate",
       "agent": "hypothesis-generator",
-      "requires": ["S0_context_lock"],
-      "outputs": ["hypothesis_candidates", "source_corpus", "source_verification"],
-      "blocking": true
+      "requires": [
+        "S0_context_lock"
+      ],
+      "outputs": [
+        "hypothesis_candidates",
+        "source_corpus",
+        "source_verification"
+      ],
+      "blocking": true,
+      "phase": "specialist"
     },
     {
       "id": "S2_rank",
       "agent": "hypothesis-ranker",
-      "requires": ["S1_generate"],
+      "requires": [
+        "S1_generate"
+      ],
       "outputs": [
         "hypothesis_tournament",
         "results_integration",
         "claim_ledger",
         "claim_support_matrix"
       ],
-      "blocking": true
+      "blocking": true,
+      "phase": "specialist"
     },
     {
       "id": "S3_confounds",
       "agent": "causal-inference-confounder-analyst",
-      "requires": ["S2_rank"],
-      "outputs": ["stage_evaluation"],
+      "requires": [
+        "S2_rank"
+      ],
+      "outputs": [
+        "stage_evaluation"
+      ],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/causal-inference-confounder-analyst.toml",
-      "independence_required": true
+      "independence_required": true,
+      "phase": "review",
+      "required_checks": [
+        "claims.confounds"
+      ],
+      "required_input_refs": [
+        "claim_ledger.json",
+        "source_corpus.json"
+      ]
+    },
+    {
+      "id": "W_write",
+      "agent": "scientific-writer-citation-agent",
+      "phase": "write",
+      "requires": [
+        "S3_confounds"
+      ],
+      "outputs": [
+        "final_text"
+      ],
+      "blocking": true
     },
     {
       "id": "S4_post_write",
       "agent": "post-write-final-validator",
-      "requires": ["S3_confounds"],
-      "outputs": ["post_write_validation", "review_artifact_manifest", "final_text"],
+      "requires": [
+        "W_write"
+      ],
+      "outputs": [
+        "post_write_validation",
+        "review_artifact_manifest"
+      ],
       "blocking": true,
       "spawnable": true,
       "toml_template_path": "codex-agents/post-write-final-validator.toml",
-      "independence_required": true
+      "independence_required": true,
+      "phase": "post-write",
+      "required_checks": [
+        "final.coverage",
+        "final.scope"
+      ],
+      "required_input_refs": [
+        "claim_ledger.json",
+        "final.md"
+      ]
     }
   ],
-  "release_gates": ["bmat_validate", "bmat_tool_ledger_check"]
+  "release_gates": [
+    "bmat_validate",
+    "bmat_tool_ledger_check"
+  ]
 }
